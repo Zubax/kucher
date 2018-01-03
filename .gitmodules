@@ -1,0 +1,3 @@
+[submodule "kucher/libraries/popcop"]
+	path = kucher/libraries/popcop
+	url = https://github.com/Zubax/popcop
