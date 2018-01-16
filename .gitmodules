@@ -1,3 +1,6 @@
 [submodule "kucher/libraries/popcop"]
 	path = kucher/libraries/popcop
 	url = https://github.com/Zubax/popcop
+[submodule "kucher/libraries/pyqtgraph"]
+	path = kucher/libraries/pyqtgraph
+	url = https://github.com/pyqtgraph/pyqtgraph-core
