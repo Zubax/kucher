@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (C) 2018 Zubax Robotics OU
 #
@@ -18,3 +19,12 @@
 #
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
+
+import os
+import sys
+
+SOURCE_PATH = os.path.abspath(os.path.dirname(__file__))
+LIBRARIES_PATH = os.path.join(SOURCE_PATH, 'libraries')
+
+sys.path.append(os.path.join(LIBRARIES_PATH))
+sys.path.append(os.path.join(LIBRARIES_PATH, 'popcop', 'python'))
