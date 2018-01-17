@@ -84,6 +84,8 @@ _TASK_ID_STATUS_REPORT_MAP = {
 
 
 class TimestampedTaskResult:
+    ENCODED_SIZE = 8
+
     def __init__(self):
         self.completed_at = Timestamp()
         self.exit_code = 0
@@ -118,6 +120,5 @@ def _unittest_timestamped_task_result():
     assert ttr.exit_code == 0
 
     ttr = TimestampedTaskResult.decode(bytes([0xDE, 0xAD, 0xBE, 0xEF, 0xA5, 0xCA, 0xFE, 123]))
-    micros = 0xFE_CA_A5_EF_BE_AD_DE
-    assert ttr.completed_at == Timestamp(micros) * Timestamp('1e-6')
+    assert ttr.completed_at == Timestamp(0xFE_CA_A5_EF_BE_AD_DE) * Timestamp('1e-6')
     assert ttr.exit_code == 123

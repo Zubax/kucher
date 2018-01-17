@@ -16,4 +16,5 @@ function die()
 
 which pytest &> /dev/null || die "Install Pytest first: sudo pip3 install pytest"
 
-pytest --ignore=kucher/libraries/pyqtgraph --capture=no -v .
+# Add "--capture=no" to suppress stdout capture
+pytest --ignore=kucher/libraries/pyqtgraph -v .

@@ -13,10 +13,10 @@
 #
 
 import enum
+import math
 import popcop
 import typing
-import decimal
-import unittest
+import struct
 from .tasks import TaskID, Timestamp, TimestampedTaskResult, TaskStatusReportBase
 
 
@@ -68,7 +68,10 @@ class DeviceCapabilityFlags(enum.IntFlag):
 
 
 class MessageBase:
-    pass
+    # noinspection PyMethodMayBeStatic
+    def encode(self) -> bytes:
+        """Encodes the message instance for transmission over the wire"""
+        raise TypeError('This message type cannot be encoded')
 
 
 class GeneralStatusMessage(MessageBase):
@@ -79,7 +82,7 @@ class GeneralStatusMessage(MessageBase):
         self.timestamp = Timestamp()
 
         # noinspection PyTypeChecker
-        self.timestamped_task_results = {
+        self.timestamped_task_results: typing.Dict[TaskID, TimestampedTaskResult] = {
             tid: TimestampedTaskResult() for tid in TaskID
         }
 
@@ -100,7 +103,75 @@ class GeneralStatusMessage(MessageBase):
 
     @staticmethod
     def decode(data: bytes):
-        pass
+        out = GeneralStatusMessage()
+
+        current_task_id_with_timestamp, = struct.unpack('<Q', data[:8])
+        out.current_task_id = TaskID((current_task_id_with_timestamp >> 56) & 0xFF)
+        out.timestamp = Timestamp(current_task_id_with_timestamp & (2**56 - 1)) * Timestamp('1e-6')
+
+        offset = 8
+        # noinspection PyTypeChecker
+        for tid in TaskID:
+            block = data[offset:offset + TimestampedTaskResult.ENCODED_SIZE]
+            out.timestamped_task_results[tid] = TimestampedTaskResult.decode(block)
+            offset += TimestampedTaskResult.ENCODED_SIZE
+
+        status_flags, \
+            out.cpu_temperature, \
+            out.vsi_temperature, \
+            out.motor_temperature, \
+            out.dc_voltage, \
+            out.dc_current, \
+            out.hardware_lvps_malfunction_event_count, \
+            out.hardware_overload_event_count, \
+            out.hardware_fault_event_count = struct.unpack('< Q fff ff LLL', data[offset:offset+40])
+        offset += 40
+
+        out.status_flags = StatusFlags(status_flags)
+
+        # This field is not reported unless the motor temperature feedback is configured
+        if math.isnan(out.motor_temperature):
+            out.motor_temperature = None
+
+        out.task_specific_status_report = TaskStatusReportBase.decode(out.current_task_id, data[offset:])
+
+        return out
+
+
+def _unittest_general_status_message_decode():
+    data = bytearray([0] * 176)
+
+    # Current task ID and timestamp
+    data[0:  8] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0xA5, 0xCA, 0xFE, 5])
+
+    # Task results
+    data[8: 16] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x10, 0xCA, 0x00, 10])
+    data[16:24] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x11, 0xCA, 0x01, 11])
+    data[24:32] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x12, 0xCA, 0x02, 12])
+    data[32:40] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x13, 0xCA, 0x03, 13])
+    data[40:48] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x14, 0xCA, 0x04, 14])
+    data[48:56] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x15, 0xCA, 0x05, 15])
+    data[56:64] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x16, 0xCA, 0x06, 16])
+    data[64:72] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x17, 0xCA, 0x07, 17])
+
+    out = GeneralStatusMessage.decode(bytes(data))
+
+    assert out.current_task_id == 5
+    assert out.timestamp == Timestamp(0xFE_CA_A5_EF_BE_AD_DE) * Timestamp('1e-6')
+
+    assert out.timestamped_task_results[TaskID(0)].completed_at == Timestamp(0x00_CA_10_EF_BE_AD_DE) * Timestamp('1e-6')
+    assert out.timestamped_task_results[TaskID(1)].completed_at == Timestamp(0x01_CA_11_EF_BE_AD_DE) * Timestamp('1e-6')
+    assert out.timestamped_task_results[TaskID(2)].completed_at == Timestamp(0x02_CA_12_EF_BE_AD_DE) * Timestamp('1e-6')
+    assert out.timestamped_task_results[TaskID(3)].completed_at == Timestamp(0x03_CA_13_EF_BE_AD_DE) * Timestamp('1e-6')
+    assert out.timestamped_task_results[TaskID(4)].completed_at == Timestamp(0x04_CA_14_EF_BE_AD_DE) * Timestamp('1e-6')
+    assert out.timestamped_task_results[TaskID(5)].completed_at == Timestamp(0x05_CA_15_EF_BE_AD_DE) * Timestamp('1e-6')
+    assert out.timestamped_task_results[TaskID(6)].completed_at == Timestamp(0x06_CA_16_EF_BE_AD_DE) * Timestamp('1e-6')
+
+    # noinspection PyTypeChecker
+    for tid in TaskID:
+        assert out.timestamped_task_results[tid].exit_code == int(tid) + 10
+
+    # TODO: add tests
 
 
 class DeviceCharacteristicsMessage(MessageBase):
