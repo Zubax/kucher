@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # Copyright (C) 2018 Zubax Robotics OU
 #
@@ -12,3 +11,9 @@
 #
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
+
+from .communicator import Communicator
+
+
+class DeviceModel:
+    pass

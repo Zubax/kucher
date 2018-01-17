@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # Copyright (C) 2018 Zubax Robotics OU
 #
@@ -12,3 +11,19 @@
 #
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
+
+
+class MessageBase:
+    pass
+
+
+class GeneralStatusMessage(MessageBase):
+    FRAME_TYPE_CODE = 0
+
+
+class DeviceCharacteristicsMessage(MessageBase):
+    FRAME_TYPE_CODE = 1
+
+
+class SetpointCommandMessage(MessageBase):
+    FRAME_TYPE_CODE = 2
