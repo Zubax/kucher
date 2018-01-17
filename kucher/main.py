@@ -16,10 +16,22 @@
 import os
 import sys
 
+if sys.version_info[:2] < (3, 6):
+    raise ImportError('A newer version of Python is required')
+
 SOURCE_PATH = os.path.abspath(os.path.dirname(__file__))
 LIBRARIES_PATH = os.path.join(SOURCE_PATH, 'libraries')
 
+sys.path.insert(0, SOURCE_PATH)
 sys.path.insert(0, os.path.join(LIBRARIES_PATH))
 sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'popcop', 'python'))
 
 from model.device_model import DeviceModel
+
+
+def main():
+    pass
+
+
+if __name__ == '__main__':
+    main()

@@ -13,7 +13,44 @@
 #
 
 import popcop
+import typing
+import threading
+from ..utils import synchronized
+
+
+MAX_PAYLOAD_SIZE = 1024
+FRAME_TIMEOUT = 0.5
 
 
 class Communicator:
-    pass
+    def __init__(self,
+                 port_name: str,
+                 raw_data_handler_callback: typing.Callable):
+        self._lock = threading.RLock()
+        self._ch = popcop.physical.serial_multiprocessing.Channel(port_name=port_name,
+                                                                  max_payload_size=MAX_PAYLOAD_SIZE,
+                                                                  frame_timeout=FRAME_TIMEOUT)
+        self._raw_data_sink = raw_data_handler_callback
+
+    @synchronized
+    def send(self,
+             message,
+             timeout: typing.Optional[typing.Union[float, int]]=None,
+             callback: typing.Optional[typing.Callable]=None,
+             predicate: typing.Optional[typing.Callable]=None):
+        pass
+
+    @synchronized
+    def subscribe(self,
+                  message_type,
+                  callback: typing.Callable,
+                  predicate: typing.Optional[typing.Callable]=None):
+        pass
+
+    @synchronized
+    def poll(self):
+        pass
+
+    @synchronized
+    def close(self):
+        self._ch.close()
