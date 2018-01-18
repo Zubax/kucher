@@ -16,7 +16,9 @@ import popcop
 import typing
 import threading
 from ..utils import synchronized
+from .messages import MessageType, Message, Codec
 
+__all__ = ['Communicator']
 
 MAX_PAYLOAD_SIZE = 1024
 FRAME_TIMEOUT = 0.5
@@ -31,10 +33,13 @@ class Communicator:
                                                                   max_payload_size=MAX_PAYLOAD_SIZE,
                                                                   frame_timeout=FRAME_TIMEOUT)
         self._raw_data_sink = raw_data_handler_callback
+        self._codec: Codec
 
     @synchronized
     def send(self,
-             message,
+             message_or_type: typing.Union[Message,
+                                           popcop.standard.MessageBase,
+                                           typing.Type[popcop.standard.MessageBase]],
              timeout: typing.Optional[typing.Union[float, int]]=None,
              callback: typing.Optional[typing.Callable]=None,
              predicate: typing.Optional[typing.Callable]=None):

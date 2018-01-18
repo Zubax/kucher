@@ -184,6 +184,7 @@ GeneralStatusMessageFormatV1 = con.Struct(
         fault=U32,
     ),
     task_specific_status_report=TaskSpecificStatusReportFormat,
+    _terminator=con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
 )
 
 
@@ -228,6 +229,7 @@ DeviceCharacteristicsMessageFormatV1 = con.Struct(
             ),
         ),
     ),
+    _terminator=con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
 )
 
 
@@ -251,6 +253,7 @@ SetpointMessageFormatV1 = con.Struct(
     value=F32,
     mode=ControlModeFormat,
     _reserved=con.Padding(3),
+    _terminator=con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
 )
 
 
@@ -337,6 +340,10 @@ class Codec:
         if self._version[0] > 1:
             raise UnsupportedVersionException('Cannot communicate with version %r' % self._version)
 
+        # We could add lists of formats, e.g. using construct.Select, that could be tried consecutively
+        # until the first working format is found.
+        # E.g. con.Select(GeneralStatusMessageFormatV1, GeneralStatusMessageFormatV2)
+        # http://construct.readthedocs.io/en/latest/misc.html#select
         self._type_mapping: typing.Dict[MessageType, typing.Tuple[int, con.Struct]] = {
             MessageType.GENERAL_STATUS:      (0, GeneralStatusMessageFormatV1),
             MessageType.DEVICE_CAPABILITIES: (1, DeviceCharacteristicsMessageFormatV1),
@@ -351,7 +358,10 @@ class Codec:
             raise UnknownMessageException('Unknown frame type code when decoding: %r' % frame.frame_type_code)
 
         try:
-            fields = formatter.parse(frame.payload)
+            if frame.payload:
+                fields = formatter.parse(frame.payload)
+            else:
+                fields = con.Container()
         except Exception as ex:
             raise InvalidPayloadException('Cannot decode message') from ex
 
@@ -364,7 +374,10 @@ class Codec:
             raise UnknownMessageException('Unknown message type when encoding: %r' % message.type)
 
         try:
-            encoded = formatter.build(message.fields)
+            if len(message.fields):
+                encoded = formatter.build(message.fields)
+            else:
+                encoded = bytes()
         except Exception as ex:
             raise InvalidFieldsException('Cannot encode message') from ex
 
@@ -387,3 +400,9 @@ def _unittest_codec():
 
     msg = c.decode(popcop.transport.ReceivedFrame(ftp, payload, time.monotonic()))
     print(msg)
+
+    ftp, payload = c.encode(Message(MessageType.SETPOINT))
+    assert len(payload) == 0
+
+    msg = c.decode(popcop.transport.ReceivedFrame(ftp, payload, time.monotonic()))
+    assert len(msg.fields) == 0
