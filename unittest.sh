@@ -42,4 +42,4 @@ while [ -n "$1" ]; do
     shift
 done
 
-pytest --ignore=kucher/libraries/pyqtgraph -v .
+pytest --ignore=kucher/libraries/pyqtgraph --ignore=kucher/libraries/construct -v .
