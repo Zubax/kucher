@@ -131,6 +131,7 @@ ControlModeFormat = con.Enum(
 )
 
 
+# noinspection PyUnresolvedReferences
 TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
     'fault': con.Struct(
         'failed_task_id'                / TaskIDFormat,
