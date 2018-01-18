@@ -92,6 +92,20 @@ StatusFlagsFormat = con.FlagsEnum(
 )
 
 
+DeviceCapabilityFlagsFormat = con.FlagsEnum(
+    U64,
+
+    doubly_redundant_can_bus=1 << 0,
+    battery_eliminator_circuit=1 << 1,
+)
+
+
+MathRangeFormat = con.Struct(
+    min=F32,
+    max=F32,
+)
+
+
 TaskIDFormat = con.Enum(
     U8,
     idle=0,
@@ -101,6 +115,18 @@ TaskIDFormat = con.Enum(
     hardware_test=4,
     motor_identification=5,
     manual_control=6,
+)
+
+
+ControlModeFormat = con.Enum(
+    U8,
+
+    ratiometric_current=0,
+    ratiometric_angular_velocity=0,
+    ratiometric_voltage=0,
+    current=0,
+    mechanical_rpm=0,
+    voltage=0,
 )
 
 
@@ -145,6 +171,12 @@ GeneralStatusMessageFormatV1 = con.Struct(
         voltage=F32,
         current=F32,
     ),
+    _reserved=con.Padding(4),
+    pwm_state=con.Struct(
+        period=F32,
+        dead_time=F32,
+        upper_limit=F32,
+    ),
     hardware_flag_edge_counters=con.Struct(
         lvps_malfunction=U32,
         overload=U32,
@@ -155,18 +187,70 @@ GeneralStatusMessageFormatV1 = con.Struct(
 
 
 def _unittest_general_status_message_v1():
-    import binascii
-    import pprint
-    sample_idle = binascii.unhexlify('407e190900000000000000000000000000000000000000000b613e00000000000000000000000000'
-                                     '19cc350000000000000000000000000000000000000000000000000000000000000000000000002c'
-                                     '798d9943ebf095430000000036486e4100000000000000000000000000000000')
+    from binascii import unhexlify
+    from pprint import pprint
+    sample_idle = unhexlify('01b9e30000000000000000000000000000000000000000005b623e0000000000000000000000000093cd350000'
+                            '000000000000000000000000000000000000000000000000000000000000000000002f78c99a439af796430000'
+                            '000044866e410000000000000000ae7db23795bfd633f2eb613f000000000000000000000000')
     container = GeneralStatusMessageFormatV1.parse(sample_idle)
-    pprint.pprint(container)
+    pprint(container)
     assert container.current_task_id == 'idle'
     assert container.task_specific_status_report is None
     assert container['status_flags']['phase_current_agc_high_gain_selected']
-    assert not container.status_flags.can_data_link_up
+    assert container.status_flags.can_data_link_up
     assert sample_idle == GeneralStatusMessageFormatV1.build(container)
+
+
+DeviceCharacteristicsMessageFormatV1 = con.Struct(
+    capability_flags=DeviceCapabilityFlagsFormat,
+    board_parameters=con.Struct(
+        vsi_resistance_per_phase=con.Array(3, con.Struct(
+            high=F32,
+            low=F32,
+        )),
+        vsi_gate_ton_toff_imbalance=F32,
+        phase_current_measurement_error_variance=F32,
+        limits=con.Struct(
+            measurement_range=con.Struct(
+                vsi_dc_voltage=MathRangeFormat,
+            ),
+            safe_operating_area=con.Struct(
+                vsi_dc_voltage=MathRangeFormat,
+                vsi_dc_current=MathRangeFormat,
+                vsi_phase_current=MathRangeFormat,
+                cpu_temperature=MathRangeFormat,
+                vsi_temperature=MathRangeFormat,
+            ),
+            phase_current_transducers_zero_bias_limit=con.Struct(
+                low_gain=F32,
+                high_gain=F32,
+            ),
+        ),
+    ),
+)
+
+
+def _unittest_device_characteristics_message_v1():
+    from binascii import unhexlify
+    from pprint import pprint
+    from pytest import approx
+    sample = unhexlify('03000000000000006f12833b4260e53b6f12833b4260e53b6f12833b6f12833b83fa3cb20000803f00008040f62878'
+                       '420000304100004c420000c8c10000c8410000f0c10000f04166266c433393b143662669433313b343000000400000'
+                       '003f')
+    container = DeviceCharacteristicsMessageFormatV1.parse(sample)
+    pprint(container)
+    assert container.board_parameters.vsi_resistance_per_phase[0].low == approx(7e-3)
+    assert container.board_parameters.vsi_resistance_per_phase[2].high == approx(4e-3)
+    assert container.board_parameters.vsi_gate_ton_toff_imbalance == approx(-11e-9)
+    assert container.board_parameters.limits.phase_current_transducers_zero_bias_limit.low_gain == approx(2)
+    assert sample == DeviceCharacteristicsMessageFormatV1.build(container)
+
+
+SetpointMessageFormatV1 = con.Struct(
+    value=F32,
+    mode=ControlModeFormat,
+    _reserved=con.Padding(3),
+)
 
 
 class MessageType(enum.Enum):
@@ -181,19 +265,19 @@ class Codec:
     It uses software version numbers to determine which message formats to use.
     """
     def __init__(self):
-        self._software_version: typing.Tuple[int, int] = (0, 0)
+        self._version: typing.Tuple[int, int] = (0, 0)
 
     @property
-    def software_version(self) -> typing.Tuple[int, int]:
-        return self._software_version
+    def version(self) -> typing.Tuple[int, int]:
+        return self._version
 
-    @software_version.setter
-    def software_version(self, major_minor: typing.Tuple[int, int]):
+    @version.setter
+    def version(self, major_minor: typing.Tuple[int, int]):
         if len(major_minor) != 2:
             raise TypeError('Expected an iterable of size 2')
 
         mj, mn = map(int, major_minor)
-        self._software_version = mj, mn
+        self._version = mj, mn
 
     def decode(self, frame: popcop.transport.ReceivedFrame) -> typing.Tuple[MessageType, con.Container]:
         pass
