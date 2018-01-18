@@ -16,5 +16,30 @@ function die()
 
 which pytest &> /dev/null || die "Install Pytest first: sudo pip3 install pytest"
 
-# Add "--capture=no" to suppress stdout capture
+next_option=''
+while [ -n "$1" ]; do
+    case $1 in
+    --skip-third-party)
+        export PYTEST_ADDOPTS="$PYTEST_ADDOPTS --ignore=kucher/libraries"
+        ;;
+
+    --verbose)
+        export PYTEST_ADDOPTS="$PYTEST_ADDOPTS --capture=no -vv"
+        ;;
+
+    --help)
+        echo "Options:"
+        echo "  --help                  Show this help."
+        echo "  --skip-third-party      Ignore unit tests of third-party code."
+        echo "  --verbose               Enable verbose output."
+        exit 0
+        ;;
+
+    *)
+        die "Invalid option: $1; use --help to get help."
+        ;;
+    esac
+    shift
+done
+
 pytest --ignore=kucher/libraries/pyqtgraph -v .
