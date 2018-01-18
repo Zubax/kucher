@@ -16,175 +16,187 @@ import enum
 import math
 import popcop
 import typing
-import struct
-from .tasks import TaskID, Timestamp, TimestampedTaskResult, TaskStatusReportBase
+import decimal
+import construct as con
+
+# Convenient type aliases - we only use little-endian byte order!
+U8  = con.Int8ul
+U16 = con.Int16ul
+U32 = con.Int32ul
+U56 = con.BytesInteger(7, signed=False, swapped=True)
+U64 = con.Int64ul
+F32 = con.Float32l
 
 
-class StatusFlags(enum.IntFlag):
+# noinspection PyClassHasNoInit
+class OptionalFloatAdapter(con.Adapter):
     """
-    Device status flags, as defined by the communication protocol.
-    Status flags are carried in a 64-bit unsigned integer field.
+    Floats can be optional; if no value is provided, they may be set to NaN.
+    This adapter replaces NaN with None and vice versa.
     """
+    def _encode(self, obj, context):
+        return float('nan') if obj is None else float(obj)
+
+    def _decode(self, obj, context):
+        return None if math.isnan(obj) else float(obj)
+
+
+# noinspection PyClassHasNoInit
+class TimeAdapter(con.Adapter):
+    """
+    Converts time representation between integral number of microseconds and a Decimal number of seconds.
+    """
+    MULTIPLIER = decimal.Decimal('1e6')
+
+    def _encode(self, obj, context):
+        return int(obj * self.MULTIPLIER)
+
+    def _decode(self, obj, context):
+        return decimal.Decimal(obj) / self.MULTIPLIER
+
+
+StatusFlagsFormat = con.FlagsEnum(
+    U64,
+
     # Alert flags are allocated at the bottom (from bit 0 upwards)
-    DC_UNDERVOLTAGE                         = 1 << 0
-    DC_OVERVOLTAGE                          = 1 << 1
-    DC_UNDERCURRENT                         = 1 << 2
-    DC_OVERCURRENT                          = 1 << 3
+    dc_undervoltage=1 << 0,
+    dc_overvoltage=1 << 1,
+    dc_undercurrent=1 << 2,
+    dc_overcurrent=1 << 3,
 
-    CPU_COLD                                = 1 << 4
-    CPU_OVERHEATING                         = 1 << 5
-    VSI_COLD                                = 1 << 6
-    VSI_OVERHEATING                         = 1 << 7
-    MOTOR_COLD                              = 1 << 8
-    MOTOR_OVERHEATING                       = 1 << 9
+    cpu_cold=1 << 4,
+    cpu_overheating=1 << 5,
+    vsi_cold=1 << 6,
+    vsi_overheating=1 << 7,
+    motor_cold=1 << 8,
+    motor_overheating=1 << 9,
 
-    HARDWARE_LVPS_MALFUNCTION               = 1 << 10
-    HARDWARE_FAULT                          = 1 << 11
-    HARDWARE_OVERLOAD                       = 1 << 12
+    hardware_lvps_malfunction=1 << 10,
+    hardware_fault=1 << 11,
+    hardware_overload=1 << 12,
 
-    PHASE_CURRENT_MEASUREMENT_MALFUNCTION   = 1 << 13
+    phase_current_measurement_malfunction=1 << 13,
 
     # Non-error flags are allocated at the top (from bit 63 downwards)
-    UAVCAN_NODE_UP                          = 1 << 56
-    CAN_DATA_LINK_UP                        = 1 << 57
+    uavcan_node_up=1 << 56,
+    can_data_link_up=1 << 57,
 
-    USB_CONNECTED                           = 1 << 58
-    USB_POWER_SUPPLIED                      = 1 << 59
+    usb_connected=1 << 58,
+    usb_power_supplied=1 << 59,
 
-    RCPWM_SIGNAL_DETECTED                   = 1 << 60
+    rcpwm_signal_detected=1 << 60,
 
-    PHASE_CURRENT_AGC_HIGH_GAIN_SELECTED    = 1 << 61
-    VSI_MODULATING                          = 1 << 62
-    VSI_ENABLED                             = 1 << 63
+    phase_current_agc_high_gain_selected=1 << 61,
+    vsi_modulating=1 << 62,
+    vsi_enabled=1 << 63,
+)
 
 
-class DeviceCapabilityFlags(enum.IntFlag):
+TaskIDFormat = con.Enum(
+    U8,
+    idle=0,
+    fault=1,
+    running=2,
+    beeping=3,
+    hardware_test=4,
+    motor_identification=5,
+    manual_control=6,
+)
+
+
+TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
+    'fault': con.Struct(
+        failed_task_id=TaskIDFormat,
+        failed_task_result=U8,
+    ),
+    'running': con.Struct(
+        stall_count=U32,
+        estimated_active_power=F32,
+        demand_factor=F32,
+        electrical_angular_velocity=F32,
+        spinup_in_progress=con.Flag,
+    ),
+    'hardware_test': con.Struct(
+        progress=F32,
+    ),
+    'motor_identification': con.Struct(
+        progress=F32,
+    ),
+    'manual_control': con.Struct(
+        sub_task_id=U8,
+    ),
+}, default=con.Pass)
+
+
+GeneralStatusMessageFormatV1 = con.Struct(
+    timestamp=TimeAdapter(U56),
+    current_task_id=TaskIDFormat,
+    timestamped_task_results=con.Array(8, con.Struct(
+        completed_at=TimeAdapter(U56),
+        exit_code=U8,
+    )),
+    status_flags=StatusFlagsFormat,
+    temperature=con.Struct(
+        cpu=F32,
+        vsi=F32,
+        motor=OptionalFloatAdapter(F32),
+    ),
+    dc=con.Struct(
+        voltage=F32,
+        current=F32,
+    ),
+    hardware_flag_edge_counters=con.Struct(
+        lvps_malfunction=U32,
+        overload=U32,
+        fault=U32,
+    ),
+    task_specific_status_report=TaskSpecificStatusReportFormat,
+)
+
+
+def _unittest_general_status_message_v1():
+    import binascii
+    import pprint
+    sample_idle = binascii.unhexlify('407e190900000000000000000000000000000000000000000b613e00000000000000000000000000'
+                                     '19cc350000000000000000000000000000000000000000000000000000000000000000000000002c'
+                                     '798d9943ebf095430000000036486e4100000000000000000000000000000000')
+    container = GeneralStatusMessageFormatV1.parse(sample_idle)
+    pprint.pprint(container)
+    assert container.current_task_id == 'idle'
+    assert container.task_specific_status_report is None
+    assert container['status_flags']['phase_current_agc_high_gain_selected']
+    assert not container.status_flags.can_data_link_up
+    assert sample_idle == GeneralStatusMessageFormatV1.build(container)
+
+
+class MessageType(enum.Enum):
+    GENERAL_STATUS = enum.auto()
+    DEVICE_CAPABILITIES = enum.auto()
+    SETPOINT = enum.auto()
+
+
+class Codec:
     """
-    Device capability flags, as defined by the communication protocol.
-    Capability flags are carried in a 64-bit unsigned integer field.
+    Use this class to encode and decode messages.
+    It uses software version numbers to determine which message formats to use.
     """
-    DOUBLY_REDUNDANT_CAN_BUS                = 1 << 0
-    BATTERY_ELIMINATOR_CIRCUIT              = 1 << 1
-
-
-class MessageBase:
-    # noinspection PyMethodMayBeStatic
-    def encode(self) -> bytes:
-        """Encodes the message instance for transmission over the wire"""
-        raise TypeError('This message type cannot be encoded')
-
-
-class GeneralStatusMessage(MessageBase):
-    FRAME_TYPE_CODE = 0
-
     def __init__(self):
-        self.current_task_id = TaskID(0)
-        self.timestamp = Timestamp()
+        self._software_version: typing.Tuple[int, int] = (0, 0)
 
-        # noinspection PyTypeChecker
-        self.timestamped_task_results: typing.Dict[TaskID, TimestampedTaskResult] = {
-            tid: TimestampedTaskResult() for tid in TaskID
-        }
+    @property
+    def software_version(self) -> typing.Tuple[int, int]:
+        return self._software_version
 
-        self.status_flags = StatusFlags(0)
+    @software_version.setter
+    def software_version(self, major_minor: typing.Tuple[int, int]):
+        if len(major_minor) != 2:
+            raise TypeError('Expected an iterable of size 2')
 
-        self.cpu_temperature = 0.0
-        self.vsi_temperature = 0.0
-        self.motor_temperature = None   # Optional
+        mj, mn = map(int, major_minor)
+        self._software_version = mj, mn
 
-        self.dc_voltage = 0.0
-        self.dc_current = 0.0
+    def decode(self, frame: popcop.transport.ReceivedFrame) -> typing.Tuple[MessageType, con.Container]:
+        pass
 
-        self.hardware_lvps_malfunction_event_count  = 0
-        self.hardware_overload_event_count          = 0
-        self.hardware_fault_event_count             = 0
-
-        self.task_specific_status_report = TaskStatusReportBase()
-
-    @staticmethod
-    def decode(data: bytes):
-        out = GeneralStatusMessage()
-
-        current_task_id_with_timestamp, = struct.unpack('<Q', data[:8])
-        out.current_task_id = TaskID((current_task_id_with_timestamp >> 56) & 0xFF)
-        out.timestamp = Timestamp(current_task_id_with_timestamp & (2**56 - 1)) * Timestamp('1e-6')
-
-        offset = 8
-        # noinspection PyTypeChecker
-        for tid in TaskID:
-            block = data[offset:offset + TimestampedTaskResult.ENCODED_SIZE]
-            out.timestamped_task_results[tid] = TimestampedTaskResult.decode(block)
-            offset += TimestampedTaskResult.ENCODED_SIZE
-
-        status_flags, \
-            out.cpu_temperature, \
-            out.vsi_temperature, \
-            out.motor_temperature, \
-            out.dc_voltage, \
-            out.dc_current, \
-            out.hardware_lvps_malfunction_event_count, \
-            out.hardware_overload_event_count, \
-            out.hardware_fault_event_count = struct.unpack('< Q fff ff LLL', data[offset:offset+40])
-        offset += 40
-
-        out.status_flags = StatusFlags(status_flags)
-
-        # This field is not reported unless the motor temperature feedback is configured
-        if math.isnan(out.motor_temperature):
-            out.motor_temperature = None
-
-        out.task_specific_status_report = TaskStatusReportBase.decode(out.current_task_id, data[offset:])
-
-        return out
-
-
-def _unittest_general_status_message_decode():
-    data = bytearray([0] * 176)
-
-    # Current task ID and timestamp
-    data[0:  8] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0xA5, 0xCA, 0xFE, 5])
-
-    # Task results
-    data[8: 16] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x10, 0xCA, 0x00, 10])
-    data[16:24] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x11, 0xCA, 0x01, 11])
-    data[24:32] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x12, 0xCA, 0x02, 12])
-    data[32:40] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x13, 0xCA, 0x03, 13])
-    data[40:48] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x14, 0xCA, 0x04, 14])
-    data[48:56] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x15, 0xCA, 0x05, 15])
-    data[56:64] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x16, 0xCA, 0x06, 16])
-    data[64:72] = bytes([0xDE, 0xAD, 0xBE, 0xEF, 0x17, 0xCA, 0x07, 17])
-
-    out = GeneralStatusMessage.decode(bytes(data))
-
-    assert out.current_task_id == 5
-    assert out.timestamp == Timestamp(0xFE_CA_A5_EF_BE_AD_DE) * Timestamp('1e-6')
-
-    assert out.timestamped_task_results[TaskID(0)].completed_at == Timestamp(0x00_CA_10_EF_BE_AD_DE) * Timestamp('1e-6')
-    assert out.timestamped_task_results[TaskID(1)].completed_at == Timestamp(0x01_CA_11_EF_BE_AD_DE) * Timestamp('1e-6')
-    assert out.timestamped_task_results[TaskID(2)].completed_at == Timestamp(0x02_CA_12_EF_BE_AD_DE) * Timestamp('1e-6')
-    assert out.timestamped_task_results[TaskID(3)].completed_at == Timestamp(0x03_CA_13_EF_BE_AD_DE) * Timestamp('1e-6')
-    assert out.timestamped_task_results[TaskID(4)].completed_at == Timestamp(0x04_CA_14_EF_BE_AD_DE) * Timestamp('1e-6')
-    assert out.timestamped_task_results[TaskID(5)].completed_at == Timestamp(0x05_CA_15_EF_BE_AD_DE) * Timestamp('1e-6')
-    assert out.timestamped_task_results[TaskID(6)].completed_at == Timestamp(0x06_CA_16_EF_BE_AD_DE) * Timestamp('1e-6')
-
-    # noinspection PyTypeChecker
-    for tid in TaskID:
-        assert out.timestamped_task_results[tid].exit_code == int(tid) + 10
-
-    # TODO: add tests
-
-
-class DeviceCharacteristicsMessage(MessageBase):
-    FRAME_TYPE_CODE = 1
-
-
-class SetpointCommandMessage(MessageBase):
-    FRAME_TYPE_CODE = 2
-
-
-def decode(frame: popcop.transport.ReceivedFrame) -> typing.Optional[MessageBase]:
-    pass
-
-
-def encode(message: MessageBase) -> typing.Tuple:
-    pass
+    def encode(self, message_type: MessageType, fields: typing.MappingView) -> typing.Tuple[int, bytes]:
+        pass
