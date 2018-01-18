@@ -81,6 +81,19 @@ class Communicator:
         return False
 
     @synchronized
+    def set_protocol_version(self, major_minor: typing.Tuple[int, int]):
+        """
+        Sets the current protocol version, which defines which message formats to use.
+        The protocol versions can be swapped at any time.
+        By default, no protocol version is set, so only standard messages can be used.
+        The user is required to assign a protocol version before using application-specific messages.
+        """
+        if len(major_minor) != 2:
+            raise TypeError('Expected a tuple of two integers, got %r' % major_minor)
+
+        self._codec = Codec(major_minor)
+
+    @synchronized
     def send(self,
              message_or_type: typing.Union[Message,
                                            popcop.standard.MessageBase,
