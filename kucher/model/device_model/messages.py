@@ -291,12 +291,16 @@ class Message:
     Simple container type for messages. Contains type information and the message fields.
     Note that the type is read-only, whereas the fields can be changed.
     """
-    def __init__(self, message_type: MessageType, fields: typing.Optional[con.Container]=None):
+    def __init__(self,
+                 message_type: MessageType,
+                 fields: typing.Optional[typing.MappingView]=None,
+                 timestamp: typing.Optional[float]=None):
         if not isinstance(message_type, MessageType):
             raise TypeError('Expected MessageType not %r' % message_type)
 
         self._type = message_type
-        self._fields = fields or con.Container()
+        self._fields = con.Container(fields or {})
+        self._timestamp = float(timestamp or 0)
 
     @property
     def type(self) -> MessageType:
@@ -305,6 +309,10 @@ class Message:
     @property
     def fields(self) -> con.Container:
         return self._fields
+
+    @property
+    def timestamp(self) -> float:
+        return self._timestamp
 
     def __str__(self):
         return '%s:%s' % (self.type, self.fields)
@@ -357,7 +365,7 @@ class Codec:
         except Exception as ex:
             raise InvalidPayloadException('Cannot decode message') from ex
 
-        return Message(mt, fields)
+        return Message(mt, fields, frame.timestamp)
 
     def encode(self, message: Message) -> typing.Tuple[int, bytes]:
         try:
