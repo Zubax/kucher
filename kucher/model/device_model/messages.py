@@ -108,6 +108,7 @@ MathRangeFormat = con.Struct(
 
 TaskIDFormat = con.Enum(
     U8,
+
     idle=0,
     fault=1,
     running=2,
@@ -259,28 +260,130 @@ class MessageType(enum.Enum):
     SETPOINT = enum.auto()
 
 
+class MessagingException(Exception):
+    pass
+
+
+class UnsupportedVersionException(MessagingException):
+    """
+    This exception is thrown when the Codec class detects that it doesn't know how to communicate with the
+    given firmware version.
+    """
+    pass
+
+
+class UnknownMessageException(MessagingException):
+    """
+    This exception is thrown when the Codec class is asked to encode or decode a message it doesn't know about.
+    """
+    pass
+
+
+class InvalidFieldsException(MessagingException):
+    """
+    This exception is thrown when the Codec class is asked to encode fields that don't fit the message type.
+    """
+    pass
+
+
+class InvalidPayloadException(MessagingException):
+    """
+    This exception is thrown when the Codec class is asked to decode an incorrect message.
+    """
+    pass
+
+
+class Message:
+    """
+    Simple container type for messages. Contains type information and the message fields.
+    Note that the type is read-only, whereas the fields can be changed.
+    """
+    def __init__(self, message_type: MessageType, fields: typing.Optional[con.Container]=None):
+        if not isinstance(message_type, MessageType):
+            raise TypeError('Expected MessageType not %r' % message_type)
+
+        self._type = message_type
+        self._fields = fields or con.Container()
+
+    @property
+    def type(self) -> MessageType:
+        return self._type
+
+    @property
+    def fields(self) -> con.Container:
+        return self._fields
+
+    def __str__(self):
+        return '%s:%s' % (self.type, self.fields)
+
+    def __repr__(self):
+        return '%r:%r' % (self.type, self.fields)
+
+
 class Codec:
     """
     Use this class to encode and decode messages.
     It uses software version numbers to determine which message formats to use.
     """
-    def __init__(self):
-        self._version: typing.Tuple[int, int] = (0, 0)
-
-    @property
-    def version(self) -> typing.Tuple[int, int]:
-        return self._version
-
-    @version.setter
-    def version(self, major_minor: typing.Tuple[int, int]):
-        if len(major_minor) != 2:
+    def __init__(self, version_major_minor: typing.Tuple[int, int]):
+        if len(version_major_minor) != 2:
             raise TypeError('Expected an iterable of size 2')
 
-        mj, mn = map(int, major_minor)
-        self._version = mj, mn
+        # Currently we don't do much here. In the future we may want to add additional logic that would be
+        # adjusting the behavior of the class by swapping the available message definitions.
+        # Some messages may also encode version information individually within themselves.
+        self._version: typing.Tuple[int, int] = tuple(map(int, version_major_minor))
 
-    def decode(self, frame: popcop.transport.ReceivedFrame) -> typing.Tuple[MessageType, con.Container]:
-        pass
+        if self._version[0] > 1:
+            raise UnsupportedVersionException('Cannot communicate with version %r' % self._version)
 
-    def encode(self, message_type: MessageType, fields: typing.MappingView) -> typing.Tuple[int, bytes]:
-        pass
+        self._type_mapping: typing.Dict[MessageType, typing.Tuple[int, con.Struct]] = {
+            MessageType.GENERAL_STATUS:      (0, GeneralStatusMessageFormatV1),
+            MessageType.DEVICE_CAPABILITIES: (1, DeviceCharacteristicsMessageFormatV1),
+            MessageType.SETPOINT:            (2, SetpointMessageFormatV1),
+        }
+
+    def decode(self, frame: popcop.transport.ReceivedFrame) -> Message:
+        for mt, (frame_type_code, formatter) in self._type_mapping.items():
+            if frame_type_code == frame.frame_type_code:
+                break
+        else:
+            raise UnknownMessageException('Unknown frame type code when decoding: %r' % frame.frame_type_code)
+
+        try:
+            fields = formatter.parse(frame.payload)
+        except Exception as ex:
+            raise InvalidPayloadException('Cannot decode message') from ex
+
+        return Message(mt, fields)
+
+    def encode(self, message: Message) -> typing.Tuple[int, bytes]:
+        try:
+            frame_type_code, formatter = self._type_mapping[message.type]
+        except KeyError:
+            raise UnknownMessageException('Unknown message type when encoding: %r' % message.type)
+
+        try:
+            encoded = formatter.build(message.fields)
+        except Exception as ex:
+            raise InvalidFieldsException('Cannot encode message') from ex
+
+        return frame_type_code, encoded
+
+
+def _unittest_codec():
+    from binascii import hexlify
+    import time
+
+    c = Codec((1, 2))
+
+    msg = Message(MessageType.SETPOINT)
+    msg.fields.value = 1.234
+    msg.fields.mode = 'current'
+
+    ftp, payload = c.encode(msg)
+    print(ftp)
+    print(hexlify(payload))
+
+    msg = c.decode(popcop.transport.ReceivedFrame(ftp, payload, time.monotonic()))
+    print(msg)
