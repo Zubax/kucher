@@ -25,6 +25,7 @@ LIBRARIES_PATH = os.path.join(SOURCE_PATH, 'libraries')
 sys.path.insert(0, SOURCE_PATH)
 sys.path.insert(0, os.path.join(LIBRARIES_PATH))
 sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'popcop', 'python'))
+sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'construct'))
 
 from model.device_model import DeviceModel
 
