@@ -123,68 +123,66 @@ ControlModeFormat = con.Enum(
     U8,
 
     ratiometric_current=0,
-    ratiometric_angular_velocity=0,
-    ratiometric_voltage=0,
-    current=0,
-    mechanical_rpm=0,
-    voltage=0,
+    ratiometric_angular_velocity=1,
+    ratiometric_voltage=2,
+    current=3,
+    mechanical_rpm=4,
+    voltage=5,
 )
 
 
 TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
     'fault': con.Struct(
-        failed_task_id=TaskIDFormat,
-        failed_task_result=U8,
+        'failed_task_id'                / TaskIDFormat,
+        'failed_task_result'            / U8,
     ),
     'running': con.Struct(
-        stall_count=U32,
-        estimated_active_power=F32,
-        demand_factor=F32,
-        electrical_angular_velocity=F32,
-        spinup_in_progress=con.Flag,
+        'stall_count'                   / U32,
+        'estimated_active_power'        / F32,
+        'demand_factor'                 / F32,
+        'electrical_angular_velocity'   / F32,
+        'spinup_in_progress'            / con.Flag,
     ),
     'hardware_test': con.Struct(
-        progress=F32,
+        'progress'                      / F32,
     ),
     'motor_identification': con.Struct(
-        progress=F32,
+        'progress'                      / F32,
     ),
     'manual_control': con.Struct(
-        sub_task_id=U8,
+        'sub_task_id'                   / U8,
     ),
 }, default=con.Pass)
 
 
+# noinspection PyUnresolvedReferences
 GeneralStatusMessageFormatV1 = con.Struct(
-    timestamp=TimeAdapter(U56),
-    current_task_id=TaskIDFormat,
-    timestamped_task_results=con.Array(8, con.Struct(
-        completed_at=TimeAdapter(U56),
-        exit_code=U8,
-    )),
-    status_flags=StatusFlagsFormat,
-    temperature=con.Struct(
-        cpu=F32,
-        vsi=F32,
-        motor=OptionalFloatAdapter(F32),
+    'timestamp' / TimeAdapter(U56),
+    'current_task_id' / TaskIDFormat,
+    'timestamped_task_results' / con.Array(8, ('completed_at' / TimeAdapter(U56) + 'exit_code' / U8)),
+    'status_flags' / StatusFlagsFormat,
+    'temperature' / con.Struct(
+        'cpu'   / F32,
+        'vsi'   / F32,
+        'motor' / OptionalFloatAdapter(F32),
     ),
-    dc=con.Struct(
-        voltage=F32,
-        current=F32,
+    'dc' / con.Struct(
+        'voltage' / F32,
+        'current' / F32,
     ),
-    _reserved=con.Padding(4),
-    pwm_state=con.Struct(
-        period=F32,
-        dead_time=F32,
-        upper_limit=F32,
+    con.Padding(4),
+    'pwm_state' / con.Struct(
+        'period'        / F32,
+        'dead_time'     / F32,
+        'upper_limit'   / F32,
     ),
-    hardware_flag_edge_counters=con.Struct(
-        lvps_malfunction=U32,
-        overload=U32,
-        fault=U32,
+    'hardware_flag_edge_counters' / con.Struct(
+        'lvps_malfunction'  / U32,
+        'overload'          / U32,
+        'fault'             / U32,
     ),
-    task_specific_status_report=TaskSpecificStatusReportFormat,
-    _terminator=con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
+    'task_specific_status_report' / TaskSpecificStatusReportFormat,
+    con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
 )
 
 
@@ -203,33 +201,28 @@ def _unittest_general_status_message_v1():
     assert sample_idle == GeneralStatusMessageFormatV1.build(container)
 
 
+# noinspection PyUnresolvedReferences
 DeviceCharacteristicsMessageFormatV1 = con.Struct(
-    capability_flags=DeviceCapabilityFlagsFormat,
-    board_parameters=con.Struct(
-        vsi_resistance_per_phase=con.Array(3, con.Struct(
-            high=F32,
-            low=F32,
-        )),
-        vsi_gate_ton_toff_imbalance=F32,
-        phase_current_measurement_error_variance=F32,
-        limits=con.Struct(
-            measurement_range=con.Struct(
-                vsi_dc_voltage=MathRangeFormat,
+    'capability_flags'  / DeviceCapabilityFlagsFormat,
+    'board_parameters'  / con.Struct(
+        'vsi_resistance_per_phase' / con.Array(3, ('high' / F32 + 'low' / F32)),
+        'vsi_gate_ton_toff_imbalance'               / F32,
+        'phase_current_measurement_error_variance'  / F32,
+        'limits' / con.Struct(
+            'measurement_range' / con.Struct(
+                'vsi_dc_voltage'        / MathRangeFormat,
             ),
-            safe_operating_area=con.Struct(
-                vsi_dc_voltage=MathRangeFormat,
-                vsi_dc_current=MathRangeFormat,
-                vsi_phase_current=MathRangeFormat,
-                cpu_temperature=MathRangeFormat,
-                vsi_temperature=MathRangeFormat,
+            'safe_operating_area' / con.Struct(
+                'vsi_dc_voltage'        / MathRangeFormat,
+                'vsi_dc_current'        / MathRangeFormat,
+                'vsi_phase_current'     / MathRangeFormat,
+                'cpu_temperature'       / MathRangeFormat,
+                'vsi_temperature'       / MathRangeFormat,
             ),
-            phase_current_transducers_zero_bias_limit=con.Struct(
-                low_gain=F32,
-                high_gain=F32,
-            ),
+            'phase_current_transducers_zero_bias_limit' / ('low_gain' / F32 + 'high_gain' / F32),
         ),
     ),
-    _terminator=con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
+    con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
 )
 
 
@@ -249,12 +242,8 @@ def _unittest_device_characteristics_message_v1():
     assert sample == DeviceCharacteristicsMessageFormatV1.build(container)
 
 
-SetpointMessageFormatV1 = con.Struct(
-    value=F32,
-    mode=ControlModeFormat,
-    _reserved=con.Padding(3),
-    _terminator=con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
-)
+# noinspection PyUnresolvedReferences
+SetpointMessageFormatV1 = 'value' / F32 + 'mode' / ControlModeFormat + con.Padding(3) + con.Terminated
 
 
 class MessageType(enum.Enum):
@@ -344,6 +333,8 @@ class Codec:
         # until the first working format is found.
         # E.g. con.Select(GeneralStatusMessageFormatV1, GeneralStatusMessageFormatV2)
         # http://construct.readthedocs.io/en/latest/misc.html#select
+        # Beware that this will only work if message types are terminated, i.e. contain construct.Terminated at the end!
+        # Therefore all message types must be terminated in order to facilitate this approach!
         self._type_mapping: typing.Dict[MessageType, typing.Tuple[int, con.Struct]] = {
             MessageType.GENERAL_STATUS:      (0, GeneralStatusMessageFormatV1),
             MessageType.DEVICE_CAPABILITIES: (1, DeviceCharacteristicsMessageFormatV1),
