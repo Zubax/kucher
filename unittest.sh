@@ -42,4 +42,6 @@ while [ -n "$1" ]; do
     shift
 done
 
+export PYTHONASYNCIODEBUG=1
+
 pytest --ignore=kucher/libraries/pyqtgraph --ignore=kucher/libraries/construct -v .
