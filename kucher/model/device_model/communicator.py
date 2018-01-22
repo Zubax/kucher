@@ -27,6 +27,7 @@ __all__ = ['Communicator', 'CommunicatorException', 'LOOPBACK_PORT_NAME']
 MAX_PAYLOAD_SIZE = 1024
 FRAME_TIMEOUT = 0.5
 LOOPBACK_PORT_NAME = 'loop://'
+STATE_CHECK_INTERVAL = 0.1
 
 AnyMessage = typing.Union[Message, StandardMessageBase]
 StandardMessageType = typing.Type[StandardMessageBase]
@@ -35,6 +36,10 @@ _logger = getLogger(__name__)
 
 
 class CommunicatorException(Exception):
+    pass
+
+
+class CommunicationChannelClosedException(CommunicatorException):
     pass
 
 
@@ -65,8 +70,11 @@ class Communicator:
         self._thread_handle.start()
 
     def __del__(self):
-        if self.is_open:
-            self._ch.close()
+        try:
+            if self.is_open:
+                self._ch.close()
+        except AttributeError:
+            pass
 
     def _thread_entry(self):
         # This thread is NOT allowed to invoke any methods of this class, for thread safety reasons!
@@ -76,7 +84,7 @@ class Communicator:
         while self._ch.is_open:
             # noinspection PyBroadException
             try:
-                ret = self._ch.receive(0.1)
+                ret = self._ch.receive(STATE_CHECK_INTERVAL)
 
                 if isinstance(ret, bytes):
                     log_str = ret.decode(encoding='utf8', errors='replace')
@@ -138,17 +146,21 @@ class Communicator:
         we simply dump the message into the channel's queue non-blockingly and then return immediately.
         This implementation detail may be changed in the future, but the API won't be affected.
         """
-        if isinstance(message_or_type, Message):
-            if self._codec is None:
-                raise CommunicatorException('Codec is not yet initialized, cannot send application-specific message')
+        try:
+            if isinstance(message_or_type, Message):
+                if self._codec is None:
+                    raise CommunicatorException('Codec is not yet initialized, cannot send application-specific message')
 
-            frame_type_code, payload = self._codec.encode(message_or_type)
-            self._ch.send_application_specific(frame_type_code, payload)
+                frame_type_code, payload = self._codec.encode(message_or_type)
+                self._ch.send_application_specific(frame_type_code, payload)
 
-        elif isinstance(message_or_type, (StandardMessageBase, type)):
-            self._ch.send_standard(message_or_type)
+            elif isinstance(message_or_type, (StandardMessageBase, type)):
+                self._ch.send_standard(message_or_type)
 
-        raise TypeError(f'Invalid message or message type: {type(message_or_type)}')
+            else:
+                raise TypeError(f'Invalid message or message type {type(message_or_type)}: {message_or_type}')
+        except popcop.physical.serial_multiprocessing.ChannelClosedException as ex:
+            raise CommunicationChannelClosedException from ex
 
     @staticmethod
     def _match_message(reference: typing.Union[Message,
@@ -206,26 +218,47 @@ class Communicator:
                     _logger.error('Unhandled exception in response predicate for message %r: %r',
                                   message_or_type, ex, exc_info=True)
 
-        future = asyncio.Future()
+        future = self._event_loop.create_future()
         entry = super_predicate, future
         try:
             self._pending_requests.add(entry)
-            return await asyncio.wait_for(future, timeout, self._event_loop)
+            return await asyncio.wait_for(future, timeout, loop=self._event_loop)
         except asyncio.TimeoutError:
             return None
         finally:
             self._pending_requests.remove(entry)
 
     async def receive(self) -> AnyMessage:
-        return await self._message_queue.get()
+        """
+        Awaits for messages from the connected node.
+        Throws CommunicationChannelClosedException if the channel is closed or becomes closed while waiting.
+        """
+        if self.is_open:
+            out = await self._message_queue.get()
+            if out is not None:
+                return out
 
-    async def receive_log(self) -> str:
-        return await self._log_queue.get()
+        raise CommunicationChannelClosedException
+
+    async def read_log(self) -> str:
+        """
+        Awaits for log data from the connected node.
+        Throws CommunicationChannelClosedException if the channel is closed or becomes closed while waiting.
+        """
+        if self.is_open:
+            out = await self._log_queue.get()
+            if out is not None:
+                return out
+
+        raise CommunicationChannelClosedException
 
     async def close(self):
         await asyncio.gather(self._event_loop.run_in_executor(None, self._thread_handle.join),
                              self._event_loop.run_in_executor(None, self._ch.close),
                              loop=self._event_loop)
+        # This is required to un-block the waiting coroutines, if any.
+        self._message_queue.put_nowait(None)
+        self._log_queue.put_nowait(None)
 
     @property
     def is_open(self):
@@ -237,19 +270,59 @@ def _unittest_communicator_message_matcher():
 
 
 def _unittest_communicator_loopback():
+    from pytest import raises
+
     loop = asyncio.get_event_loop()
     com = Communicator(LOOPBACK_PORT_NAME, loop)
 
+    # noinspection PyProtectedMember
     async def sender():
-        pass
+        com._ch.send_raw(b'Hello world!')
+        with raises(CommunicatorException):
+            await com.send(Message(MessageType.SETPOINT, {'value': 123.456, 'mode': 'current'}))
+
+        com.set_protocol_version((1, 2))
+        await com.send(Message(MessageType.SETPOINT, {'value': 123.456, 'mode': 'current'}))
+        status_response = await com.request(Message(MessageType.GENERAL_STATUS), 1)
+        print('status_response:', status_response)
+        #assert status_response
 
     async def receiver():
-        pass
+        msg = await com.receive()
+        print(msg)
 
-    async def run():
-        await asyncio.gather(sender(), receiver(), loop=loop)
+        with raises(CommunicationChannelClosedException):
+            await com.receive()
+
+    async def log_reader():
+        accumulator = ''
+        while True:
+            try:
+                accumulator += await com.read_log()
+            except CommunicationChannelClosedException:
+                break
+
+            print('Log accumulator:', accumulator)
+            assert 'Hello world!'.startswith(accumulator)
+
+        with raises(CommunicationChannelClosedException):
+            await com.read_log()
+
+    async def closer():
+        await asyncio.sleep(5, loop=loop)
         assert com.is_open
         await com.close()
         assert not com.is_open
+
+        with raises(CommunicationChannelClosedException):
+            await com.send(Message(MessageType.SETPOINT, {'value': 123.456, 'mode': 'current'}))
+
+    async def run():
+        assert com.is_open
+        await asyncio.gather(sender(),
+                             receiver(),
+                             log_reader(),
+                             closer(),
+                             loop=loop)
 
     loop.run_until_complete(run())

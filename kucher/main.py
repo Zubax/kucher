@@ -31,8 +31,16 @@ from model.device_model import DeviceModel
 
 
 def main():
-    pass
+    if '--test' in sys.argv:
+        import pytest
+        args = sys.argv
+        args.remove('--test')
+        args.append('--ignore=' + LIBRARIES_PATH)
+        args.append('-v')
+        args.append('.')
+        pytest.main(args)
+        return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

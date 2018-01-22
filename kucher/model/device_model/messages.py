@@ -293,7 +293,7 @@ class Message:
     """
     def __init__(self,
                  message_type: MessageType,
-                 fields: typing.Optional[typing.MappingView]=None,
+                 fields: typing.Optional[typing.Mapping]=None,
                  timestamp: typing.Optional[float]=None):
         if not isinstance(message_type, MessageType):
             raise TypeError('Expected MessageType not %r' % message_type)
