@@ -266,8 +266,21 @@ class Communicator:
         return self._ch.is_open
 
 
+# noinspection PyProtectedMember
 def _unittest_communicator_message_matcher():
-    pass
+    from popcop.standard import NodeInfoMessage
+
+    mm = Communicator._match_message
+    mt = MessageType
+
+    assert mm(mt.GENERAL_STATUS, Message(mt.GENERAL_STATUS))
+    assert not mm(Message(mt.GENERAL_STATUS), Message(mt.SETPOINT))
+    assert not mm(mt.SETPOINT, NodeInfoMessage())
+    assert not mm(Message(mt.SETPOINT), NodeInfoMessage())
+    assert mm(Message(mt.DEVICE_CAPABILITIES), Message(mt.DEVICE_CAPABILITIES))
+    assert mm(NodeInfoMessage, NodeInfoMessage())
+    assert mm(NodeInfoMessage(), NodeInfoMessage())
+    assert not mm(NodeInfoMessage(), popcop.standard.MessageBase())
 
 
 def _unittest_communicator_loopback():
