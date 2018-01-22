@@ -149,7 +149,8 @@ class Communicator:
         try:
             if isinstance(message_or_type, Message):
                 if self._codec is None:
-                    raise CommunicatorException('Codec is not yet initialized, cannot send application-specific message')
+                    raise CommunicatorException('Codec is not yet initialized, '
+                                                'cannot send application-specific message')
 
                 frame_type_code, payload = self._codec.encode(message_or_type)
                 self._ch.send_application_specific(frame_type_code, payload)
@@ -270,7 +271,7 @@ def _unittest_communicator_message_matcher():
 
 
 def _unittest_communicator_loopback():
-    from pytest import raises
+    from pytest import raises, approx
 
     loop = asyncio.get_event_loop()
     com = Communicator(LOOPBACK_PORT_NAME, loop)
@@ -282,17 +283,28 @@ def _unittest_communicator_loopback():
             await com.send(Message(MessageType.SETPOINT, {'value': 123.456, 'mode': 'current'}))
 
         com.set_protocol_version((1, 2))
+        print('Sending SETPOINT...')
         await com.send(Message(MessageType.SETPOINT, {'value': 123.456, 'mode': 'current'}))
-        status_response = await com.request(Message(MessageType.GENERAL_STATUS), 1)
-        print('status_response:', status_response)
-        #assert status_response
 
-    async def receiver():
-        msg = await com.receive()
-        print(msg)
+        print('Requesting GENERAL_STATUS...')
+        status_response = await com.request(Message(MessageType.GENERAL_STATUS), 1)
+        print('GENERAL_STATUS response:', status_response)
+        assert isinstance(status_response, Message)
+        assert status_response.type == MessageType.GENERAL_STATUS
+        assert not status_response.fields
+        assert status_response.timestamp > 0
 
         with raises(CommunicationChannelClosedException):
             await com.receive()
+
+    async def receiver():
+        # This receiver will receive all messages that were not claimed by request() calls
+        msg = await com.receive()
+        print('Received:', msg)
+        assert isinstance(msg, Message)
+        assert msg.type == MessageType.SETPOINT
+        assert msg.fields.value == approx(123.456)
+        assert msg.fields.mode == 'current'
 
     async def log_reader():
         accumulator = ''
@@ -309,6 +321,7 @@ def _unittest_communicator_loopback():
             await com.read_log()
 
     async def closer():
+        assert com.is_open
         await asyncio.sleep(5, loop=loop)
         assert com.is_open
         await com.close()
@@ -316,6 +329,12 @@ def _unittest_communicator_loopback():
 
         with raises(CommunicationChannelClosedException):
             await com.send(Message(MessageType.SETPOINT, {'value': 123.456, 'mode': 'current'}))
+
+        with raises(CommunicationChannelClosedException):
+            await com.read_log()
+
+        with raises(CommunicationChannelClosedException):
+            await com.receive()
 
     async def run():
         assert com.is_open
