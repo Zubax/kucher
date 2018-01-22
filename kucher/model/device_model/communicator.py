@@ -12,7 +12,6 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import time
 import popcop
 import typing
 import asyncio
@@ -46,6 +45,9 @@ class CommunicationChannelClosedException(CommunicatorException):
 class Communicator:
     """
     Asynchronous communicator class. This class is not thread-safe!
+
+    The constructor is not async-friendly (it is blocking).
+    The factory method new() should be used in async contexts.
     """
 
     IO_WORKER_ERROR_LIMIT = 100
@@ -53,6 +55,7 @@ class Communicator:
     def __init__(self,
                  port_name: str,
                  event_loop: asyncio.AbstractEventLoop):
+        """The constructor is blocking. Use the factory method new() in async contexts instead."""
         self._event_loop = event_loop
         self._ch = popcop.physical.serial_multiprocessing.Channel(port_name=port_name,
                                                                   max_payload_size=MAX_PAYLOAD_SIZE,
@@ -75,6 +78,15 @@ class Communicator:
                 self._ch.close()
         except AttributeError:
             pass
+
+    @staticmethod
+    async def new(port_name: str,
+                  event_loop: asyncio.AbstractEventLoop) -> 'Communicator':
+        """
+        Use this method to create new instances of this class from async contexts.
+        """
+        return await event_loop.run_in_executor(None, lambda: Communicator(port_name=port_name,
+                                                                           event_loop=event_loop))
 
     def _thread_entry(self):
         # This thread is NOT allowed to invoke any methods of this class, for thread safety reasons!
@@ -283,11 +295,11 @@ def _unittest_communicator_message_matcher():
     assert not mm(NodeInfoMessage(), popcop.standard.MessageBase())
 
 
-def _unittest_communicator_loopback():
+async def _async_unittest_communicator_loopback():
     from pytest import raises, approx
 
     loop = asyncio.get_event_loop()
-    com = Communicator(LOOPBACK_PORT_NAME, loop)
+    com = await Communicator.new(LOOPBACK_PORT_NAME, loop)
 
     # noinspection PyProtectedMember
     async def sender():
@@ -349,12 +361,13 @@ def _unittest_communicator_loopback():
         with raises(CommunicationChannelClosedException):
             await com.receive()
 
-    async def run():
-        assert com.is_open
-        await asyncio.gather(sender(),
-                             receiver(),
-                             log_reader(),
-                             closer(),
-                             loop=loop)
+    assert com.is_open
+    await asyncio.gather(sender(),
+                         receiver(),
+                         log_reader(),
+                         closer(),
+                         loop=loop)
 
-    loop.run_until_complete(run())
+
+def _unittest_communicator_loopback():
+    asyncio.get_event_loop().run_until_complete(_async_unittest_communicator_loopback())
