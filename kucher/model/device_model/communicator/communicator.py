@@ -18,10 +18,11 @@ import asyncio
 import threading
 from logging import getLogger
 from .messages import MessageType, Message, Codec
+from .exceptions import CommunicatorException
 from popcop.standard import MessageBase as StandardMessageBase
 from popcop.transport import ReceivedFrame
 
-__all__ = ['Communicator', 'CommunicatorException', 'LOOPBACK_PORT_NAME']
+__all__ = ['Communicator', 'CommunicationChannelClosedException', 'LOOPBACK_PORT_NAME']
 
 MAX_PAYLOAD_SIZE = 1024
 FRAME_TIMEOUT = 0.5
@@ -32,10 +33,6 @@ AnyMessage = typing.Union[Message, StandardMessageBase]
 StandardMessageType = typing.Type[StandardMessageBase]
 
 _logger = getLogger(__name__)
-
-
-class CommunicatorException(Exception):
-    pass
 
 
 class CommunicationChannelClosedException(CommunicatorException):

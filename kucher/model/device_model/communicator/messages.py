@@ -18,6 +18,7 @@ import popcop
 import typing
 import decimal
 import construct as con
+from .exceptions import CommunicatorException
 
 # Convenient type aliases - we only use little-endian byte order!
 U8  = con.Int8ul
@@ -205,23 +206,23 @@ def _unittest_general_status_message_v1():
 # noinspection PyUnresolvedReferences
 DeviceCharacteristicsMessageFormatV1 = con.Struct(
     'capability_flags'  / DeviceCapabilityFlagsFormat,
-    'board_parameters'  / con.Struct(
-        'vsi_resistance_per_phase' / con.Array(3, ('high' / F32 + 'low' / F32)),
-        'vsi_gate_ton_toff_imbalance'               / F32,
+    'vsi_model' / con.Struct(
+        'resistance_per_phase' / con.Array(3, ('high' / F32 + 'low' / F32)),
+        'gate_ton_toff_imbalance'                   / F32,
         'phase_current_measurement_error_variance'  / F32,
-        'limits' / con.Struct(
-            'measurement_range' / con.Struct(
-                'vsi_dc_voltage'        / MathRangeFormat,
-            ),
-            'safe_operating_area' / con.Struct(
-                'vsi_dc_voltage'        / MathRangeFormat,
-                'vsi_dc_current'        / MathRangeFormat,
-                'vsi_phase_current'     / MathRangeFormat,
-                'cpu_temperature'       / MathRangeFormat,
-                'vsi_temperature'       / MathRangeFormat,
-            ),
-            'phase_current_transducers_zero_bias_limit' / ('low_gain' / F32 + 'high_gain' / F32),
+    ),
+    'limits' / con.Struct(
+        'measurement_range' / con.Struct(
+            'vsi_dc_voltage'        / MathRangeFormat,
         ),
+        'safe_operating_area' / con.Struct(
+            'vsi_dc_voltage'        / MathRangeFormat,
+            'vsi_dc_current'        / MathRangeFormat,
+            'vsi_phase_current'     / MathRangeFormat,
+            'cpu_temperature'       / MathRangeFormat,
+            'vsi_temperature'       / MathRangeFormat,
+        ),
+        'phase_current_zero_bias_limit' / ('low_gain' / F32 + 'high_gain' / F32),
     ),
     con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
 )
@@ -236,10 +237,10 @@ def _unittest_device_characteristics_message_v1():
                        '003f')
     container = DeviceCharacteristicsMessageFormatV1.parse(sample)
     pprint(container)
-    assert container.board_parameters.vsi_resistance_per_phase[0].low == approx(7e-3)
-    assert container.board_parameters.vsi_resistance_per_phase[2].high == approx(4e-3)
-    assert container.board_parameters.vsi_gate_ton_toff_imbalance == approx(-11e-9)
-    assert container.board_parameters.limits.phase_current_transducers_zero_bias_limit.low_gain == approx(2)
+    assert container.vsi_model.resistance_per_phase[0].low == approx(7e-3)
+    assert container.vsi_model.resistance_per_phase[2].high == approx(4e-3)
+    assert container.vsi_model.gate_ton_toff_imbalance == approx(-11e-9)
+    assert container.limits.phase_current_zero_bias_limit.low_gain == approx(2)
     assert sample == DeviceCharacteristicsMessageFormatV1.build(container)
 
 
@@ -253,7 +254,7 @@ class MessageType(enum.Enum):
     SETPOINT = enum.auto()
 
 
-class MessagingException(Exception):
+class MessagingException(CommunicatorException):
     pass
 
 

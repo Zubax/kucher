@@ -26,6 +26,7 @@ sys.path.insert(0, SOURCE_PATH)
 sys.path.insert(0, os.path.join(LIBRARIES_PATH))
 sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'popcop', 'python'))
 sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'construct'))
+sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'dataclasses'))
 
 from model.device_model import DeviceModel
 
@@ -33,10 +34,11 @@ from model.device_model import DeviceModel
 def main():
     if '--test' in sys.argv:
         import pytest
-        args = sys.argv
+        args = sys.argv[:]
         args.remove('--test')
         args.append('--ignore=' + LIBRARIES_PATH)
-        args.append('-v')
+        args.append('--capture=no')
+        args.append('-vv')
         args.append('.')
         pytest.main(args)
         return 0

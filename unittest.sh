@@ -44,4 +44,7 @@ done
 
 export PYTHONASYNCIODEBUG=1
 
-pytest --ignore=kucher/libraries/pyqtgraph --ignore=kucher/libraries/construct -v .
+pytest --ignore=kucher/libraries/pyqtgraph \
+       --ignore=kucher/libraries/construct \
+       --ignore=kucher/libraries/dataclasses \
+       -v .
