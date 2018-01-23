@@ -209,3 +209,62 @@ class DeviceModel:
             'value': float(value),
             'mode': converted_mode
         }))
+
+    async def stop(self):
+        await self.set_setpoint(0, ControlMode.CURRENT)
+
+
+def _unittest_connection():
+    import os
+    import pytest
+    import glob
+    import asyncio
+
+    port_glob = os.environ.get('KUCHER_TEST_PORT', None)
+    if not port_glob:
+        pytest.skip('Skipping because the environment variable KUCHER_TEST_PORT is not set. '
+                    'In order to test the device connection, set that variable to a name or a glob of a serial port. '
+                    'If a glob is used, it must evaluate to exactly one port, otherwise the test will fail.')
+
+    port = glob.glob(port_glob)
+    assert len(port) == 1, f'The glob was supposed to resolve to exactly one port; got {len(port)} ports.'
+    port = port[0]
+
+    loop = asyncio.get_event_loop()
+
+    async def run():
+        dm = DeviceModel(loop)
+
+        num_connection_change_notifications = 0
+        num_status_reports = 0
+
+        def on_connection_status_changed(device_info):
+            nonlocal num_connection_change_notifications
+            num_connection_change_notifications += 1
+            print(f'Connection status changed! Device info:\n{device_info}')
+
+        def on_status_report(rep):
+            nonlocal num_status_reports
+            num_status_reports += 1
+            print(f'Status report:\n{rep}')
+
+        dm.connection_status_change_event.connect(on_connection_status_changed)
+        dm.device_status_update_event.connect(on_status_report)
+
+        assert not dm.is_connected
+        assert num_status_reports == 0
+        assert num_connection_change_notifications == 0
+
+        await dm.connect(port, lambda *args: print('Progress report:', *args))
+
+        assert dm.is_connected
+        assert num_status_reports == 1
+        assert num_connection_change_notifications == 1
+
+        await dm.disconnect()
+
+        assert not dm.is_connected
+        assert num_status_reports == 1
+        assert num_connection_change_notifications == 2
+
+    loop.run_until_complete(run())

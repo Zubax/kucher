@@ -156,7 +156,7 @@ class Communicator:
         This implementation detail may be changed in the future, but the API won't be affected.
         """
         try:
-            if isinstance(message_or_type, Message):
+            if isinstance(message_or_type, (Message, MessageType)):
                 if self._codec is None:
                     raise CommunicatorException('Codec is not yet initialized, '
                                                 'cannot send application-specific message')

@@ -132,6 +132,9 @@ ControlModeFormat = con.Enum(
 )
 
 
+# Observe that by default we use padding of one byte rather than an empty sequence.
+# This is because the firmware reports empty task-specific structures as a zeroed-out byte sequence of length one byte.
+# The firmware does that because in the world of C/C++ a sizeof() cannot be zero.
 # noinspection PyUnresolvedReferences
 TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
     'fault': con.Struct(
@@ -154,7 +157,7 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
     'manual_control': con.Struct(
         'sub_task_id'                   / U8,
     ),
-}, default=con.Pass)
+}, default=con.Padding(1))
 
 
 # noinspection PyUnresolvedReferences
@@ -193,7 +196,7 @@ def _unittest_general_status_message_v1():
     from pprint import pprint
     sample_idle = unhexlify('01b9e30000000000000000000000000000000000000000005b623e0000000000000000000000000093cd350000'
                             '000000000000000000000000000000000000000000000000000000000000000000002f78c99a439af796430000'
-                            '000044866e410000000000000000ae7db23795bfd633f2eb613f000000000000000000000000')
+                            '000044866e410000000000000000ae7db23795bfd633f2eb613f00000000000000000000000000')
     container = GeneralStatusMessageFormatV1.parse(sample_idle)
     pprint(container)
     assert container.current_task_id == 'idle'
@@ -368,7 +371,10 @@ class Codec:
 
         return Message(mt, fields, frame.timestamp)
 
-    def encode(self, message: Message) -> typing.Tuple[int, bytes]:
+    def encode(self, message: typing.Union[Message, MessageType]) -> typing.Tuple[int, bytes]:
+        if isinstance(message, MessageType):
+            message = Message(message)
+
         try:
             frame_type_code, formatter = self._type_mapping[message.type]
         except KeyError:
