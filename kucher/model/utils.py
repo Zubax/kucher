@@ -12,6 +12,9 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import typing
+from logging import getLogger
+
 
 def synchronized(method):
     """
@@ -28,3 +31,70 @@ def synchronized(method):
             return method(self, *arg, **kws)
 
     return decorator
+
+
+class Event:
+    def __init__(self):
+        self._handlers: typing.Set[typing.Callable] = set()
+        self._logger = getLogger(__name__ + f'.Event[{self}]')
+
+    def connect(self, handler: typing.Callable):
+        self._logger.debug('Adding new handler %r', handler)
+        self._handlers.add(handler)
+        return self
+
+    def disconnect(self, handler: typing.Callable):
+        self._logger.debug('Removing handler %r', handler)
+        try:
+            self._handlers.remove(handler)
+        except LookupError:
+            raise ValueError(f'Handler {handler} is not registered') from None
+
+        return self
+
+    def emit(self, *args, **kwargs):
+        for handler in self._handlers:
+            try:
+                handler(*args, **kwargs)
+            except Exception as ex:
+                self._logger.exception('Unhandled exception %r in the handler %r', ex, handler)
+
+    @property
+    def num_handlers(self):
+        return len(self._handlers)
+
+    def __len__(self):
+        return len(self._handlers)
+
+    __iadd__ = connect
+    __isub__ = disconnect
+    __call__ = emit
+
+
+def _unittest_event():
+    from pytest import raises
+
+    e = Event()
+    assert e.num_handlers == 0
+    e()
+    e(123, '456')
+
+    acc = ''
+
+    def acc_add(*s):
+        nonlocal acc
+        acc += ''.join(s)
+
+    e += acc_add
+    e('123', 'abc')
+    e('def')
+    e()
+    assert len(e) == 1
+    assert acc == '123abcdef'
+
+    with raises(ValueError):
+        e -= lambda a: None
+
+    e -= acc_add
+    assert len(e) == 0
+    e(123, '456')
