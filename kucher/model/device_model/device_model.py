@@ -66,6 +66,10 @@ class DeviceModel:
 
     @property
     def device_status_update_event(self):
+        """
+        This event is invoked when a new general status message is obtained from the device.
+        The arguments are local monotonic timestamp in seconds and an instance of GeneralStatusView.
+        """
         return self._evt_device_status_update
 
     @property
@@ -83,11 +87,6 @@ class DeviceModel:
         The argument is None if the connection was lost, and non-none otherwise.
         """
         return self._evt_connection_status_change
-
-    def _ensure_connected(self):
-        if not self.is_connected:
-            raise InvalidStateException('The requested operation could not be performed because the device '
-                                        'connection is not established')
 
     async def connect(self,
                       port_name: str,
@@ -111,10 +110,10 @@ class DeviceModel:
             node_info = await self._com.request(popcop.standard.NodeInfoMessage)
 
             _logger.info('Node info of the connected device: %r', node_info)
-            assert isinstance(node_info, popcop.standard.NodeInfoMessage)
             if not node_info:
                 raise ConnectionFailedException('Node info request has timed out')
 
+            assert isinstance(node_info, popcop.standard.NodeInfoMessage)
             if node_info.node_name != 'com.zubax.telega':
                 raise IncompatibleDeviceException(f'The connected device is not compatible with this software: '
                                                   f'{node_info}')
@@ -153,11 +152,11 @@ class DeviceModel:
             await self.disconnect()
             raise
 
-        self._last_general_status = general_status
+        self._last_general_status = general_status.timestamp, GeneralStatusView.populate(general_status.fields)
         self._device_info = device_info
 
         self._evt_connection_status_change(self._device_info)
-        self._evt_device_status_update(self._last_general_status)
+        self._evt_device_status_update(*self._last_general_status)
 
         # TODO: Launch a background task now
 
@@ -187,8 +186,8 @@ class DeviceModel:
         return self._device_info or DeviceInfoView()
 
     @property
-    def last_general_status(self) -> GeneralStatusView:
-        return self._last_general_status or GeneralStatusView()
+    def last_general_status(self) -> typing.Tuple[float, GeneralStatusView]:
+        return self._last_general_status or (0, GeneralStatusView())
 
     async def set_setpoint(self, value: float, mode: ControlMode):
         self._ensure_connected()
@@ -212,6 +211,26 @@ class DeviceModel:
 
     async def stop(self):
         await self.set_setpoint(0, ControlMode.CURRENT)
+
+    async def _background_task_entry_point(self):
+        while self.is_connected:
+            pass
+
+    async def _log_reader_entry_point(self):
+        while self.is_connected:
+            # TODO: reassemble into lines, each timestamped
+            out = await self._com.read_log()
+            if not out:
+                _logger.info('Log reader stopping: channel is closed')
+                break
+
+            self._evt_log_message(*out)
+
+    def _ensure_connected(self):
+        if not self.is_connected:
+            raise InvalidStateException('The requested operation could not be performed because the device '
+                                        'connection is not established')
+        assert self._com
 
 
 def _unittest_connection():
@@ -243,10 +262,10 @@ def _unittest_connection():
             num_connection_change_notifications += 1
             print(f'Connection status changed! Device info:\n{device_info}')
 
-        def on_status_report(rep):
+        def on_status_report(ts, rep):
             nonlocal num_status_reports
             num_status_reports += 1
-            print(f'Status report:\n{rep}')
+            print(f'Status report at {ts}:\n{rep}')
 
         dm.connection_status_change_event.connect(on_connection_status_changed)
         dm.device_status_update_event.connect(on_status_report)

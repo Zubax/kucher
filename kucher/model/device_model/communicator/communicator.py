@@ -12,6 +12,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import time
 import popcop
 import typing
 import asyncio
@@ -96,9 +97,10 @@ class Communicator:
                 ret = self._ch.receive(STATE_CHECK_INTERVAL)
 
                 if isinstance(ret, bytes):
+                    ts = time.monotonic()
                     log_str = ret.decode(encoding='utf8', errors='replace')
                     _logger.debug('Received log string: %r', log_str)
-                    self._event_loop.call_soon_threadsafe(self._log_queue.put_nowait, log_str)
+                    self._event_loop.call_soon_threadsafe(self._log_queue.put_nowait, (ts, log_str))
 
                 elif ret is not None:
                     _logger.debug('Received item: %r', ret)
@@ -251,7 +253,7 @@ class Communicator:
 
         raise CommunicationChannelClosedException
 
-    async def read_log(self) -> str:
+    async def read_log(self) -> typing.Tuple[float, str]:
         """
         Awaits for log data from the connected node.
         Throws CommunicationChannelClosedException if the channel is closed or becomes closed while waiting.
@@ -333,7 +335,7 @@ async def _async_unittest_communicator_loopback():
         accumulator = ''
         while True:
             try:
-                accumulator += await com.read_log()
+                accumulator += (await com.read_log())[1]
             except CommunicationChannelClosedException:
                 break
 
