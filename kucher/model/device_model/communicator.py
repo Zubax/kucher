@@ -113,8 +113,8 @@ class Communicator:
 
             except Exception as ex:
                 error_counter += 1
-                _logger.error(f'Unhandled exception in IO worker thread '
-                              f'({error_counter} of {self.IO_WORKER_ERROR_LIMIT}): {ex}', exc_info=True)
+                _logger.exception(f'Unhandled exception in IO worker thread '
+                                  f'({error_counter} of {self.IO_WORKER_ERROR_LIMIT}): {ex}')
                 if error_counter > self.IO_WORKER_ERROR_LIMIT:
                     _logger.error('Too many errors, stopping!')
                     break
@@ -228,8 +228,8 @@ class Communicator:
                 try:
                     return predicate(item)
                 except Exception as ex:
-                    _logger.error('Unhandled exception in response predicate for message %r: %r',
-                                  message_or_type, ex, exc_info=True)
+                    _logger.exception('Unhandled exception in response predicate for message %r: %r',
+                                      message_or_type, ex)
 
         future = self._event_loop.create_future()
         entry = super_predicate, future
