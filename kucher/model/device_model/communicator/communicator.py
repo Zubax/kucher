@@ -205,14 +205,15 @@ class Communicator:
         await self._do_send(message)
 
     async def request(self,
-                      message_or_type: typing.Union[Message, StandardMessageBase, StandardMessageType],
-                      timeout: typing.Union[float, int],
+                      message_or_type: typing.Union[Message, MessageType, StandardMessageBase, StandardMessageType],
+                      timeout: typing.Optional[typing.Union[float, int]]=None,
                       predicate: typing.Optional[typing.Callable[[AnyMessage], bool]]=None) ->\
             typing.Optional[AnyMessage]:
         """
         Sends a message, then awaits for a matching response.
         If no matching response was received before the timeout has expired, returns None.
         """
+        timeout = float(timeout or popcop.standard.DEFAULT_STANDARD_REQUEST_TIMEOUT)
         if timeout <= 0:
             raise ValueError('A positive timeout is required')
 
@@ -286,7 +287,7 @@ def _unittest_communicator_message_matcher():
     assert not mm(Message(mt.GENERAL_STATUS), Message(mt.SETPOINT))
     assert not mm(mt.SETPOINT, NodeInfoMessage())
     assert not mm(Message(mt.SETPOINT), NodeInfoMessage())
-    assert mm(Message(mt.DEVICE_CAPABILITIES), Message(mt.DEVICE_CAPABILITIES))
+    assert mm(Message(mt.DEVICE_CHARACTERISTICS), Message(mt.DEVICE_CHARACTERISTICS))
     assert mm(NodeInfoMessage, NodeInfoMessage())
     assert mm(NodeInfoMessage(), NodeInfoMessage())
     assert not mm(NodeInfoMessage(), popcop.standard.MessageBase())

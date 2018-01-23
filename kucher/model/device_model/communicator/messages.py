@@ -250,7 +250,7 @@ SetpointMessageFormatV1 = 'value' / F32 + 'mode' / ControlModeFormat + con.Paddi
 
 class MessageType(enum.Enum):
     GENERAL_STATUS = enum.auto()
-    DEVICE_CAPABILITIES = enum.auto()
+    DEVICE_CHARACTERISTICS = enum.auto()
     SETPOINT = enum.auto()
 
 
@@ -346,9 +346,9 @@ class Codec:
         # Beware that this will only work if message types are terminated, i.e. contain construct.Terminated at the end!
         # Therefore all message types must be terminated in order to facilitate this approach!
         self._type_mapping: typing.Dict[MessageType, typing.Tuple[int, con.Struct]] = {
-            MessageType.GENERAL_STATUS:      (0, GeneralStatusMessageFormatV1),
-            MessageType.DEVICE_CAPABILITIES: (1, DeviceCharacteristicsMessageFormatV1),
-            MessageType.SETPOINT:            (2, SetpointMessageFormatV1),
+            MessageType.GENERAL_STATUS:         (0, GeneralStatusMessageFormatV1),
+            MessageType.DEVICE_CHARACTERISTICS: (1, DeviceCharacteristicsMessageFormatV1),
+            MessageType.SETPOINT:               (2, SetpointMessageFormatV1),
         }
 
     def decode(self, frame: popcop.transport.ReceivedFrame) -> Message:
