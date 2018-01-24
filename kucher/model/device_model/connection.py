@@ -42,24 +42,29 @@ class IncompatibleDeviceException(ConnectionAttemptFailedException):
 
 
 class Connection:
+    """
+    The connection object is assumed to be always connected as long as it exists.
+    If it is detected that the connection is loss, a callback will be invoked.
+    """
+
     def __init__(self,
                  event_loop:                asyncio.AbstractEventLoop,
                  communicator:              Communicator,
                  device_info:               DeviceInfoView,
                  general_status_with_ts:    typing.Tuple[float, GeneralStatusView],
-                 on_connection_lost:        typing.Callable[[], None],
+                 on_connection_loss:        typing.Callable[[], None],
                  on_general_status_update:  typing.Callable[[float, GeneralStatusView], None],
                  on_log_line:               typing.Callable[[float, str], None]):
-        self._event_loop = event_loop
         self._com: Communicator = communicator
         self._device_info = device_info
         self._last_general_status_with_timestamp = general_status_with_ts
 
-        self._on_connection_lost = on_connection_lost
+        self._on_connection_loss = on_connection_loss
         self._on_general_status_update = on_general_status_update
         self._on_log_line = on_log_line
 
-        # TODO: Launch the tasks
+        event_loop.create_task(self._log_reader_entry_point())
+        event_loop.create_task(self._background_task_entry_point())
 
     @property
     def device_info(self) -> DeviceInfoView:
@@ -70,7 +75,7 @@ class Connection:
         return self._last_general_status_with_timestamp
 
     async def disconnect(self):
-        self._on_connection_lost = lambda: None     # Suppress further reporting
+        self._on_connection_loss = lambda: None     # Suppress further reporting
 
         # noinspection PyBroadException
         try:
@@ -90,26 +95,28 @@ class Connection:
     async def _handle_connection_loss(self):
         # noinspection PyBroadException
         try:
-            self._on_connection_lost()
+            self._on_connection_loss()
         except Exception:
             _logger.exception('Unhandled exception in the connection loss callback')
 
         await self.disconnect()
 
     async def _background_task_entry_point(self):
+        _logger.info('Background task started')
         # noinspection PyBroadException
         try:
             while True:
-                pass
+                await self._com.receive()  # TODO: Implement
 
         except CommunicationChannelClosedException as ex:
             _logger.info('Background task is stopping because the communication channel is closed: %r', ex)
         except Exception:
             _logger.exception('Unhandled exception in the background task')
         finally:
-            self._handle_connection_loss()
+            await self._handle_connection_loss()
 
     async def _log_reader_entry_point(self):
+        _logger.info('Log reader task started')
         # noinspection PyBroadException
         try:
             while True:
@@ -122,12 +129,12 @@ class Connection:
         except Exception:
             _logger.exception('Unhandled exception in the log reader task')
         finally:
-            self._handle_connection_loss()
+            await self._handle_connection_loss()
 
 
 async def connect(event_loop:                  asyncio.AbstractEventLoop,
                   port_name:                   str,
-                  on_connection_lost:          typing.Callable[[], None],
+                  on_connection_loss:          typing.Callable[[], None],
                   on_general_status_update:    typing.Callable[[float, GeneralStatusView], None],
                   on_log_line:                 typing.Callable[[float, str], None],
                   on_progress_report:          typing.Optional[typing.Callable[[str], None]]) -> Connection:
@@ -191,6 +198,70 @@ async def connect(event_loop:                  asyncio.AbstractEventLoop,
                       device_info=device_info,
                       general_status_with_ts=(general_status.timestamp,
                                               GeneralStatusView.populate(general_status.fields)),
-                      on_connection_lost=on_connection_lost,
+                      on_connection_loss=on_connection_loss,
                       on_general_status_update=on_general_status_update,
                       on_log_line=on_log_line)
+
+
+def _unittest_connection():
+    import os
+    import pytest
+    import glob
+    import asyncio
+
+    port_glob = os.environ.get('KUCHER_TEST_PORT', None)
+    if not port_glob:
+        pytest.skip('Skipping because the environment variable KUCHER_TEST_PORT is not set. '
+                    'In order to test the device connection, set that variable to a name or a glob of a serial port. '
+                    'If a glob is used, it must evaluate to exactly one port, otherwise the test will fail.')
+
+    port = glob.glob(port_glob)
+    assert len(port) == 1, f'The glob was supposed to resolve to exactly one port; got {len(port)} ports.'
+    port = port[0]
+
+    loop = asyncio.get_event_loop()
+
+    # noinspection PyProtectedMember
+    async def run():
+        num_connection_loss_notifications = 0
+        num_status_reports = 0
+
+        def on_connection_loss():
+            nonlocal num_connection_loss_notifications
+            num_connection_loss_notifications += 1
+            print(f'Connection lost!')
+
+        def on_general_status_update(ts, rep):
+            nonlocal num_status_reports
+            num_status_reports += 1
+            print(f'Status report at {ts}:\n{rep}')
+
+        assert num_status_reports == 0
+        assert num_connection_loss_notifications == 0
+
+        print('Connecting...')
+        con = await connect(event_loop=loop,
+                            port_name=port,
+                            on_connection_loss=on_connection_loss,
+                            on_general_status_update=on_general_status_update,
+                            on_log_line=lambda *args: print('Log line:', *args),
+                            on_progress_report=lambda *args: print('Progress report:', *args))
+        print('Connected successfully')
+
+        assert num_status_reports == 0
+        assert num_connection_loss_notifications == 0
+
+        assert 'zubax' in con.device_info.name
+        assert con.device_info.characteristics.vsi_model.resistance_per_phase[1].high > 0
+        assert con.last_general_status_with_timestamp[0] > 0
+        assert con.last_general_status_with_timestamp[1].timestamp > 0
+
+        # Simulate failure of the underlying port
+        con._com._ch.close()
+
+        await asyncio.sleep(1, loop=loop)
+
+        assert num_status_reports == 0
+        assert num_connection_loss_notifications == 1
+
+    loop.run_until_complete(run())

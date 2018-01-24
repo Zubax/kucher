@@ -98,7 +98,7 @@ class DeviceModel:
 
         self._conn = await connect(event_loop=self._event_loop,
                                    port_name=port_name,
-                                   on_connection_lost=self._on_connection_lost,
+                                   on_connection_loss=self._on_connection_loss,
                                    on_general_status_update=self._evt_device_status_update,
                                    on_log_line=self._evt_log_line,
                                    on_progress_report=on_progress_report)
@@ -152,7 +152,7 @@ class DeviceModel:
     async def stop(self):
         await self.set_setpoint(0, ControlMode.CURRENT)
 
-    def _on_connection_lost(self):
+    def _on_connection_loss(self):
         _logger.info('Connection instance reported connection loss')
         # The Connection instance will terminate itself, so we don't have to do anything, just clear the reference
         self._conn = None
