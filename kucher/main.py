@@ -15,10 +15,38 @@
 
 import os
 import sys
+import logging
+import datetime
+import data_dir
 
 if sys.version_info[:2] < (3, 6):
     raise ImportError('A newer version of Python is required')
 
+try:
+    # noinspection PyUnresolvedReferences
+    sys.getwindowsversion()
+    RUNNING_ON_WINDOWS = True
+except AttributeError:
+    RUNNING_ON_WINDOWS = False
+
+#
+# Configuring logging before other packages are imported
+#
+if '--debug' in sys.argv:
+    sys.argv.remove('--debug')
+    LOGGING_LEVEL = logging.DEBUG
+else:
+    LOGGING_LEVEL = logging.INFO
+
+logging.basicConfig(stream=sys.stderr,
+                    level=LOGGING_LEVEL,
+                    format='%(asctime)s pid=%(process)-5d %(levelname)s: %(name)s: %(message)s')
+
+_logger = logging.getLogger(__name__.replace('__', ''))
+
+#
+# Configuring the third-party modules
+#
 SOURCE_PATH = os.path.abspath(os.path.dirname(__file__))
 LIBRARIES_PATH = os.path.join(SOURCE_PATH, 'libraries')
 
@@ -28,10 +56,22 @@ sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'popcop', 'python'))
 sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'construct'))
 sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'dataclasses'))
 
+#
+# Now we can import the other modules, since the path is now configured and the third-party libraries are reachable.
+#
 from model.device_model import DeviceModel
 
 
 def main():
+    data_dir.init()
+
+    # Only the main process will be logging into the file
+    log_file_name = os.path.join(data_dir.LOG_DIR, f'{datetime.datetime.now():%Y%m%d-%H%M%S}-{os.getpid()}.log')
+    file_handler = logging.FileHandler(log_file_name)
+    file_handler.setLevel(LOGGING_LEVEL)
+    file_handler.setFormatter(logging.Formatter('%(asctime)s pid=%(process)-5d %(levelname)-8s %(name)s: %(message)s'))
+    logging.root.addHandler(file_handler)
+
     if '--test' in sys.argv:
         import pytest
         args = sys.argv[:]
