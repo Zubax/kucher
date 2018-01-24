@@ -24,6 +24,9 @@ from ..utils import Event
 from logging import getLogger
 
 
+DEFAULT_GENERAL_STATUS_UPDATE_PERIOD = 0.5
+
+
 _logger = getLogger(__name__)
 
 
@@ -101,7 +104,8 @@ class DeviceModel:
                                    on_connection_loss=self._on_connection_loss,
                                    on_general_status_update=self._evt_device_status_update,
                                    on_log_line=self._evt_log_line,
-                                   on_progress_report=on_progress_report)
+                                   on_progress_report=on_progress_report,
+                                   general_status_update_period=DEFAULT_GENERAL_STATUS_UPDATE_PERIOD)
 
         self._evt_connection_status_change(self._conn.device_info)
         self._evt_device_status_update(*self._conn.last_general_status_with_timestamp)

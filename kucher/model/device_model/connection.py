@@ -33,6 +33,10 @@ class ConnectionNotEstablishedException(ConnectionException):
     pass
 
 
+class ConnectionLostException(ConnectionNotEstablishedException):
+    pass
+
+
 class ConnectionAttemptFailedException(ConnectionException):
     pass
 
@@ -48,23 +52,27 @@ class Connection:
     """
 
     def __init__(self,
-                 event_loop:                asyncio.AbstractEventLoop,
-                 communicator:              Communicator,
-                 device_info:               DeviceInfoView,
-                 general_status_with_ts:    typing.Tuple[float, GeneralStatusView],
-                 on_connection_loss:        typing.Callable[[], None],
-                 on_general_status_update:  typing.Callable[[float, GeneralStatusView], None],
-                 on_log_line:               typing.Callable[[float, str], None]):
+                 event_loop:                    asyncio.AbstractEventLoop,
+                 communicator:                  Communicator,
+                 device_info:                   DeviceInfoView,
+                 general_status_with_ts:        typing.Tuple[float, GeneralStatusView],
+                 on_connection_loss:            typing.Callable[[], None],
+                 on_general_status_update:      typing.Callable[[float, GeneralStatusView], None],
+                 on_log_line:                   typing.Callable[[float, str], None],
+                 general_status_update_period:  float):
+        self._event_loop = event_loop
         self._com: Communicator = communicator
         self._device_info = device_info
         self._last_general_status_with_timestamp = general_status_with_ts
+        self._general_status_update_period = general_status_update_period
 
         self._on_connection_loss = on_connection_loss
         self._on_general_status_update = on_general_status_update
         self._on_log_line = on_log_line
 
-        event_loop.create_task(self._log_reader_entry_point())
-        event_loop.create_task(self._background_task_entry_point())
+        self._launch_task(self._log_reader_task_entry_point)
+        self._launch_task(self._receiver_task_entry_point)
+        self._launch_task(self._status_monitoring_task_entry_point)
 
     @property
     def device_info(self) -> DeviceInfoView:
@@ -101,43 +109,60 @@ class Connection:
 
         await self.disconnect()
 
-    async def _background_task_entry_point(self):
-        _logger.info('Background task started')
-        # noinspection PyBroadException
-        try:
-            while True:
-                await self._com.receive()  # TODO: Implement
+    async def _status_monitoring_task_entry_point(self):
+        while True:
+            await asyncio.sleep(self._general_status_update_period, loop=self._event_loop)
 
-        except CommunicationChannelClosedException as ex:
-            _logger.info('Background task is stopping because the communication channel is closed: %r', ex)
-        except Exception:
-            _logger.exception('Unhandled exception in the background task')
-        finally:
-            await self._handle_connection_loss()
+            response = await self._com.request(MessageType.GENERAL_STATUS)
+            if not response:
+                raise ConnectionLostException('General status request has timed out')
 
-    async def _log_reader_entry_point(self):
-        _logger.info('Log reader task started')
-        # noinspection PyBroadException
-        try:
-            while True:
-                timestamp, text = await self._com.read_log()
-                for line in text.splitlines(keepends=True):
-                    self._on_log_line(timestamp, line)
+            assert isinstance(response, Message)
+            assert response.type == MessageType.GENERAL_STATUS
 
-        except CommunicationChannelClosedException as ex:
-            _logger.info('Log reader task is stopping because the communication channel is closed: %r', ex)
-        except Exception:
-            _logger.exception('Unhandled exception in the log reader task')
-        finally:
-            await self._handle_connection_loss()
+            prev = self._last_general_status_with_timestamp[1]
+            new = GeneralStatusView.populate(response.fields)
+            if prev.timestamp > new.timestamp:
+                raise ConnectionLostException('Device has been restarted, connection lost')
+
+            self._last_general_status_with_timestamp = response.timestamp, new
+            self._on_general_status_update(*self._last_general_status_with_timestamp)
+
+    async def _receiver_task_entry_point(self):
+        while True:
+            item = await self._com.receive()
+            _logger.info('Unattended message: %r', item)
+
+    async def _log_reader_task_entry_point(self):
+        while True:
+            timestamp, text = await self._com.read_log()
+            for line in text.splitlines(keepends=True):
+                self._on_log_line(timestamp, line)
+
+    def _launch_task(self, target):
+        async def proxy():
+            _logger.info('Starting task %r', target)
+            # noinspection PyBroadException
+            try:
+                await target()
+            except CommunicationChannelClosedException as ex:
+                _logger.info('Task %r is stopping because the communication channel is closed: %r', target, ex)
+            except Exception:
+                _logger.exception('Unhandled exception in the task %r', target)
+            finally:
+                await self._handle_connection_loss()
+                _logger.info('Task %r has stopped', target)
+
+        self._event_loop.create_task(proxy())
 
 
-async def connect(event_loop:                  asyncio.AbstractEventLoop,
-                  port_name:                   str,
-                  on_connection_loss:          typing.Callable[[], None],
-                  on_general_status_update:    typing.Callable[[float, GeneralStatusView], None],
-                  on_log_line:                 typing.Callable[[float, str], None],
-                  on_progress_report:          typing.Optional[typing.Callable[[str], None]]) -> Connection:
+async def connect(event_loop:                   asyncio.AbstractEventLoop,
+                  port_name:                    str,
+                  on_connection_loss:           typing.Callable[[], None],
+                  on_general_status_update:     typing.Callable[[float, GeneralStatusView], None],
+                  on_log_line:                  typing.Callable[[float, str], None],
+                  on_progress_report:           typing.Optional[typing.Callable[[str], None]],
+                  general_status_update_period: float) -> Connection:
     def report(stage: str):
         _logger.info('Connection process on port %r reached the new stage %r', port_name, stage)
         if on_progress_report:
@@ -200,7 +225,8 @@ async def connect(event_loop:                  asyncio.AbstractEventLoop,
                                               GeneralStatusView.populate(general_status.fields)),
                       on_connection_loss=on_connection_loss,
                       on_general_status_update=on_general_status_update,
-                      on_log_line=on_log_line)
+                      on_log_line=on_log_line,
+                      general_status_update_period=general_status_update_period)
 
 
 def _unittest_connection():
@@ -245,10 +271,16 @@ def _unittest_connection():
                             on_connection_loss=on_connection_loss,
                             on_general_status_update=on_general_status_update,
                             on_log_line=lambda *args: print('Log line:', *args),
-                            on_progress_report=lambda *args: print('Progress report:', *args))
+                            on_progress_report=lambda *args: print('Progress report:', *args),
+                            general_status_update_period=0.5)
         print('Connected successfully')
 
         assert num_status_reports == 0
+        assert num_connection_loss_notifications == 0
+
+        await asyncio.sleep(con._general_status_update_period * 2 + 0.4, loop=loop)
+
+        assert num_status_reports == 2
         assert num_connection_loss_notifications == 0
 
         assert 'zubax' in con.device_info.name
@@ -261,7 +293,7 @@ def _unittest_connection():
 
         await asyncio.sleep(1, loop=loop)
 
-        assert num_status_reports == 0
+        assert num_status_reports == 2
         assert num_connection_loss_notifications == 1
 
     loop.run_until_complete(run())
