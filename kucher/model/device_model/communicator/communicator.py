@@ -122,7 +122,15 @@ class Communicator:
                 error_counter = 0
 
         _logger.info('IO worker thread is stopping')
-        self._ch.close()
+        # noinspection PyBroadException
+        try:
+            self._ch.close()
+        except Exception:
+            _logger.exception('Could not close the channel properly')
+
+        # This is required to un-block the waiting coroutines, if any.
+        self._message_queue.put_nowait(None)
+        self._log_queue.put_nowait(None)
 
     def _process_received_item(self, item: typing.Union[ReceivedFrame, StandardMessageBase]) -> None:
         if isinstance(item, StandardMessageBase):
@@ -246,7 +254,7 @@ class Communicator:
         Awaits for messages from the connected node.
         Throws CommunicationChannelClosedException if the channel is closed or becomes closed while waiting.
         """
-        if self.is_open:
+        if self.is_open or not self._message_queue.empty():
             out = await self._message_queue.get()
             if out is not None:
                 return out
@@ -258,7 +266,7 @@ class Communicator:
         Awaits for log data from the connected node.
         Throws CommunicationChannelClosedException if the channel is closed or becomes closed while waiting.
         """
-        if self.is_open:
+        if self.is_open or not self._log_queue.empty():
             out = await self._log_queue.get()
             if out is not None:
                 return out
