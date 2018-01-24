@@ -274,6 +274,7 @@ class Communicator:
         raise CommunicationChannelClosedException
 
     async def close(self):
+        # TODO: Ensure idempotency
         await asyncio.gather(self._event_loop.run_in_executor(None, self._thread_handle.join),
                              self._event_loop.run_in_executor(None, self._ch.close),
                              loop=self._event_loop)

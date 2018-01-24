@@ -16,7 +16,8 @@ import enum
 import popcop
 import typing
 import asyncio
-from .communicator import Communicator, MessageType, Message, CommunicationChannelClosedException
+from .communicator import MessageType, Message
+from .connection import connect, Connection, ConnectionNotEstablishedException
 from .device_info_view import DeviceInfoView
 from .general_status_view import GeneralStatusView
 from ..utils import Event
@@ -27,18 +28,6 @@ _logger = getLogger(__name__)
 
 
 class DeviceModelException(Exception):
-    pass
-
-
-class ConnectionNotEstablishedException(DeviceModelException):
-    pass
-
-
-class ConnectionFailedException(DeviceModelException):
-    pass
-
-
-class IncompatibleDeviceException(ConnectionFailedException):
     pass
 
 
@@ -55,14 +44,11 @@ class DeviceModel:
     def __init__(self, event_loop: asyncio.AbstractEventLoop):
         self._event_loop = event_loop
 
+        self._conn: Connection = None
+
         self._evt_device_status_update = Event()
         self._evt_log_line = Event()
         self._evt_connection_status_change = Event()
-
-        # Inner variable states
-        self._com: Communicator = None
-        self._device_info = None
-        self._last_general_status_with_timestamp = None
 
     @property
     def device_status_update_event(self):
@@ -73,7 +59,7 @@ class DeviceModel:
         return self._evt_device_status_update
 
     @property
-    def log_line_event(self):
+    def log_line_reception_event(self):
         """
         This event is invoked when a new log line is received from the device.
         The arguments are local monotonic timestamp in seconds and an str.
@@ -106,107 +92,46 @@ class DeviceModel:
 
     async def connect(self,
                       port_name: str,
-                      progress_report_handler: typing.Optional[typing.Callable[[str], None]]=None):
-        def report(stage: str):
-            _logger.info('Connection process on port %r reached the new stage %r', port_name, stage)
-            if progress_report_handler:
-                progress_report_handler(stage)
-
-        # We must wait for completion before establishing a new connection because the new connection could be
-        # referring to the same port as the old one.
+                      on_progress_report: typing.Optional[typing.Callable[[str], None]]=None):
         await self.disconnect()
-        assert not self._device_info
+        assert not self._conn
 
-        try:
-            report('I/O initialization')
-            assert not self._com
-            self._com = await Communicator.new(port_name, self._event_loop)
+        self._conn = await connect(event_loop=self._event_loop,
+                                   port_name=port_name,
+                                   on_connection_lost=self._on_connection_lost,
+                                   on_general_status_update=self._evt_device_status_update,
+                                   on_log_line=self._evt_log_line,
+                                   on_progress_report=on_progress_report)
 
-            report('Device detection')
-            node_info = await self._com.request(popcop.standard.NodeInfoMessage)
-
-            _logger.info('Node info of the connected device: %r', node_info)
-            if not node_info:
-                raise ConnectionFailedException('Node info request has timed out')
-
-            assert isinstance(node_info, popcop.standard.NodeInfoMessage)
-            if node_info.node_name != 'com.zubax.telega':
-                raise IncompatibleDeviceException(f'The connected device is not compatible with this software: '
-                                                  f'{node_info}')
-
-            if node_info.mode == popcop.standard.NodeInfoMessage.Mode.BOOTLOADER:
-                raise IncompatibleDeviceException('The connected device is in the bootloader mode. '
-                                                  'This mode is not yet supported (but soon will be).')
-
-            if node_info.mode != popcop.standard.NodeInfoMessage.Mode.NORMAL:
-                raise IncompatibleDeviceException(f'The connected device is in a wrong mode: {node_info.mode}')
-
-            # Configuring the communicator to use a specific version of the protocol.
-            # From now on, we can use the application-specific messages, since the communicator knows how to
-            # encode and decode them.
-            sw_major_minor = node_info.software_version_major, node_info.software_version_minor
-            self._com.set_protocol_version(sw_major_minor)
-
-            report('Device identification')
-            characteristics = await self._com.request(MessageType.DEVICE_CHARACTERISTICS)
-            _logger.info('Device characteristics: %r', characteristics)
-            if not characteristics:
-                raise ConnectionFailedException('Device capabilities request has timed out')
-
-            report('Device status request')
-            general_status = await self._com.request(MessageType.GENERAL_STATUS)
-            _logger.info('General status: %r', general_status)
-            if not general_status:
-                raise ConnectionFailedException('General status request has timed out')
-
-            device_info = DeviceInfoView.populate(node_info_message=node_info,
-                                                  characteristics_message=characteristics.fields)
-            _logger.info('Populated device info view: %r', device_info)
-
-            report('Completed successfully')
-        except Exception:
-            await self.disconnect()
-            raise
-
-        self._last_general_status_with_timestamp = \
-            general_status.timestamp, GeneralStatusView.populate(general_status.fields)
-        self._device_info = device_info
-
-        self._evt_connection_status_change(self._device_info)
-        self._evt_device_status_update(*self._last_general_status_with_timestamp)
-
-        # TODO: Launch a background task now
+        self._evt_connection_status_change(self._conn.device_info)
+        self._evt_device_status_update(*self._conn.last_general_status_with_timestamp)
 
     async def disconnect(self):
-        if self._device_info:
+        _logger.info('Explicit disconnect request')
+        if self._conn:
             self._evt_connection_status_change(None)
-
-        self._device_info = None
-        self._last_general_status_with_timestamp = None
-
-        if self._com:
-            # noinspection PyBroadException
             try:
-                await self._com.close()
-            except Exception:
-                _logger.exception('Could not properly close the old communicator instance; continuing anyway. '
-                                  'The communicator is a big boy and should be able to sort its stuff out on its own. '
-                                  'Hey communicator, you suck!')
-        self._com = None
+                await self._conn.disconnect()
+            finally:
+                self._conn = None
 
     @property
     def is_connected(self) -> bool:
-        return self._device_info is not None
+        return self._conn is not None
 
     @property
-    def device_info(self) -> DeviceInfoView:
-        return self._device_info or DeviceInfoView()
+    def device_info(self) -> typing.Optional[DeviceInfoView]:
+        if self._conn:
+            return self._conn.device_info
 
     @property
-    def last_general_status_with_timestamp(self) -> typing.Tuple[float, GeneralStatusView]:
-        return self._last_general_status_with_timestamp or (0, GeneralStatusView())
+    def last_general_status_with_timestamp(self) -> typing.Optional[typing.Tuple[float, GeneralStatusView]]:
+        if self._conn:
+            return self._conn.last_general_status_with_timestamp
 
     async def set_setpoint(self, value: float, mode: ControlMode):
+        self._ensure_connected()
+
         try:
             converted_mode = {
                 ControlMode.RATIOMETRIC_CURRENT:          'ratiometric_current',
@@ -219,7 +144,7 @@ class DeviceModel:
         except KeyError:
             raise ValueError(f'Unsupported control mode: {mode}') from None
 
-        await self._do_send(Message(MessageType.SETPOINT, {
+        await self._conn.send(Message(MessageType.SETPOINT, {
             'value': float(value),
             'mode': converted_mode
         }))
@@ -227,36 +152,19 @@ class DeviceModel:
     async def stop(self):
         await self.set_setpoint(0, ControlMode.CURRENT)
 
-    async def _background_task_entry_point(self):
-        while self.is_connected:
-            pass
+    def _on_connection_lost(self):
+        _logger.info('Connection instance reported connection loss')
+        # The Connection instance will terminate itself, so we don't have to do anything, just clear the reference
+        self._conn = None
+        self._evt_connection_status_change(None)
 
-    async def _log_reader_entry_point(self):
-        # noinspection PyBroadException
-        try:
-            while self.is_connected:
-                timestamp, text = await self._com.read_log()
-                for line in text.splitlines(keepends=True):
-                    self._evt_log_line(timestamp, line)
-
-        except CommunicationChannelClosedException as ex:
-            _logger.info('Log reader worker is stopping because the communication channel is closed: %r', ex)
-
-        except Exception:
-            _logger.exception('Unhandled exception in the log reader task')
-
-    async def _do_send(self, message: typing.Union[Message, popcop.standard.MessageBase]):
-        if not self._com:
-            raise ConnectionNotEstablishedException('Could not send the message because the device connection is '
-                                                    'not established')
-        try:
-            await self._com.send(message)
-        except CommunicationChannelClosedException as ex:
-            raise ConnectionNotEstablishedException('Could not send the message because the communication channel is '
-                                                    'closed') from ex
+    def _ensure_connected(self):
+        if not self.is_connected:
+            raise ConnectionNotEstablishedException('The requested operation could not be performed because '
+                                                    'the device connection is not established')
 
 
-def _unittest_connection():
+def _unittest_device_model_connection():
     import os
     import pytest
     import glob
