@@ -112,8 +112,8 @@ TaskIDFormat = con.Enum(
 
     idle=0,
     fault=1,
-    running=2,
-    beeping=3,
+    beeping=2,
+    running=3,
     hardware_test=4,
     motor_identification=5,
     manual_control=6,
@@ -176,7 +176,7 @@ GeneralStatusMessageFormatV1 = con.Struct(
         'current' / F32,
     ),
     con.Padding(4),
-    'pwm_state' / con.Struct(
+    'pwm' / con.Struct(
         'period'        / F32,
         'dead_time'     / F32,
         'upper_limit'   / F32,
