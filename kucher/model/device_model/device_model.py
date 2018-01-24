@@ -16,7 +16,7 @@ import enum
 import popcop
 import typing
 import asyncio
-from .communicator import Communicator, MessageType, Message
+from .communicator import Communicator, MessageType, Message, CommunicationChannelClosedException
 from .device_info_view import DeviceInfoView
 from .general_status_view import GeneralStatusView
 from ..utils import Event
@@ -56,7 +56,7 @@ class DeviceModel:
         self._event_loop = event_loop
 
         self._evt_device_status_update = Event()
-        self._evt_log_message = Event()
+        self._evt_log_line = Event()
         self._evt_connection_status_change = Event()
 
         # Inner variable states
@@ -73,12 +73,28 @@ class DeviceModel:
         return self._evt_device_status_update
 
     @property
-    def log_message_event(self):
+    def log_line_event(self):
         """
-        This event is invoked when a new log message is received from the device.
+        This event is invoked when a new log line is received from the device.
         The arguments are local monotonic timestamp in seconds and an str.
+        The new line character at the end of each line, if present, is preserved.
+        Note that incomplete lines may be reported as well, e.g.: "Hello ", then "world\n"; the reason is
+        that the class attempts to minimize the latency of the data that passes through it.
+        The receiver can easily check whether the line is complete or not by checking if there are any of the
+        following characters at the end of it (see https://docs.python.org/3/library/stdtypes.html#str.splitlines):
+            \n              Line Feed
+            \r              Carriage Return
+            \r\n            Carriage Return + Line Feed
+            \v or \x0b      Line Tabulation
+            \f or \x0c      Form Feed
+            \x1c            File Separator
+            \x1d            Group Separator
+            \x1e            Record Separator
+            \x85            Next Line (C1 Control Code)
+            \u2028          Line Separator
+            \u2029          Paragraph Separator
         """
-        return self._evt_log_message
+        return self._evt_log_line
 
     @property
     def connection_status_change_event(self):
@@ -217,14 +233,18 @@ class DeviceModel:
             pass
 
     async def _log_reader_entry_point(self):
-        while self.is_connected:
-            # TODO: reassemble into lines, each timestamped
-            out = await self._com.read_log()
-            if not out:
-                _logger.info('Log reader stopping: channel is closed')
-                break
+        # noinspection PyBroadException
+        try:
+            while self.is_connected:
+                timestamp, text = await self._com.read_log()
+                for line in text.splitlines(keepends=True):
+                    self._evt_log_line(timestamp, line)
 
-            self._evt_log_message(*out)
+        except CommunicationChannelClosedException as ex:
+            _logger.info('Log reader worker is stopping because the communication channel is closed: %r', ex)
+
+        except Exception:
+            _logger.exception('Unhandled exception in the log reader task')
 
     def _ensure_connected(self):
         if not self.is_connected:
