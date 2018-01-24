@@ -274,7 +274,6 @@ class Communicator:
         raise CommunicationChannelClosedException
 
     async def close(self):
-        # TODO: Ensure idempotency
         await asyncio.gather(self._event_loop.run_in_executor(None, self._thread_handle.join),
                              self._event_loop.run_in_executor(None, self._ch.close),
                              loop=self._event_loop)
@@ -361,6 +360,9 @@ async def _async_unittest_communicator_loopback():
         await com.close()
         assert not com.is_open
 
+        # Testing that close() is idempotent
+        await com.close()
+
         with raises(CommunicationChannelClosedException):
             await com.send(Message(MessageType.SETPOINT, {'value': 123.456, 'mode': 'current'}))
 
@@ -369,6 +371,11 @@ async def _async_unittest_communicator_loopback():
 
         with raises(CommunicationChannelClosedException):
             await com.receive()
+
+        # Testing idempotency again
+        await com.close()
+        await asyncio.sleep(1, loop=loop)
+        await com.close()
 
     assert com.is_open
     await asyncio.gather(sender(),
@@ -415,6 +422,14 @@ async def _async_unittest_communicator_disconnect_detection():
 
         with raises(CommunicationChannelClosedException):
             await com.receive()
+
+        # Testing that close() is idempotent
+        await com.close()
+
+        # And again, because why not
+        await com.close()
+        await asyncio.sleep(1, loop=loop)
+        await com.close()
 
     assert com.is_open
     await asyncio.gather(receiver(),
