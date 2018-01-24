@@ -30,7 +30,7 @@ class DeviceModelException(Exception):
     pass
 
 
-class InvalidStateException(DeviceModelException):
+class ConnectionNotEstablishedException(DeviceModelException):
     pass
 
 
@@ -62,7 +62,7 @@ class DeviceModel:
         # Inner variable states
         self._com: Communicator = None
         self._device_info = None
-        self._last_general_status = None
+        self._last_general_status_with_timestamp = None
 
     @property
     def device_status_update_event(self):
@@ -168,11 +168,12 @@ class DeviceModel:
             await self.disconnect()
             raise
 
-        self._last_general_status = general_status.timestamp, GeneralStatusView.populate(general_status.fields)
+        self._last_general_status_with_timestamp = \
+            general_status.timestamp, GeneralStatusView.populate(general_status.fields)
         self._device_info = device_info
 
         self._evt_connection_status_change(self._device_info)
-        self._evt_device_status_update(*self._last_general_status)
+        self._evt_device_status_update(*self._last_general_status_with_timestamp)
 
         # TODO: Launch a background task now
 
@@ -181,7 +182,7 @@ class DeviceModel:
             self._evt_connection_status_change(None)
 
         self._device_info = None
-        self._last_general_status = None
+        self._last_general_status_with_timestamp = None
 
         if self._com:
             # noinspection PyBroadException
@@ -202,12 +203,10 @@ class DeviceModel:
         return self._device_info or DeviceInfoView()
 
     @property
-    def last_general_status(self) -> typing.Tuple[float, GeneralStatusView]:
-        return self._last_general_status or (0, GeneralStatusView())
+    def last_general_status_with_timestamp(self) -> typing.Tuple[float, GeneralStatusView]:
+        return self._last_general_status_with_timestamp or (0, GeneralStatusView())
 
     async def set_setpoint(self, value: float, mode: ControlMode):
-        self._ensure_connected()
-
         try:
             converted_mode = {
                 ControlMode.RATIOMETRIC_CURRENT:          'ratiometric_current',
@@ -220,7 +219,7 @@ class DeviceModel:
         except KeyError:
             raise ValueError(f'Unsupported control mode: {mode}') from None
 
-        await self._com.send(Message(MessageType.SETPOINT, {
+        await self._do_send(Message(MessageType.SETPOINT, {
             'value': float(value),
             'mode': converted_mode
         }))
@@ -246,11 +245,15 @@ class DeviceModel:
         except Exception:
             _logger.exception('Unhandled exception in the log reader task')
 
-    def _ensure_connected(self):
-        if not self.is_connected:
-            raise InvalidStateException('The requested operation could not be performed because the device '
-                                        'connection is not established')
-        assert self._com
+    async def _do_send(self, message: typing.Union[Message, popcop.standard.MessageBase]):
+        if not self._com:
+            raise ConnectionNotEstablishedException('Could not send the message because the device connection is '
+                                                    'not established')
+        try:
+            await self._com.send(message)
+        except CommunicationChannelClosedException as ex:
+            raise ConnectionNotEstablishedException('Could not send the message because the communication channel is '
+                                                    'closed') from ex
 
 
 def _unittest_connection():
