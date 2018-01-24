@@ -379,3 +379,48 @@ async def _async_unittest_communicator_loopback():
 
 def _unittest_communicator_loopback():
     asyncio.get_event_loop().run_until_complete(_async_unittest_communicator_loopback())
+
+
+async def _async_unittest_communicator_disconnect_detection():
+    from pytest import raises
+
+    loop = asyncio.get_event_loop()
+    com = await Communicator.new(LOOPBACK_PORT_NAME, loop)
+
+    async def receiver():
+        with raises(CommunicationChannelClosedException):
+            await com.receive()
+
+    async def log_reader():
+        with raises(CommunicationChannelClosedException):
+            await com.read_log()
+
+    # noinspection PyProtectedMember
+    async def closer():
+        assert com.is_open
+        await asyncio.sleep(1, loop=loop)
+        assert com.is_open
+
+        com._ch.close()         # Simulate failure of the serial connection
+
+        assert not com.is_open
+        await asyncio.sleep(1, loop=loop)
+
+        with raises(CommunicationChannelClosedException):
+            await com.send(popcop.standard.NodeInfoMessage())
+
+        with raises(CommunicationChannelClosedException):
+            await com.read_log()
+
+        with raises(CommunicationChannelClosedException):
+            await com.receive()
+
+    assert com.is_open
+    await asyncio.gather(receiver(),
+                         log_reader(),
+                         closer(),
+                         loop=loop)
+
+
+def _unittest_communicator_disconnect_detection():
+    asyncio.get_event_loop().run_until_complete(_async_unittest_communicator_disconnect_detection())
