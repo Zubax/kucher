@@ -13,16 +13,14 @@
 #
 
 import enum
-import popcop
 import typing
 import asyncio
+from utils import Event
+from logging import getLogger
 from .communicator import MessageType, Message
 from .connection import connect, Connection, ConnectionNotEstablishedException
 from .device_info_view import DeviceInfoView
 from .general_status_view import GeneralStatusView
-from ..utils import Event
-from logging import getLogger
-
 
 DEFAULT_GENERAL_STATUS_UPDATE_PERIOD = 0.5
 
