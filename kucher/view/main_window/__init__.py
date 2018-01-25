@@ -13,23 +13,46 @@
 #
 
 import typing
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QAction
-from PyQt5.QtGui import QKeySequence, QDesktopServices
-from PyQt5.QtCore import QTimer, Qt, QUrl
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QSplitter, QAction
+from PyQt5.QtGui import QKeySequence, QDesktopServices, QCloseEvent
+from PyQt5.QtCore import QUrl
 from ..utils import get_application_icon
+from data_dir import LOG_DIR
 
 
 class MainWindow(QMainWindow):
+    # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
     def __init__(self, on_close: typing.Callable[[], None]):
-        # noinspection PyArgumentList
         super(MainWindow, self).__init__()
         self.setWindowTitle('Zubax Kucher')
         self.setWindowIcon(get_application_icon())
 
+        self._on_close = on_close
+
         # File menu
         quit_action = QAction('&Quit', self)
         quit_action.setShortcut(QKeySequence('Ctrl+Shift+Q'))
-        quit_action.triggered.connect(on_close)
+        quit_action.triggered.connect(self._on_close)
 
         file_menu = self.menuBar().addMenu('&File')
         file_menu.addAction(quit_action)
+
+        # Help menu
+        website_action = QAction('Open Zubax Robotics &website', self)
+        website_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('https://zubax.com')))
+
+        knowledge_base_action = QAction('Open Zubax Robotics &knowledge base', self)
+        knowledge_base_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('https://kb.zubax.com')))
+
+        show_log_directory_action = QAction('Open &log directory', self)
+        show_log_directory_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(LOG_DIR)))
+
+        help_menu = self.menuBar().addMenu('&Help')
+        help_menu.addAction(website_action)
+        help_menu.addAction(knowledge_base_action)
+        help_menu.addAction(show_log_directory_action)
+        # help_menu.addAction(about_action)                 # TODO: Implement this
+
+    def closeEvent(self, event: QCloseEvent):
+        self._on_close()
+        event.ignore()
