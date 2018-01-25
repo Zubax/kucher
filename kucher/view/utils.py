@@ -24,6 +24,10 @@ def get_application_icon() -> QIcon:
     return QIcon(get_absolute_path('view', 'icons', 'zee-with-margins.png'))
 
 
+def get_icon(name: str) -> QIcon:
+    return QIcon(get_absolute_path('view', 'icons', f'{name}.png'))
+
+
 def get_monospace_font() -> QFont:
     preferred = ['Consolas', 'DejaVu Sans Mono', 'Monospace', 'Lucida Console', 'Monaco']
     for name in preferred:
