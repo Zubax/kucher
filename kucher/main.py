@@ -55,11 +55,16 @@ sys.path.insert(0, os.path.join(LIBRARIES_PATH))
 sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'popcop', 'python'))
 sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'construct'))
 sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'dataclasses'))
+sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'quamash'))
 
 #
 # Now we can import the other modules, since the path is now configured and the third-party libraries are reachable.
 #
-from model.device_model import DeviceModel
+import asyncio
+from PyQt5.QtWidgets import QApplication
+from quamash import QEventLoop
+
+from controller import Controller
 
 
 def main():
@@ -80,8 +85,17 @@ def main():
         args.append('--capture=no')
         args.append('-vv')
         args.append('.')
-        pytest.main(args)
-        return 0
+        return pytest.main(args)
+
+    # Configuring the event loop
+    app = QApplication(sys.argv)
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
+
+    # Running the application
+    with loop:
+        ctrl = Controller()
+        loop.run_until_complete(ctrl.run())
 
 
 if __name__ == '__main__':

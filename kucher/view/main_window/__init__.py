@@ -11,3 +11,25 @@
 #
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
+
+import typing
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QAction
+from PyQt5.QtGui import QKeySequence, QDesktopServices
+from PyQt5.QtCore import QTimer, Qt, QUrl
+from ..utils import get_application_icon
+
+
+class MainWindow(QMainWindow):
+    def __init__(self, on_close: typing.Callable[[], None]):
+        # noinspection PyArgumentList
+        super(MainWindow, self).__init__()
+        self.setWindowTitle('Zubax Kucher')
+        self.setWindowIcon(get_application_icon())
+
+        # File menu
+        quit_action = QAction('&Quit', self)
+        quit_action.setShortcut(QKeySequence('Ctrl+Shift+Q'))
+        quit_action.triggered.connect(on_close)
+
+        file_menu = self.menuBar().addMenu('&File')
+        file_menu.addAction(quit_action)
