@@ -34,6 +34,7 @@ LOG_DIR = os.path.join(USER_SPECIFIC_DATA_DIR, 'log')
 
 
 _MAX_AGE_OF_LOG_FILE_IN_DAYS = 30
+_MIN_USEFUL_LOG_FILE_SIZE = 1
 
 
 def _create_directory(*path_items):
@@ -57,14 +58,16 @@ def _old_log_cleaner():
         current_time = time.time()
         for f in map(lambda x: os.path.join(LOG_DIR, x), os.listdir(LOG_DIR)):
             creation_time = os.path.getctime(f)
-            if (current_time - creation_time) / (24 * 3600) >= _MAX_AGE_OF_LOG_FILE_IN_DAYS:
+            too_old = (current_time - creation_time) / (24 * 3600) >= _MAX_AGE_OF_LOG_FILE_IN_DAYS
+            too_small = os.path.getsize(f) < _MIN_USEFUL_LOG_FILE_SIZE
+            if too_old or too_small:
                 # noinspection PyBroadException
                 try:
                     os.unlink(f)
                 except Exception:
                     _logger.exception('Could not remove file %r', f)
                 else:
-                    _logger.info('File %r removed successfully', f)
+                    _logger.info(f'File {f} removed successfully; old={too_old} small={too_small}')
                     num_removed += 1
 
         _logger.info('Background old log cleaner has finished successfully; total files removed: %r', num_removed)
