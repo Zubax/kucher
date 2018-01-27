@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QSplitter, QActio
 from PyQt5.QtGui import QKeySequence, QDesktopServices, QCloseEvent
 from PyQt5.QtCore import QUrl
 from ..utils import get_application_icon, get_icon
+from .connection_management_widget import ConnectionManagementWidget
 from data_dir import LOG_DIR
 
 
@@ -27,7 +28,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Zubax Kucher')
         self.setWindowIcon(get_application_icon())
 
+        self.statusBar().show()
+
         self._on_close = on_close
+
+        self._connection_management_widget = ConnectionManagementWidget(self)
 
         # File menu
         quit_action = QAction(get_icon('exit'), '&Quit', self)
@@ -52,6 +57,15 @@ class MainWindow(QMainWindow):
         help_menu.addAction(knowledge_base_action)
         help_menu.addAction(show_log_directory_action)
         # help_menu.addAction(about_action)                 # TODO: Implement this
+
+        # Layout
+        central_widget = QWidget(self)
+
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(self._connection_management_widget)
+
+        central_widget.setLayout(main_layout)
+        self.setCentralWidget(central_widget)
 
     def closeEvent(self, event: QCloseEvent):
         self._on_close()
