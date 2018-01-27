@@ -165,7 +165,7 @@ class ConnectionManagementWidget(WidgetBase):
         operational_group.setLayout(operational_layout)
         self._overlay.addWidget(operational_group)
 
-        progress_group = QGroupBox('Device connection', self)
+        progress_group = QGroupBox('Device connection progress', self)
         progress_layout = QHBoxLayout()
         progress_layout.addWidget(self._connection_progress_bar)
         progress_group.setLayout(progress_layout)
