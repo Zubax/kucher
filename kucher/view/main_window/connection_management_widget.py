@@ -24,7 +24,7 @@ from PyQt5.QtCore import QTimer, Qt
 from PyQt5 import QtSerialPort
 from ..utils import get_monospace_font, gui_test, time_tracked, make_button, show_error, get_icon
 from ..device_info import BasicDeviceInfo
-from ..widget_base import WidgetBase
+from ..widgets import WidgetBase
 
 
 _logger = getLogger(__name__)
