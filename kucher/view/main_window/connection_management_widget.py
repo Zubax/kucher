@@ -16,13 +16,14 @@ import typing
 import string
 import fnmatch
 import itertools
+import asyncio
 from logging import getLogger
-from utils import Event
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QCompleter, QStackedLayout, QLabel, QGroupBox, QProgressBar
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5 import QtSerialPort
-from ..utils import get_monospace_font, gui_test, time_tracked, make_button
+from ..utils import get_monospace_font, gui_test, time_tracked, make_button, show_error
+from ..device_info import BasicDeviceInfo
 from ..widget_base import WidgetBase
 
 
@@ -38,6 +39,7 @@ _PREFERABLE_VENDOR_PRODUCT_PATTERNS: typing.List[typing.Tuple[str, str]] = [
 
 
 # TODO: This is probably blocking IO-heavy (perhaps not on all platforms); run this logic in a background worker?
+# noinspection PyArgumentList
 @time_tracked
 def _list_prospective_ports() -> typing.List[QtSerialPort.QSerialPortInfo]:
     # https://github.com/UAVCAN/gui_tool/issues/21
@@ -109,8 +111,16 @@ def _update_port_list(ports: typing.List[QtSerialPort.QSerialPortInfo],
     return ports
 
 
+ConnectionRequestCallback = typing.Callable[[str], typing.Awaitable[BasicDeviceInfo]]
+DisconnectionRequestCallback = typing.Callable[[], typing.Awaitable[None]]
+
+
 class ConnectionManagementWidget(WidgetBase):
-    def __init__(self, parent: QWidget):
+    # noinspection PyArgumentList,PyUnresolvedReferences
+    def __init__(self,
+                 parent: typing.Optional[QWidget],
+                 on_connection_request: ConnectionRequestCallback,
+                 on_disconnection_request: DisconnectionRequestCallback):
         super(ConnectionManagementWidget, self).__init__(parent)
         self.setAttribute(Qt.WA_DeleteOnClose)                  # This is required to stop background timers!
 
@@ -142,8 +152,10 @@ class ConnectionManagementWidget(WidgetBase):
         self._connection_progress_bar.setMaximum(100)
 
         self._connection_established = False
+        self._last_task: typing.Optional[asyncio.Task] = None
 
-        self.connection_requested_event = Event()   # (Optional[str]) -> bool
+        self._connection_request_callback: ConnectionRequestCallback = on_connection_request
+        self._disconnection_request_callback: DisconnectionRequestCallback = on_disconnection_request
 
         # Layout
         self._overlay = QStackedLayout(self)
@@ -180,36 +192,32 @@ class ConnectionManagementWidget(WidgetBase):
         # Initialization
         self._update_ports()
 
-    def on_connection_lost(self):
-        self._connection_established = False
-        self._overlay.setCurrentIndex(0)
+    def on_connection_loss(self, reason: str):
+        """
+        This method should be invoked when the connection becomes lost.
+        It will cause the widget to change its state accordingly.
+        :param reason: Human-readable description of the reason in one line.
+        """
+        self._switch_state_disconnected()
+        self._connected_device_description.setText(f'Connection lost: {reason.strip() or "Unknown reason"}')
 
-        self._port_combo.setEnabled(True)
-        self._connect_button.setText('Connect')
-        self._connected_device_description.setText('Not connected')
+    def on_connection_initialization_progress_report(self,
+                                                     stage_description: str,
+                                                     progress: float):
+        """
+        This method should be periodically invoked while connection is being initialized.
+        :param stage_description: Human-readable short string displaying what is currently being done.
+                                  E.g. "Opening port"
+        :param progress:          A float in [0, 1] that displays how much of the work has been completed so far,
+                                  where 0 - nothing, 1 - all done.
+        """
+        if self._overlay.currentIndex() != 1:
+            raise RuntimeError('Invalid usage: this method can only be invoked when connection initialization is '
+                               'in progress. Currently it is not.')
 
-        self._update_ports()
-
-    def on_connection_established(self,
-                                  device_description: str,
-                                  software_version_major_minor: typing.Tuple[int, int],
-                                  hardware_version_major_minor: typing.Tuple[int, int],
-                                  device_unique_id: bytes):
-        self._connection_established = True
-        self._overlay.setCurrentIndex(0)
-
-        self._port_combo.setEnabled(False)
-        self._connect_button.setText('Disconnect')
-
-        sw_ver = '.'.join(map(str, software_version_major_minor))
-        hw_ver = '.'.join(map(str, hardware_version_major_minor))
-        self._connected_device_description.setText(f'Connected to: {device_description}, '
-                                                   f'SW v{sw_ver}, HW v{hw_ver}, '
-                                                   f'UID #{device_unique_id.hex()}')
-
-    def on_connection_initialization_progress(self, stage_description: str, progress: float):
-        self._connection_established = False
-        self._overlay.setCurrentIndex(1)
+        # noinspection PyTypeChecker
+        if not (0.0 <= progress <= 1.0):
+            _logger.error(f'Connection progress estimate falls outside of [0, 1]: {progress}')
 
         stage_description = stage_description.strip()
         if stage_description[-1] in string.ascii_letters:
@@ -227,32 +235,102 @@ class ConnectionManagementWidget(WidgetBase):
             ports = _list_prospective_ports()
         except Exception as ex:
             _logger.exception('Could not list ports')
-            self.flash(f'Could not list ports: {ex}')
+            self.flash(f'Could not list ports: {ex}', duration=10)
             ports = []
 
         self._port_mapping = _update_port_list(ports, self._port_combo)
 
-    def _on_confirmation(self):
-        if not self._connection_established:
-            try:
-                selected_port = self._port_mapping[str(self._port_combo.currentText()).strip()]
-            except KeyError:
-                selected_port = str(self._port_combo.currentText()).strip()
+    def _switch_state_connected(self, device_info: BasicDeviceInfo):
+        self._connection_established = True
+        self._overlay.setCurrentIndex(0)
 
-            self.on_connection_initialization_progress('Requesting connection...', 0)
+        self._port_combo.setEnabled(False)
+
+        self._connect_button.setEnabled(True)
+        self._connect_button.setText('Disconnect')
+
+        sw_ver = f'{device_info.software_version.major}.{device_info.software_version.minor}'
+        hw_ver = f'{device_info.hardware_version.major}.{device_info.hardware_version.minor}'
+        full_description = f'Connected to: {device_info.description}, SW v{sw_ver}, HW v{hw_ver}, ' \
+                           f'UID #{device_info.globally_unique_id.hex()}'
+
+        self._connected_device_description.setText(full_description)
+
+    def _switch_state_disconnected(self):
+        self._connection_established = False
+        self._overlay.setCurrentIndex(0)
+
+        self._port_combo.setEnabled(True)
+
+        self._connect_button.setEnabled(True)
+        self._connect_button.setText('Connect')
+
+        self._connected_device_description.setText('Not connected')
+
+        self._update_ports()
+
+    async def _do_connect(self):
+        _logger.info('Connection initialization task spawned')
+        try:
+            selected_port = self._port_mapping[str(self._port_combo.currentText()).strip()]
+        except KeyError:
+            selected_port = str(self._port_combo.currentText()).strip()
+
+        # Activate the progress view and initialize it
+        self._overlay.setCurrentIndex(1)
+        self._connection_progress_bar.setValue(0)
+        self._connection_progress_bar.setFormat('Requesting connection...')
+
+        # noinspection PyBroadException
+        try:
+            device_info: BasicDeviceInfo = await self._connection_request_callback(selected_port)
+        except Exception as ex:
+            show_error('Could not connect',
+                       f'Connection via the port {selected_port} could not be established.',
+                       f'Reason: {str(ex)}',
+                       parent=self)
+            self._switch_state_disconnected()
         else:
-            self.on_connection_lost()
-            selected_port = None
+            assert device_info is not None
+            self._switch_state_connected(device_info)
 
-        self.connection_requested_event(selected_port)
+    async def _do_disconnect(self):
+        _logger.info('Connection termination task spawned')
+        # noinspection PyBroadException
+        try:
+            await self._disconnection_request_callback()
+        except Exception as ex:
+            _logger.exception('Disconnect request failed')
+            self.flash(f'Disconnection problem: {ex}', duration=10)
+
+        self._switch_state_disconnected()
+
+    def _on_confirmation(self):
+        # Deactivate the controls in order to prevent accidental double-entry
+        self._port_combo.setEnabled(False)
+        self._connect_button.setEnabled(False)
+
+        if (self._last_task is not None) and not self._last_task.done():
+            show_error("I'm sorry Dave, I'm afraid I can't do that",
+                       'Cannot connect/disconnect while another connection/disconnection operation is still running',
+                       f'Pending future: {self._last_task}',
+                       self)
+            raise RuntimeError(f'Cannot (dis)connect while another (dis)connection operation is still running: '
+                               f'{self._last_task}')
+        else:
+            if not self._connection_established:
+                self._last_task = asyncio.get_event_loop().create_task(self._do_connect())
+            else:
+                self._last_task = asyncio.get_event_loop().create_task(self._do_disconnect())
 
 
+# noinspection PyGlobalUndefined
 @gui_test
 def _unittest_connection_management_widget():
-    global _list_prospective_ports
-
+    import asyncio
     from PyQt5.QtWidgets import QApplication
-    app = QApplication([])
+
+    global _list_prospective_ports
 
     def list_prospective_ports_mock():
         # noinspection PyPep8Naming
@@ -281,51 +359,100 @@ def _unittest_connection_management_widget():
 
     _list_prospective_ports = list_prospective_ports_mock
 
-    # noinspection PyProtectedMember
-    def connect():
-        widget._on_confirmation()
-        timer.singleShot(500, lambda: progress(0))
+    good_night_sweet_prince = False
+    throw = False
 
-    def progress(value: float):
-        assert selected_port == 'SystemLocation'  # See above
-        if value < 1:
-            timer.singleShot(500, lambda: progress(value + 0.1))
-            widget.on_connection_initialization_progress(f'Progress {int(value * 100)}%', value)
-        else:
-            widget.connection_requested_event -= on_connection_requested
-            widget.connection_requested_event += on_disconnection_requested
-            timer.singleShot(3000, disconnect)
-            widget.on_connection_established('Device Description', (1, 2), (3, 4), b'0123456789abcdef')
+    async def run_events():
+        while not good_night_sweet_prince:
+            app.processEvents()
+            await asyncio.sleep(0.01)
 
     # noinspection PyProtectedMember
-    def disconnect():
-        assert selected_port == 'SystemLocation'  # See above
-        widget._on_confirmation()
-        timer.singleShot(3000, finalize)
+    async def walk():
+        nonlocal good_night_sweet_prince, throw
 
-    def finalize():
-        assert selected_port is None
+        await asyncio.sleep(2)
+        print('Connect button click')
+        assert not widget._connection_established
+        widget._on_confirmation()
+
+        # Should be CONNECTED now
+        await asyncio.sleep(10)
+        print('Disconnect button click')
+        assert widget._connection_established
+        widget._on_confirmation()
+
+        # Should be DISCONNECTED now
+        await asyncio.sleep(2)
+        print('Connect button click with error')
+        assert not widget._connection_established
+        throw = True
+        widget._on_confirmation()
+
+        # Should be DISCONNECTED now
+        await asyncio.sleep(10)
+        print('Connect button click without error, connection loss later')
+        assert not widget._connection_established
+        throw = False
+        widget._on_confirmation()
+
+        # Should be CONNECTED now
+        await asyncio.sleep(10)
+        print('Connection loss')
+        assert widget._connection_established
+        widget.on_connection_loss("You're half machine, half pussy!")
+
+        # Should be DISCONNECTED now
+        await asyncio.sleep(5)
+        print('Termination')
+        assert not widget._connection_established
+        good_night_sweet_prince = True
         widget.close()
 
-    selected_port = None
-
-    def on_connection_requested(p):
-        nonlocal selected_port
-        selected_port = p
+    async def on_connection_request(selected_port):
         print('CONNECTION REQUESTED:', selected_port)
         assert selected_port == 'SystemLocation'            # See above
 
-    def on_disconnection_requested(p):
-        nonlocal selected_port
-        selected_port = p
-        assert selected_port is None
+        await asyncio.sleep(0.5)
+        widget.on_connection_initialization_progress_report('First stage', 0.2)
 
-    widget = ConnectionManagementWidget(None)
+        await asyncio.sleep(0.5)
+        widget.on_connection_initialization_progress_report('Second stage', 0.4)
+
+        await asyncio.sleep(0.5)
+        widget.on_connection_initialization_progress_report('Third stage', 0.6)
+
+        await asyncio.sleep(0.5)
+        widget.on_connection_initialization_progress_report('Fourth stage', 0.7)
+
+        if throw:
+            raise RuntimeError('Houston we have a problem!')
+
+        await asyncio.sleep(0.5)
+        widget.on_connection_initialization_progress_report('Success!', 1.0)
+
+        out = BasicDeviceInfo(name='com.zubax.whatever',
+                              description='Joo Janta 200 Super-Chromatic Peril Sensitive Sunglasses',
+                              globally_unique_id=b'0123456789abcdef')
+        out.software_version.major = 1
+        out.software_version.minor = 2
+        out.hardware_version.major = 3
+        out.hardware_version.minor = 4
+
+        return out
+
+    async def on_disconnection_request():
+        print('DISCONNECTION REQUESTED')
+        await asyncio.sleep(0.5)
+
+    app = QApplication([])
+
+    widget = ConnectionManagementWidget(None,
+                                        on_connection_request=on_connection_request,
+                                        on_disconnection_request=on_disconnection_request)
     widget.show()
 
-    widget.connection_requested_event += on_connection_requested
-
-    timer = QTimer()
-    timer.singleShot(1000, connect)
-
-    app.exec()
+    asyncio.get_event_loop().run_until_complete(asyncio.gather(
+        run_events(),
+        walk()
+    ))

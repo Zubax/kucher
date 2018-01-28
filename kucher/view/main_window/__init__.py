@@ -17,13 +17,17 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QSplitter, QActio
 from PyQt5.QtGui import QKeySequence, QDesktopServices, QCloseEvent
 from PyQt5.QtCore import QUrl
 from ..utils import get_application_icon, get_icon
-from .connection_management_widget import ConnectionManagementWidget
+from .connection_management_widget import ConnectionManagementWidget, ConnectionRequestCallback, \
+                                          DisconnectionRequestCallback
 from data_dir import LOG_DIR
 
 
 class MainWindow(QMainWindow):
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
-    def __init__(self, on_close: typing.Callable[[], None]):
+    def __init__(self,
+                 on_close: typing.Callable[[], None],
+                 on_connection_request: ConnectionRequestCallback,
+                 on_disconnection_request: DisconnectionRequestCallback):
         super(MainWindow, self).__init__()
         self.setWindowTitle('Zubax Kucher')
         self.setWindowIcon(get_application_icon())
@@ -32,7 +36,10 @@ class MainWindow(QMainWindow):
 
         self._on_close = on_close
 
-        self._connection_management_widget = ConnectionManagementWidget(self)
+        self._connection_management_widget = \
+            ConnectionManagementWidget(self,
+                                       on_connection_request=on_connection_request,
+                                       on_disconnection_request=on_disconnection_request)
 
         # File menu
         quit_action = QAction(get_icon('exit'), '&Quit', self)
@@ -66,6 +73,14 @@ class MainWindow(QMainWindow):
 
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
+
+    def on_connection_loss(self, reason: str):
+        self._connection_management_widget.on_connection_loss(reason)
+
+    def on_connection_initialization_progress_report(self,
+                                                     stage_description: str,
+                                                     progress: float):
+        self.on_connection_initialization_progress_report(stage_description, progress)
 
     def closeEvent(self, event: QCloseEvent):
         self._on_close()

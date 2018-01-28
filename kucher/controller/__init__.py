@@ -16,6 +16,7 @@ import asyncio
 from logging import getLogger
 from model.device_model import DeviceModel
 from view.main_window import MainWindow
+from view.device_info import BasicDeviceInfo
 
 
 _logger = getLogger(__name__)
@@ -25,7 +26,9 @@ class Controller:
     def __init__(self):
         self._device_model = DeviceModel(asyncio.get_event_loop())
 
-        self._main_window = MainWindow(self._on_main_window_close)
+        self._main_window = MainWindow(on_close=self._on_main_window_close,
+                                       on_connection_request=self._on_connection_request,
+                                       on_disconnection_request=self._on_disconnection_request)
         self._main_window.show()
 
         self._should_stop = False
@@ -33,6 +36,12 @@ class Controller:
     def _on_main_window_close(self):
         _logger.info('The main window is closing, asking the controller task to stop')
         self._should_stop = True
+
+    async def _on_connection_request(self, port: str) -> BasicDeviceInfo:
+        pass
+
+    async def _on_disconnection_request(self) -> None:
+        pass
 
     async def run(self):
         # noinspection PyBroadException

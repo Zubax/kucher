@@ -17,7 +17,7 @@ import time
 import typing
 import functools
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QPushButton
+from PyQt5.QtWidgets import QWidget, QPushButton, QMessageBox
 from PyQt5.QtGui import QFont, QFontInfo, QIcon
 from PyQt5.QtCore import Qt
 from resources import get_absolute_path
@@ -78,6 +78,28 @@ def make_button(parent: QWidget,
     return b
 
 
+def show_error(title: str,
+               text: str,
+               informative_text: str,
+               parent: typing.Optional[QWidget]) -> QMessageBox:
+    _logger.exception('Error window: title=%r, text=%r, informative_text=%r, parent=%r',
+                      title, text, informative_text, parent)
+
+    mbox = QMessageBox(parent)
+
+    mbox.setWindowTitle(str(title))
+    mbox.setText(str(text))
+    if informative_text:
+        mbox.setInformativeText(str(informative_text))
+
+    mbox.setIcon(QMessageBox.Critical)
+    mbox.setStandardButtons(QMessageBox.Ok)
+
+    mbox.show()     # Not exec() because we don't want it to block!
+
+    return mbox
+
+
 def time_tracked(target: typing.Callable):
     """
     Execution time of functions wrapped in this decorator will be logged at the debug level.
@@ -128,3 +150,15 @@ def gui_test(test_case_function: typing.Callable):
         test_case_function(*args, **kwargs)
 
     return decorator
+
+
+def _unittest_show_error():
+    from PyQt5.QtWidgets import QApplication
+    app = QApplication([])
+    # We don't have to act upon the returned object; we just need to keep a reference to keep it alive
+    mb = show_error('Error title', 'Error text', 'Informative text', None)
+    for _ in range(1000):
+        time.sleep(0.002)
+        app.processEvents()
+
+    mb.close()

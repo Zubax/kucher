@@ -83,6 +83,7 @@ def main():
         args.remove('--test')
         args.append('--ignore=' + LIBRARIES_PATH)
         args.append('--capture=no')
+        args.append('--fulltrace')
         args.append('-vv')
         args.append('.')
         return pytest.main(args)

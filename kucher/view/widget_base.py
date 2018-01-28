@@ -13,7 +13,11 @@
 #
 
 import typing
+from logging import getLogger
 from PyQt5.QtWidgets import QWidget
+
+
+_logger = getLogger(__name__)
 
 
 class WidgetBase(QWidget):
@@ -29,4 +33,9 @@ class WidgetBase(QWidget):
         Shows the specified message in the status bar of the parent window.
         """
         duration_milliseconds = int((duration or 0) * 1000)
-        self.window().statusBar().showMessage(message % format_args, duration_milliseconds)
+        formatted_message = message % format_args
+        self.window().statusBar().showMessage(formatted_message, duration_milliseconds)
+        _logger.info('Flashing status bar message from %r for %.1f seconds: %r',
+                     self,
+                     (duration_milliseconds * 1e-3) if duration_milliseconds > 0 else float('inf'),
+                     formatted_message)
