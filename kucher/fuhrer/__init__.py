@@ -23,7 +23,7 @@ import view.device_info
 _logger = getLogger(__name__)
 
 
-class Controller:
+class Fuhrer:
     def __init__(self):
         self._device_model = DeviceModel(asyncio.get_event_loop())
 

@@ -64,7 +64,7 @@ import asyncio
 from PyQt5.QtWidgets import QApplication
 from quamash import QEventLoop
 
-from controller import Controller
+from fuhrer import Fuhrer
 
 
 def main():
@@ -95,7 +95,7 @@ def main():
 
     # Running the application
     with loop:
-        ctrl = Controller()
+        ctrl = Fuhrer()
         loop.run_until_complete(ctrl.run())
 
 
