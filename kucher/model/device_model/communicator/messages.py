@@ -139,11 +139,7 @@ ControlModeFormat = con.Enum(
 TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
     'fault': con.Struct(
         'failed_task_id'                / TaskIDFormat,
-        'failed_task_result'            / con.Struct(
-            'completed_at'              / TimeAdapter(U64),
-            'exit_code'                 / U8,
-            con.Padding(7),
-        ),
+        'failed_task_exit_code'         / U8,
     ),
     'running': con.Struct(
         'stall_count'                   / U32,

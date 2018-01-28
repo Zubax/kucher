@@ -109,17 +109,13 @@ class TaskSpecific:
     @_struct_view
     class Fault:
         failed_task_id:                 TaskID = TaskID.IDLE
-        failed_task_result:             TimestampedTaskResult = TimestampedTaskResult()
+        failed_task_exit_code:          int = 0
 
         @staticmethod
         def populate(fields: typing.Mapping):
-            res = fields['failed_task_result']
             return TaskSpecific.Fault(
                 failed_task_id=TASK_ID_MAPPING[fields['failed_task_id']][0],
-                failed_task_result=TimestampedTaskResult(
-                    completed_at=res['completed_at'],
-                    exit_code=res['exit_code'],
-                ),
+                failed_task_exit_code=fields['failed_task_exit_code'],
             )
 
     @_struct_view
