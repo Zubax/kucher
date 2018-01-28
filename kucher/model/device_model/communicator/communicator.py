@@ -129,8 +129,8 @@ class Communicator:
             _logger.exception('Could not close the channel properly')
 
         # This is required to un-block the waiting coroutines, if any.
-        self._message_queue.put_nowait(None)
-        self._log_queue.put_nowait(None)
+        self._event_loop.call_soon_threadsafe(self._message_queue.put_nowait, None)
+        self._event_loop.call_soon_threadsafe(self._log_queue.put_nowait, None)
 
     def _process_received_item(self, item: typing.Union[ReceivedFrame, StandardMessageBase]) -> None:
         if isinstance(item, StandardMessageBase):
