@@ -86,14 +86,16 @@ class DeviceModel:
     @property
     def connection_status_change_event(self):
         """
-        The only argument passed to the event handler is an optional DeviceInfoView.
-        The argument is None if the connection was lost, and non-none otherwise.
+        The only argument passed to the event handler is a union of either:
+            - DeviceInfoView - when connection established;
+            - Exception - when connection failed, with the exception object containing the relevant information;
+            - str - like above, but the relevant information will be contained in a human-readable string.
         """
         return self._evt_connection_status_change
 
     async def connect(self,
                       port_name: str,
-                      on_progress_report: typing.Optional[typing.Callable[[str], None]]=None):
+                      on_progress_report: typing.Optional[typing.Callable[[str], None]]=None) -> DeviceInfoView:
         await self.disconnect()
         assert not self._conn
 
@@ -108,10 +110,12 @@ class DeviceModel:
         self._evt_connection_status_change(self._conn.device_info)
         self._evt_device_status_update(*self._conn.last_general_status_with_timestamp)
 
+        return self._conn.device_info
+
     async def disconnect(self):
         _logger.info('Explicit disconnect request')
         if self._conn:
-            self._evt_connection_status_change(None)
+            self._evt_connection_status_change('Explicit disconnection')
             try:
                 await self._conn.disconnect()
             finally:
@@ -154,11 +158,11 @@ class DeviceModel:
     async def stop(self):
         await self.set_setpoint(0, ControlMode.CURRENT)
 
-    def _on_connection_loss(self):
-        _logger.info('Connection instance reported connection loss')
+    def _on_connection_loss(self, reason: typing.Union[str, Exception]):
+        _logger.info('Connection instance reported connection loss; reason: %r', reason)
         # The Connection instance will terminate itself, so we don't have to do anything, just clear the reference
         self._conn = None
-        self._evt_connection_status_change(None)
+        self._evt_connection_status_change(reason)
 
     def _ensure_connected(self):
         if not self.is_connected:
@@ -190,10 +194,10 @@ def _unittest_device_model_connection():
         num_connection_change_notifications = 0
         num_status_reports = 0
 
-        def on_connection_status_changed(device_info):
+        def on_connection_status_changed(info):
             nonlocal num_connection_change_notifications
             num_connection_change_notifications += 1
-            print(f'Connection status changed! Device info:\n{device_info}')
+            print(f'Connection status changed! Info:\n{info}')
 
         def on_status_report(ts, rep):
             nonlocal num_status_reports

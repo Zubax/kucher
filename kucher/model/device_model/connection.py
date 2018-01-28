@@ -56,7 +56,7 @@ class Connection:
                  communicator:                  Communicator,
                  device_info:                   DeviceInfoView,
                  general_status_with_ts:        typing.Tuple[float, GeneralStatusView],
-                 on_connection_loss:            typing.Callable[[], None],
+                 on_connection_loss:            typing.Callable[[typing.Union[str, Exception]], None],
                  on_general_status_update:      typing.Callable[[float, GeneralStatusView], None],
                  on_log_line:                   typing.Callable[[float, str], None],
                  general_status_update_period:  float):
@@ -83,7 +83,7 @@ class Connection:
         return self._last_general_status_with_timestamp
 
     async def disconnect(self):
-        self._on_connection_loss = lambda: None     # Suppress further reporting
+        self._on_connection_loss = lambda *_: None     # Suppress further reporting
 
         # noinspection PyBroadException
         try:
@@ -100,10 +100,10 @@ class Connection:
             raise ConnectionNotEstablishedException('Could not send the message because the communication channel is '
                                                     'closed') from ex
 
-    async def _handle_connection_loss(self):
+    async def _handle_connection_loss(self, reason: typing.Union[str, Exception]):
         # noinspection PyBroadException
         try:
-            self._on_connection_loss()
+            self._on_connection_loss(reason)
         except Exception:
             _logger.exception('Unhandled exception in the connection loss callback')
 
@@ -147,10 +147,14 @@ class Connection:
                 await target()
             except CommunicationChannelClosedException as ex:
                 _logger.info('Task %r is stopping because the communication channel is closed: %r', target, ex)
-            except Exception:
+                await self._handle_connection_loss(ex)
+            except Exception as ex:
                 _logger.exception('Unhandled exception in the task %r', target)
+                await self._handle_connection_loss(ex)
+            else:
+                _logger.error('Unexpected termination of the task %r', target)
+                await self._handle_connection_loss('Unknown reason')    # Should never happen!
             finally:
-                await self._handle_connection_loss()
                 _logger.info('Task %r has stopped', target)
 
         self._event_loop.create_task(proxy())
@@ -158,7 +162,7 @@ class Connection:
 
 async def connect(event_loop:                   asyncio.AbstractEventLoop,
                   port_name:                    str,
-                  on_connection_loss:           typing.Callable[[], None],
+                  on_connection_loss:           typing.Callable[[typing.Union[str, Exception]], None],
                   on_general_status_update:     typing.Callable[[float, GeneralStatusView], None],
                   on_log_line:                  typing.Callable[[float, str], None],
                   on_progress_report:           typing.Optional[typing.Callable[[str], None]],
@@ -252,10 +256,10 @@ def _unittest_connection():
         num_connection_loss_notifications = 0
         num_status_reports = 0
 
-        def on_connection_loss():
+        def on_connection_loss(reason):
             nonlocal num_connection_loss_notifications
             num_connection_loss_notifications += 1
-            print(f'Connection lost!')
+            print(f'Connection lost! Reason: {reason}')
 
         def on_general_status_update(ts, rep):
             nonlocal num_status_reports

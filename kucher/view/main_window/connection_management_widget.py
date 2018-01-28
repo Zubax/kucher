@@ -198,8 +198,9 @@ class ConnectionManagementWidget(WidgetBase):
         It will cause the widget to change its state accordingly.
         :param reason: Human-readable description of the reason in one line.
         """
-        self._switch_state_disconnected()
-        self._connected_device_description.setText(f'Connection lost: {reason.strip() or "Unknown reason"}')
+        if self._connection_established:
+            self._switch_state_disconnected()
+            self._connected_device_description.setText(f'Connection lost: {reason.strip() or "Unknown reason"}')
 
     def on_connection_initialization_progress_report(self,
                                                      stage_description: str,
