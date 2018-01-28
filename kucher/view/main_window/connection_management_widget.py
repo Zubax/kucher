@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QCompleter, QStacke
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5 import QtSerialPort
-from ..utils import get_monospace_font, gui_test, time_tracked, make_button, show_error
+from ..utils import get_monospace_font, gui_test, time_tracked, make_button, show_error, get_icon
 from ..device_info import BasicDeviceInfo
 from ..widget_base import WidgetBase
 
@@ -251,6 +251,7 @@ class ConnectionManagementWidget(WidgetBase):
 
         self._connect_button.setEnabled(True)
         self._connect_button.setText('Disconnect')
+        self._connect_button.setIcon(get_icon('connected'))
 
         sw = device_info.software_version
         sw_ver = f'{sw.major}.{sw.minor}.{sw.vcs_commit_id:08x}'
@@ -275,6 +276,7 @@ class ConnectionManagementWidget(WidgetBase):
 
         self._connect_button.setEnabled(True)
         self._connect_button.setText('Connect')
+        self._connect_button.setIcon(get_icon('disconnected'))
 
         self._connected_device_description.setText(_DESCRIPTION_WHEN_NOT_CONNECTED)
 
@@ -307,6 +309,12 @@ class ConnectionManagementWidget(WidgetBase):
 
     async def _do_disconnect(self):
         _logger.info('Connection termination task spawned')
+
+        # Activate the progress view and initialize it
+        self._overlay.setCurrentIndex(1)
+        self._connection_progress_bar.setValue(100)
+        self._connection_progress_bar.setFormat('Disconnecting, please wait...')
+
         # noinspection PyBroadException
         try:
             await self._disconnection_request_callback()
