@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
     def on_connection_initialization_progress_report(self,
                                                      stage_description: str,
                                                      progress: float):
-        self.on_connection_initialization_progress_report(stage_description, progress)
+        self._connection_management_widget.on_connection_initialization_progress_report(stage_description, progress)
 
     def closeEvent(self, event: QCloseEvent):
         self._on_close()

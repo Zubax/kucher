@@ -30,6 +30,8 @@ from ..widget_base import WidgetBase
 _logger = getLogger(__name__)
 
 
+_DESCRIPTION_WHEN_NOT_CONNECTED = 'Not connected\n'
+
 # This list defines serial ports that will float up the list of possible ports.
 # The objective is to always pre-select the best guess, best choice port, so that the user could connect in
 # just one click. Vendor-product pairs located at the beginning of the list are preferred.
@@ -136,7 +138,7 @@ class ConnectionManagementWidget(WidgetBase):
         self._connect_button = make_button(self, 'Connect', 'disconnected', on_clicked=self._on_confirmation)
 
         self._connected_device_description = QLabel(self)
-        self._connected_device_description.setText('Not connected')
+        self._connected_device_description.setText(_DESCRIPTION_WHEN_NOT_CONNECTED)
 
         combo_completer = QCompleter()
         combo_completer.setCaseSensitivity(Qt.CaseInsensitive)
@@ -250,10 +252,18 @@ class ConnectionManagementWidget(WidgetBase):
         self._connect_button.setEnabled(True)
         self._connect_button.setText('Disconnect')
 
-        sw_ver = f'{device_info.software_version.major}.{device_info.software_version.minor}'
+        sw = device_info.software_version
+        sw_ver = f'{sw.major}.{sw.minor}.{sw.vcs_commit_id:08x}'
+        if sw.dirty_build:
+            sw_ver += '-dirty'
+
+        if not sw.release_build:
+            sw_ver += '-debug'
+
         hw_ver = f'{device_info.hardware_version.major}.{device_info.hardware_version.minor}'
-        full_description = f'Connected to: {device_info.description}, SW v{sw_ver}, HW v{hw_ver}, ' \
-                           f'UID #{device_info.globally_unique_id.hex()}'
+
+        full_description = f'Connected to: {device_info.description}\n' \
+                           f'UID {device_info.globally_unique_id.hex()}, SW v{sw_ver}, HW v{hw_ver}'
 
         self._connected_device_description.setText(full_description)
 
@@ -266,7 +276,7 @@ class ConnectionManagementWidget(WidgetBase):
         self._connect_button.setEnabled(True)
         self._connect_button.setText('Connect')
 
-        self._connected_device_description.setText('Not connected')
+        self._connected_device_description.setText(_DESCRIPTION_WHEN_NOT_CONNECTED)
 
         self._update_ports()
 
@@ -437,6 +447,7 @@ def _unittest_connection_management_widget():
                               globally_unique_id=b'0123456789abcdef')
         out.software_version.major = 1
         out.software_version.minor = 2
+        out.software_version.dirty_build = True
         out.hardware_version.major = 3
         out.hardware_version.minor = 4
 

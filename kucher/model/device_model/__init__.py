@@ -95,7 +95,7 @@ class DeviceModel:
 
     async def connect(self,
                       port_name: str,
-                      on_progress_report: typing.Optional[typing.Callable[[str], None]]=None) -> DeviceInfoView:
+                      on_progress_report: typing.Optional[typing.Callable[[str, float], None]]=None) -> DeviceInfoView:
         await self.disconnect()
         assert not self._conn
 
@@ -112,10 +112,10 @@ class DeviceModel:
 
         return self._conn.device_info
 
-    async def disconnect(self):
-        _logger.info('Explicit disconnect request')
+    async def disconnect(self, reason: str=None):
+        _logger.info('Explicit disconnect request; reason: %r', reason)
         if self._conn:
-            self._evt_connection_status_change('Explicit disconnection')
+            self._evt_connection_status_change(reason or 'Explicit disconnection')
             try:
                 await self._conn.disconnect()
             finally:

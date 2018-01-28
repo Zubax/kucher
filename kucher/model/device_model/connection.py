@@ -165,18 +165,20 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
                   on_connection_loss:           typing.Callable[[typing.Union[str, Exception]], None],
                   on_general_status_update:     typing.Callable[[float, GeneralStatusView], None],
                   on_log_line:                  typing.Callable[[float, str], None],
-                  on_progress_report:           typing.Optional[typing.Callable[[str], None]],
+                  on_progress_report:           typing.Optional[typing.Callable[[str, float], None]],
                   general_status_update_period: float) -> Connection:
-    def report(stage: str):
+    def report(stage: str, progress: float):
         _logger.info('Connection process on port %r reached the new stage %r', port_name, stage)
+        # noinspection PyTypeChecker
+        assert 0.0 <= progress <= 1.0
         if on_progress_report:
-            on_progress_report(stage)
+            on_progress_report(stage, progress)
 
-    report('I/O initialization')
+    report('I/O initialization', 0.1)
     com = await Communicator.new(port_name, event_loop)
 
     try:
-        report('Device detection')
+        report('Device detection', 0.2)
         node_info = await com.request(popcop.standard.NodeInfoMessage)
 
         _logger.info('Node info of the connected device: %r', node_info)
@@ -201,13 +203,13 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
         sw_major_minor = node_info.software_version_major, node_info.software_version_minor
         com.set_protocol_version(sw_major_minor)
 
-        report('Device identification')
+        report('Device identification', 0.4)
         characteristics = await com.request(MessageType.DEVICE_CHARACTERISTICS)
         _logger.info('Device characteristics: %r', characteristics)
         if not characteristics:
             raise ConnectionAttemptFailedException('Device capabilities request has timed out')
 
-        report('Device status request')
+        report('Device status request', 0.6)
         general_status = await com.request(MessageType.GENERAL_STATUS)
         _logger.info('General status: %r', general_status)
         if not general_status:
@@ -217,7 +219,7 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
                                               characteristics_message=characteristics.fields)
         _logger.info('Populated device info view: %r', device_info)
 
-        report('Completed successfully')
+        report('Completed successfully', 1.0)
     except Exception:
         await com.close()
         raise
