@@ -17,7 +17,9 @@ import os
 import sys
 import logging
 import datetime
+
 import data_dir
+import version
 
 if sys.version_info[:2] < (3, 6):
     raise ImportError('A newer version of Python is required')
@@ -94,6 +96,7 @@ def main():
     asyncio.set_event_loop(loop)
 
     # Running the application
+    _logger.info('Starting version %r', version.__version__)
     with loop:
         ctrl = Fuhrer()
         loop.run_until_complete(ctrl.run())

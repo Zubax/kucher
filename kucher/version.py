@@ -13,4 +13,8 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-from .version import *
+__version__ = 0, 0, 1
+
+__author__ = "Pavel Kirienko"
+__license__ = "GPLv3"
+__email__ = "pavel.kirienko@zubax.com"
