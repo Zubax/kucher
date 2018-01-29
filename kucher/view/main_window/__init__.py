@@ -21,6 +21,7 @@ from .connection_management_widget import ConnectionManagementWidget, Connection
                                           DisconnectionRequestCallback
 from .dc_quantities_widget import DCQuantitiesWidget
 from .temperature_widget import TemperatureWidget
+from .hardware_flag_counters_widget import HardwareFlagCountersWidget
 from ..monitored_quantity import MonitoredQuantity
 from data_dir import LOG_DIR
 
@@ -51,6 +52,7 @@ class MainWindow(QMainWindow):
 
         self._dc_quantities_widget = DCQuantitiesWidget(self)
         self._temperature_widget = TemperatureWidget(self)
+        self._hardware_flag_counters_widget = HardwareFlagCountersWidget(self)
 
         self._configure_menu()
 
@@ -67,7 +69,8 @@ class MainWindow(QMainWindow):
             main_layout.addLayout(inner)
 
         add_row(self._dc_quantities_widget,
-                self._temperature_widget)
+                self._temperature_widget,
+                self._hardware_flag_counters_widget)
 
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
@@ -101,13 +104,14 @@ class MainWindow(QMainWindow):
         self._connection_management_widget.on_connection_loss(reason)
         self._dc_quantities_widget.reset()
         self._temperature_widget.reset()
+        self._hardware_flag_counters_widget.reset()
 
     def on_connection_initialization_progress_report(self,
                                                      stage_description: str,
                                                      progress: float):
         self._connection_management_widget.on_connection_initialization_progress_report(stage_description, progress)
 
-    def on_general_status_update(self, ts: float, s: GeneralStatusView):
+    def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
         # DC quantities
         power = s.dc.voltage * s.dc.current
         self._dc_quantities_widget.set(_make_monitored_quantity(s.dc.voltage,
@@ -128,6 +132,16 @@ class MainWindow(QMainWindow):
                                      _make_monitored_quantity(k2c(s.temperature.motor) if s.temperature.motor else None,
                                                               s.alert_flags.motor_cold,
                                                               s.alert_flags.motor_overheating))
+        # Hardware flags
+        hfc_fs = HardwareFlagCountersWidget.FlagState
+        # noinspection PyArgumentList
+        self._hardware_flag_counters_widget.set(
+            lvps_malfunction=hfc_fs(event_count=s.hardware_flag_edge_counters.lvps_malfunction,
+                                    active=s.alert_flags.hardware_lvps_malfunction),
+            overload=hfc_fs(event_count=s.hardware_flag_edge_counters.overload,
+                            active=s.alert_flags.hardware_overload),
+            fault=hfc_fs(event_count=s.hardware_flag_edge_counters.fault,
+                         active=s.alert_flags.hardware_fault))
 
     def closeEvent(self, event: QCloseEvent):
         self._on_close()
