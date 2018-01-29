@@ -42,6 +42,10 @@ class ValueDisplayGroupWidget(QGroupBox):
                 }}
             ''')
 
+            # We don't actually want it to be checkable, so override this thing to return it back to normal again
+            # noinspection PyUnresolvedReferences
+            self.toggled.connect(lambda _: self.setChecked(True))
+
         self._with_comments = with_comments
         self._inferiors: typing.List[ValueDisplayWidget] = []
         self._inferior_layout = QHBoxLayout()
