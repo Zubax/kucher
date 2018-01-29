@@ -43,7 +43,7 @@ class ValueDisplayGroupWidget(QGroupBox):
             ''')
 
         self._with_comments = with_comments
-
+        self._inferiors: typing.List[ValueDisplayWidget] = []
         self._inferior_layout = QHBoxLayout()
         self.setLayout(self._inferior_layout)
 
@@ -57,8 +57,13 @@ class ValueDisplayGroupWidget(QGroupBox):
                                       placeholder_text=placeholder_text,
                                       with_comment=self._with_comments,
                                       tooltip=tooltip)
+        self._inferiors.append(inferior)
         self._inferior_layout.addWidget(inferior, stretch=1)
         return inferior
+
+    def reset(self):
+        for inf in self._inferiors:
+            inf.reset()
 
 
 # noinspection PyArgumentList
