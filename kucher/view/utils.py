@@ -30,22 +30,24 @@ def get_application_icon() -> QIcon:
     return QIcon(get_absolute_path('view', 'icons', 'zee-with-margins.png'))
 
 
+@functools.lru_cache(None)
 def get_icon(name: str) -> QIcon:
     return QIcon(get_absolute_path('view', 'icons', f'{name}.png'))
 
 
+@functools.lru_cache()
 def get_monospace_font() -> QFont:
     preferred = ['Consolas', 'DejaVu Sans Mono', 'Monospace', 'Lucida Console', 'Monaco']
     for name in preferred:
         font = QFont(name)
         if QFontInfo(font).fixedPitch():
-            _logger.debug('Selected monospace font: %r', font.toString())
+            _logger.info('Selected monospace font: %r', font.toString())
             return font
 
     font = QFont()
     font.setStyleHint(QFont().Monospace)
     font.setFamily('monospace')
-    _logger.debug('Using fallback monospace font: %r', font.toString())
+    _logger.info('Using fallback monospace font: %r', font.toString())
     return font
 
 
@@ -152,6 +154,7 @@ def gui_test(test_case_function: typing.Callable):
     return decorator
 
 
+@gui_test
 def _unittest_show_error():
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
@@ -162,3 +165,46 @@ def _unittest_show_error():
         app.processEvents()
 
     mb.close()
+
+
+@gui_test
+def _unittest_icons():
+    import math
+    import glob
+    from PyQt5.QtWidgets import QApplication, QMainWindow, QGroupBox, QGridLayout, QLabel, QSizePolicy
+    from PyQt5.QtGui import QFont, QFontMetrics
+
+    app = QApplication([])
+
+    all_icons = list(map(lambda x: os.path.splitext(os.path.basename(x))[0],
+                         glob.glob(os.path.join(get_absolute_path('view', 'icons'), '*'))))
+    print('All icons:', len(all_icons), all_icons)
+
+    grid_size = int(math.ceil(math.sqrt(len(all_icons))))
+
+    icon_size = QFontMetrics(QFont()).height()
+
+    def render_icon(name: str, row: int, col: int):
+        icon = get_icon(name)
+        icon_label = QLabel()
+        icon_label.setAlignment(Qt.AlignCenter)
+        icon_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        icon_label.setPixmap(icon.pixmap(icon_size, icon_size))
+        layout.addWidget(icon_label, row, col)
+
+    win = QMainWindow()
+    container = QGroupBox(win)
+    layout = QGridLayout()
+
+    for idx, ic in enumerate(all_icons):
+        render_icon(ic, idx // grid_size, idx % grid_size)
+
+    container.setLayout(layout)
+    win.setCentralWidget(container)
+    win.show()
+
+    for _ in range(1000):
+        time.sleep(0.005)
+        app.processEvents()
+
+    win.close()
