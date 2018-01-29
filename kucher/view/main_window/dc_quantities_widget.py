@@ -44,10 +44,10 @@ class DCQuantitiesWidget(ValueDisplayGroupWidget):
                                                    '%.1f A',
                                                    params_default=dp(comment='OK',
                                                                      icon_name='ok'),
-                                                   params_when_low=dp(comment='Regen O/L',
+                                                   params_when_low=dp(comment='Regen OC',
                                                                       icon_name='overload-negative',
                                                                       style=style.ALERT_LOW),
-                                                   params_when_high=dp(comment='Overload',
+                                                   params_when_high=dp(comment='Overcurrent',
                                                                        icon_name='overload',
                                                                        style=style.ALERT_HIGH))
 
