@@ -18,13 +18,14 @@ import fnmatch
 import itertools
 import asyncio
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QCompleter, QStackedLayout, QLabel, QGroupBox, QProgressBar
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QCompleter, QStackedLayout, QLabel, QProgressBar
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5 import QtSerialPort
 from ..utils import get_monospace_font, gui_test, time_tracked, make_button, show_error, get_icon
 from ..device_info import BasicDeviceInfo
 from ..widgets import WidgetBase
+from ..widgets.group_box import GroupBoxWidget
 
 
 _logger = getLogger(__name__)
@@ -162,7 +163,7 @@ class ConnectionManagementWidget(WidgetBase):
         # Layout
         self._overlay = QStackedLayout(self)
 
-        operational_group = QGroupBox('Device connection', self)
+        operational_group = GroupBoxWidget(self, 'Device connection', 'connector')
 
         operational_layout_top = QHBoxLayout()
         operational_layout_top.addWidget(QLabel('Port:'))
@@ -179,7 +180,7 @@ class ConnectionManagementWidget(WidgetBase):
         operational_group.setLayout(operational_layout)
         self._overlay.addWidget(operational_group)
 
-        progress_group = QGroupBox('Device connection progress', self)
+        progress_group = GroupBoxWidget(self, 'Device connection progress', 'hourglass')
         progress_layout = QHBoxLayout()
         progress_layout.addWidget(self._connection_progress_bar)
         progress_group.setLayout(progress_layout)
