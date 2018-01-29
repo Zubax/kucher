@@ -23,6 +23,7 @@ from .dc_quantities_widget import DCQuantitiesWidget
 from .temperature_widget import TemperatureWidget
 from .hardware_flag_counters_widget import HardwareFlagCountersWidget
 from .device_time_widget import DeviceTimeWidget
+from .vsi_status_widget import VSIStatusWidget
 from ..monitored_quantity import MonitoredQuantity
 from data_dir import LOG_DIR
 
@@ -55,6 +56,7 @@ class MainWindow(QMainWindow):
         self._temperature_widget = TemperatureWidget(self)
         self._hardware_flag_counters_widget = HardwareFlagCountersWidget(self)
         self._device_time_widget = DeviceTimeWidget(self)
+        self._vsi_status_widget = VSIStatusWidget(self)
 
         self._configure_menu()
 
@@ -74,7 +76,8 @@ class MainWindow(QMainWindow):
                 self._temperature_widget,
                 self._hardware_flag_counters_widget)
 
-        add_row(self._device_time_widget)
+        add_row(self._device_time_widget,
+                self._vsi_status_widget)
 
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
@@ -110,6 +113,7 @@ class MainWindow(QMainWindow):
         self._temperature_widget.reset()
         self._hardware_flag_counters_widget.reset()
         self._device_time_widget.reset()
+        self._vsi_status_widget.reset()
 
     def on_connection_initialization_progress_report(self,
                                                      stage_description: str,
@@ -150,6 +154,18 @@ class MainWindow(QMainWindow):
 
         # Device time
         self._device_time_widget.set(s.timestamp)
+
+        # VSI status
+        if s.status_flags.vsi_modulating:
+            vsi_status = 'modulating'
+        elif s.status_flags.vsi_enabled:
+            vsi_status = 'armed'
+        else:
+            vsi_status = 'idle'
+
+        self._vsi_status_widget.set(1 / s.pwm.period,
+                                    vsi_status,
+                                    s.status_flags.phase_current_agc_high_gain_selected)
 
     def closeEvent(self, event: QCloseEvent):
         self._on_close()
