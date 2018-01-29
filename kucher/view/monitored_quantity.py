@@ -29,7 +29,7 @@ class MonitoredQuantity:
     def __init__(self,
                  value: typing.Union[int, float],
                  alert: 'typing.Optional[MonitoredQuantity.Alert]'=None):
-        self.value = float(value)
+        self.value = float(value) if value is not None else None
         self.alert = alert or self.Alert.NONE
 
     def __float__(self):

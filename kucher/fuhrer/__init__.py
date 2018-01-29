@@ -12,12 +12,13 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import typing
 import asyncio
 from logging import getLogger
 import model.device_model
-from model.device_model import DeviceModel
+from model.device_model import DeviceModel, DeviceInfoView
 from view.main_window import MainWindow
-import view.device_info
+import view.basic_device_info
 
 
 _logger = getLogger(__name__)
@@ -25,12 +26,15 @@ _logger = getLogger(__name__)
 
 class Fuhrer:
     def __init__(self):
-        self._device_model = DeviceModel(asyncio.get_event_loop())
+        self._device_model: DeviceModel = DeviceModel(asyncio.get_event_loop())
 
         self._main_window = MainWindow(on_close=self._on_main_window_close,
                                        on_connection_request=self._on_connection_request,
                                        on_disconnection_request=self._on_disconnection_request)
         self._main_window.show()
+
+        self._device_model.device_status_update_event.connect(self._main_window.on_general_status_update)
+        self._device_model.connection_status_change_event.connect(self._on_connection_status_change)
 
         self._should_stop = False
 
@@ -38,7 +42,15 @@ class Fuhrer:
         _logger.info('The main window is closing, asking the controller task to stop')
         self._should_stop = True
 
-    async def _on_connection_request(self, port: str) -> view.device_info.BasicDeviceInfo:
+    def _on_connection_status_change(self, device_info_or_error: typing.Union[DeviceInfoView, str, Exception]):
+        if isinstance(device_info_or_error, DeviceInfoView):
+            pass
+        elif isinstance(device_info_or_error, (str, Exception)):
+            self._main_window.on_connection_loss(str(device_info_or_error))
+        else:
+            raise TypeError(f'Invalid argument: {type(device_info_or_error)}')
+
+    async def _on_connection_request(self, port: str) -> view.basic_device_info.BasicDeviceInfo:
         assert not self._device_model.is_connected
 
         def on_progress_report(stage_description: str, progress: float):
@@ -62,11 +74,11 @@ class Fuhrer:
             _logger.info('Controller task is stopping normally')
 
 
-def _make_view_basic_device_info(di: model.device_model.DeviceInfoView) -> view.device_info.BasicDeviceInfo:
+def _make_view_basic_device_info(di: model.device_model.DeviceInfoView) -> view.basic_device_info.BasicDeviceInfo:
     """
     Decouples the model-specific device info representation from the view-specific device info representation.
     """
-    out = view.device_info.BasicDeviceInfo()
+    out = view.basic_device_info.BasicDeviceInfo()
     out.name               = di.name
     out.description        = di.description
     out.globally_unique_id = di.globally_unique_id
