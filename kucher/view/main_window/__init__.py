@@ -17,6 +17,9 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QAct
 from PyQt5.QtGui import QKeySequence, QDesktopServices, QCloseEvent
 from PyQt5.QtCore import QUrl
 from ..utils import get_application_icon, get_icon
+from ..monitored_quantity import MonitoredQuantity
+from data_dir import LOG_DIR
+
 from .connection_management_widget import ConnectionManagementWidget, ConnectionRequestCallback, \
                                           DisconnectionRequestCallback
 from .dc_quantities_widget import DCQuantitiesWidget
@@ -24,8 +27,7 @@ from .temperature_widget import TemperatureWidget
 from .hardware_flag_counters_widget import HardwareFlagCountersWidget
 from .device_time_widget import DeviceTimeWidget
 from .vsi_status_widget import VSIStatusWidget
-from ..monitored_quantity import MonitoredQuantity
-from data_dir import LOG_DIR
+from .active_alerts_widget import ActiveAlertsWidget
 
 # This is an undesirable coupling, but it allows us to avoid excessive code duplication.
 # We keep it this way while the codebase is new and fluid. In the future we may want to come up with an
@@ -57,6 +59,7 @@ class MainWindow(QMainWindow):
         self._hardware_flag_counters_widget = HardwareFlagCountersWidget(self)
         self._device_time_widget = DeviceTimeWidget(self)
         self._vsi_status_widget = VSIStatusWidget(self)
+        self._active_alerts_widget = ActiveAlertsWidget(self)
 
         self._configure_menu()
 
@@ -69,15 +72,22 @@ class MainWindow(QMainWindow):
         def add_row(*widgets):
             inner = QHBoxLayout()
             for w in widgets:
-                inner.addWidget(w)
+                if isinstance(w, tuple):
+                    w, stretch = w
+                else:
+                    w, stretch = w, 0
+
+                inner.addWidget(w, stretch)
+
             main_layout.addLayout(inner)
 
         add_row(self._dc_quantities_widget,
                 self._temperature_widget,
                 self._hardware_flag_counters_widget)
 
-        add_row(self._device_time_widget,
-                self._vsi_status_widget)
+        add_row((self._device_time_widget, 1),
+                (self._vsi_status_widget, 2),
+                (self._active_alerts_widget, 2))
 
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
@@ -114,6 +124,7 @@ class MainWindow(QMainWindow):
         self._hardware_flag_counters_widget.reset()
         self._device_time_widget.reset()
         self._vsi_status_widget.reset()
+        self._active_alerts_widget.reset()
 
     def on_connection_initialization_progress_report(self,
                                                      stage_description: str,
@@ -166,6 +177,9 @@ class MainWindow(QMainWindow):
         self._vsi_status_widget.set(1 / s.pwm.period,
                                     vsi_status,
                                     s.status_flags.phase_current_agc_high_gain_selected)
+
+        # Active alerts
+        self._active_alerts_widget.set(s.alert_flags)
 
     def closeEvent(self, event: QCloseEvent):
         self._on_close()

@@ -25,7 +25,7 @@ from PyQt5 import QtSerialPort
 from ..utils import get_monospace_font, gui_test, time_tracked, make_button, show_error, get_icon
 from ..basic_device_info import BasicDeviceInfo
 from ..widgets import WidgetBase
-from ..widgets.group_box import GroupBoxWidget
+from ..widgets.group_box_widget import GroupBoxWidget
 
 
 _logger = getLogger(__name__)

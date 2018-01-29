@@ -16,7 +16,7 @@ import typing
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QGroupBox
 from ..utils import gui_test, get_icon_path
 from .value_display_widget import ValueDisplayWidget
-from .group_box import GroupBoxWidget
+from .group_box_widget import GroupBoxWidget
 
 
 class ValueDisplayGroupWidget(GroupBoxWidget):
