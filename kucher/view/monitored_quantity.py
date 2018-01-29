@@ -49,7 +49,7 @@ class MonitoredQuantityPresenter:
     class DisplayParameters:
         comment:    str = None
         icon_name:  str = None
-        style:      ValueDisplayWidget = ValueDisplayWidget.Style.NORMAL
+        style:      ValueDisplayWidget.Style = ValueDisplayWidget.Style.NORMAL
 
     def __init__(self,
                  display_target:    ValueDisplayWidget,
