@@ -27,9 +27,9 @@ class MonitoredQuantity:
         TOO_HIGH = enum.auto()
 
     def __init__(self,
-                 value: float,
+                 value: typing.Union[int, float],
                  alert: 'typing.Optional[MonitoredQuantity.Alert]'=None):
-        self.value = value
+        self.value = float(value)
         self.alert = alert or self.Alert.NONE
 
     def __float__(self):
@@ -65,7 +65,10 @@ class MonitoredQuantityPresenter:
             MonitoredQuantity.Alert.TOO_HIGH: params_when_high or self.DisplayParameters(),
         }
 
-    def display(self, quantity: MonitoredQuantity):
+    def display(self, quantity: typing.Union[int, float, MonitoredQuantity]):
+        if not isinstance(quantity, MonitoredQuantity):
+            quantity = MonitoredQuantity(quantity)
+
         # Render the quantity
         if quantity.value is None or math.isnan(quantity.value):
             text = 'N/A'
