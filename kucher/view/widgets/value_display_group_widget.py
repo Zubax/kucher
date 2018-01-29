@@ -14,37 +14,18 @@
 
 import typing
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QGroupBox
-from PyQt5.QtGui import QFontMetrics, QFont
 from ..utils import gui_test, get_icon_path
 from .value_display_widget import ValueDisplayWidget
+from .group_box import GroupBoxWidget
 
 
-class ValueDisplayGroupWidget(QGroupBox):
+class ValueDisplayGroupWidget(GroupBoxWidget):
     def __init__(self,
                  parent:        QWidget,
                  title:         str,
                  icon_name:     typing.Optional[str]=None,
                  with_comments: bool=False):
-        super(ValueDisplayGroupWidget, self).__init__(title, parent)
-
-        if icon_name:
-            icon_size = QFontMetrics(QFont()).height()
-            icon_path = get_icon_path(icon_name)
-
-            # This hack adds a custom icon to the GroupBox: make it checkable, and then, using styling, override
-            # the image of the check box with the custom icon.
-            self.setCheckable(True)     # This is needed to make the icon visible
-            self.setStyleSheet(f'''
-                QGroupBox::indicator {{
-                    width:  {icon_size}px;
-                    height: {icon_size}px;
-                    image: url({icon_path});
-                }}
-            ''')
-
-            # We don't actually want it to be checkable, so override this thing to return it back to normal again
-            # noinspection PyUnresolvedReferences
-            self.toggled.connect(lambda _: self.setChecked(True))
+        super(ValueDisplayGroupWidget, self).__init__(parent, title, icon_name)
 
         self._with_comments = with_comments
         self._inferiors: typing.List[ValueDisplayWidget] = []
