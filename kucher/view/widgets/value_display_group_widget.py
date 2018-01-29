@@ -21,10 +21,10 @@ from .value_display_widget import ValueDisplayWidget
 
 class ValueDisplayGroupWidget(QGroupBox):
     def __init__(self,
-                 parent:            QWidget,
-                 title:             str,
-                 icon_name:         typing.Optional[str]=None,
-                 with_subscripts:   bool=False):
+                 parent:        QWidget,
+                 title:         str,
+                 icon_name:     typing.Optional[str]=None,
+                 with_comments: bool=False):
         super(ValueDisplayGroupWidget, self).__init__(title, parent)
 
         if icon_name:
@@ -42,20 +42,20 @@ class ValueDisplayGroupWidget(QGroupBox):
                 }}
             ''')
 
-        self._with_subscripts = with_subscripts
+        self._with_comments = with_comments
 
         self._inferior_layout = QHBoxLayout()
         self.setLayout(self._inferior_layout)
 
     # noinspection PyArgumentList
-    def add_value_display(self,
-                          title:            str,
-                          placeholder_text: typing.Optional[str]=None,
-                          tooltip:          typing.Optional[str]=None) -> ValueDisplayWidget:
+    def create_value_display(self,
+                             title:            str,
+                             placeholder_text: typing.Optional[str]=None,
+                             tooltip:          typing.Optional[str]=None) -> ValueDisplayWidget:
         inferior = ValueDisplayWidget(self,
                                       title,
                                       placeholder_text=placeholder_text,
-                                      with_subscript=self._with_subscripts,
+                                      with_comment=self._with_comments,
                                       tooltip=tooltip)
         self._inferior_layout.addWidget(inferior, stretch=1)
         return inferior
@@ -70,11 +70,11 @@ def _unittest_value_display_group_widget():
 
     win = QMainWindow()
 
-    midget = ValueDisplayGroupWidget(win, 'Temperature', icon_name='thermometer', with_subscripts=True)
+    midget = ValueDisplayGroupWidget(win, 'Temperature', icon_name='thermometer', with_comments=True)
 
-    cpu = midget.add_value_display('CPU', 'N/A')
-    vsi = midget.add_value_display('VSI', 'N/A')
-    motor = midget.add_value_display('Motor', 'N/A')
+    cpu = midget.create_value_display('CPU', 'N/A')
+    vsi = midget.create_value_display('VSI', 'N/A')
+    motor = midget.create_value_display('Motor', 'N/A')
 
     win.setCentralWidget(midget)
     win.show()
@@ -86,9 +86,9 @@ def _unittest_value_display_group_widget():
 
     run_a_bit()
 
-    cpu.set('12', subscript_text='OK', subscript_icon_name='ok')
-    vsi.set('123', subscript_text='Overheating', subscript_icon_name='fire')
-    motor.set('-123', subscript_text='Cold', subscript_icon_name='cold')
+    cpu.set('12', comment='OK', icon_name='ok')
+    vsi.set('123', comment='Overheating', icon_name='fire')
+    motor.set('-123', comment='Cold', icon_name='cold')
 
     run_a_bit()
 

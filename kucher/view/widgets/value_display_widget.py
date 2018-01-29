@@ -47,7 +47,7 @@ class ValueDisplayWidget(WidgetBase):
                  parent: QWidget,
                  title: str,
                  placeholder_text: typing.Optional[str]=None,
-                 with_subscript: bool=False,
+                 with_comment: bool=False,
                  tooltip: typing.Optional[str]=None):
         super(ValueDisplayWidget, self).__init__(parent)
 
@@ -57,10 +57,10 @@ class ValueDisplayWidget(WidgetBase):
         self._value_display.setAlignment(Qt.AlignCenter)
         self._value_display.setFont(_get_large_font())
 
-        if with_subscript:
-            self._subscript = _Subscript(self)
+        if with_comment:
+            self._comment = _Subscript(self)
         else:
-            self._subscript = None
+            self._comment = None
 
         if tooltip:
             self.setToolTip(tooltip)
@@ -72,8 +72,8 @@ class ValueDisplayWidget(WidgetBase):
         layout.addWidget(title_label)
         layout.addWidget(self._value_display)
 
-        if self._subscript is not None:
-            layout.addWidget(self._subscript)
+        if self._comment is not None:
+            layout.addWidget(self._comment)
 
         layout.addStretch(1)        # Keeping the widget tight and top-aligned
 
@@ -89,24 +89,24 @@ class ValueDisplayWidget(WidgetBase):
     def reset(self):
         # TODO: handle style
         self._value_display.setText(self._placeholder_text)
-        if isinstance(self._subscript, _Subscript):
-            self._subscript.reset()
+        if isinstance(self._comment, _Subscript):
+            self._comment.reset()
 
     def set(self,
-            text: str,
-            style: 'typing.Optional[ValueDisplayWidget.Style]'=None,
-            subscript_text: typing.Optional[str]=None,
-            subscript_icon_name: typing.Optional[str]=None):
+            text:       str,
+            style:     'typing.Optional[ValueDisplayWidget.Style]'=None,
+            comment:    typing.Optional[str]=None,
+            icon_name:  typing.Optional[str]=None):
         # TODO: handle style
         style = style or self.Style.NORMAL
 
         self._value_display.setText(text)
 
-        if isinstance(self._subscript, _Subscript):
-            self._subscript.set_text(subscript_text)
-            self._subscript.set_icon(subscript_icon_name)
-        elif subscript_text or subscript_icon_name:
-            warnings.warn('Attempting to set subscript, but the instance is configured to not use one')
+        if isinstance(self._comment, _Subscript):
+            self._comment.set_text(comment)
+            self._comment.set_icon(icon_name)
+        elif comment or icon_name:
+            warnings.warn('Attempting to set comment, but the instance is configured to not use one')
 
 
 # noinspection PyArgumentList
@@ -123,8 +123,8 @@ def _unittest_value_display_widget_main():
     a = ValueDisplayWidget(container, 'Vladimir', 'N/A', tooltip='This is Vladimir')
     layout.addWidget(a)
 
-    b = ValueDisplayWidget(container, 'Dmitri', with_subscript=True)
-    b.set('123.4 \u00B0C', subscript_text='Init', subscript_icon_name='info')
+    b = ValueDisplayWidget(container, 'Dmitri', with_comment=True)
+    b.set('123.4 \u00B0C', comment='Init', icon_name='info')
     layout.addWidget(b)
 
     container.setLayout(layout)
@@ -137,11 +137,11 @@ def _unittest_value_display_widget_main():
             app.processEvents()
 
     run_a_bit()
-    b.set('12.3 \u00B0C', subscript_text='OK', subscript_icon_name='ok')
+    b.set('12.3 \u00B0C', comment='OK', icon_name='ok')
     run_a_bit()
     b.set('123.4 \u00B0C')
     run_a_bit()
-    b.set('-45.6 \u00B0C', subscript_text='Cold', subscript_icon_name='cold')
+    b.set('-45.6 \u00B0C', comment='Cold', icon_name='cold')
     run_a_bit()
 
     win.close()
