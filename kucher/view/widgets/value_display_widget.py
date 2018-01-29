@@ -46,7 +46,8 @@ class ValueDisplayWidget(WidgetBase):
                  parent: QWidget,
                  title: str,
                  placeholder_text: typing.Optional[str]=None,
-                 with_subscript: bool=False):
+                 with_subscript: bool=False,
+                 tooltip: typing.Optional[str]=None):
         super(ValueDisplayWidget, self).__init__(parent)
 
         self._placeholder_text = str(placeholder_text or '')
@@ -59,6 +60,9 @@ class ValueDisplayWidget(WidgetBase):
             self._subscript = _Subscript(self)
         else:
             self._subscript = None
+
+        if tooltip:
+            self.setToolTip(tooltip)
 
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignCenter)
@@ -114,7 +118,7 @@ def _unittest_value_display_widget_main():
     container = QGroupBox(win)
     layout = QHBoxLayout()
 
-    a = ValueDisplayWidget(container, 'Vladimir', 'N/A')
+    a = ValueDisplayWidget(container, 'Vladimir', 'N/A', tooltip='This is Vladimir')
     layout.addWidget(a)
 
     b = ValueDisplayWidget(container, 'Dmitri', with_subscript=True)
