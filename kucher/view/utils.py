@@ -31,8 +31,13 @@ def get_application_icon() -> QIcon:
 
 
 @functools.lru_cache(None)
+def get_icon_path(name: str) -> str:
+    return get_absolute_path('view', 'icons', f'{name}.png', check_existence=True)
+
+
+@functools.lru_cache(None)
 def get_icon(name: str) -> QIcon:
-    return QIcon(get_absolute_path('view', 'icons', f'{name}.png'))
+    return QIcon(get_icon_path(name))
 
 
 @functools.lru_cache()

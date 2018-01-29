@@ -42,6 +42,7 @@ class ValueDisplayWidget(WidgetBase):
         ALERT_HIGH  = enum.auto()
         ALERT_LOW   = enum.auto()
 
+    # noinspection PyArgumentList
     def __init__(self,
                  parent: QWidget,
                  title: str,
@@ -96,8 +97,8 @@ class ValueDisplayWidget(WidgetBase):
             style: 'typing.Optional[ValueDisplayWidget.Style]'=None,
             subscript_text: typing.Optional[str]=None,
             subscript_icon_name: typing.Optional[str]=None):
-        style = style or self.Style.NORMAL
         # TODO: handle style
+        style = style or self.Style.NORMAL
 
         self._value_display.setText(text)
 
@@ -108,6 +109,7 @@ class ValueDisplayWidget(WidgetBase):
             warnings.warn('Attempting to set subscript, but the instance is configured to not use one')
 
 
+# noinspection PyArgumentList
 @gui_test
 def _unittest_value_display_widget_main():
     import time
@@ -146,6 +148,7 @@ def _unittest_value_display_widget_main():
 
 
 class _Subscript(WidgetBase):
+    # noinspection PyArgumentList
     def __init__(self, parent: QWidget):
         super(_Subscript, self).__init__(parent)
 
@@ -193,6 +196,7 @@ class _Subscript(WidgetBase):
         self._text_label.setText(text or '')
 
 
+# noinspection PyArgumentList
 @gui_test
 def _unittest_value_display_widget_subscript():
     import time
@@ -204,6 +208,7 @@ def _unittest_value_display_widget_subscript():
     layout = QVBoxLayout()
     layout.addStretch(1)
 
+    # noinspection PyArgumentList
     def let_there_be_icon(text, icon_name):
         s = _Subscript(container)
         s.set_text(text)
