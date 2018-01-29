@@ -69,14 +69,12 @@ class MonitoredQuantityPresenter:
         if not isinstance(quantity, MonitoredQuantity):
             quantity = MonitoredQuantity(quantity)
 
-        # Render the quantity
         if quantity.value is None or math.isnan(quantity.value):
             text = 'N/A'
+            params = self.DisplayParameters()
         else:
             text = self._format_string % quantity.value
-
-        # Select the display style
-        params = self._params[quantity.alert]
+            params = self._params[quantity.alert]
 
         # Send over to the widget
         self._display_target.set(text,
