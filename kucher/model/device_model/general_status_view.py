@@ -182,33 +182,19 @@ TASK_ID_MAPPING = {
 
 @_struct_view
 class GeneralStatusView:
-    timestamp:                      Decimal = Decimal(0)
     current_task_id:                TaskID = TaskID.IDLE
-    timestamped_task_results:       typing.Dict[TaskID, TimestampedTaskResult] = \
-        dataclasses.field(default_factory=lambda: {})   # Dicts are ordered starting from Python 3.7 and CPython 3.6
-
+    timestamp:                      Decimal = Decimal(0)
     alert_flags:                    AlertFlags = AlertFlags()
     status_flags:                   StatusFlags = StatusFlags()
-
     temperature:                    Temperature = Temperature()
     dc:                             DCQuantities = DCQuantities()
     pwm:                            PWMState = PWMState()
     hardware_flag_edge_counters:    HardwareFlagEdgeCounters = HardwareFlagEdgeCounters()
-
     task_specific_status_report:    typing.Optional[TaskSpecific.Union] = None
 
     @staticmethod
     def populate(msg: typing.Mapping) -> 'GeneralStatusView':
         task_id, task_specific_type = TASK_ID_MAPPING[msg['current_task_id']]
-
-        timestamped_task_results = {}
-        # FIXME: THE FOLLOWING OPERATION IS NOT TASK ORDER INVARIANT; FORWARD/BACKWARD COMPATIBILITY MAY BE COMPROMISED
-        # noinspection PyTypeChecker
-        for tid, ttr in zip(TaskID, msg['timestamped_task_results']):
-            timestamped_task_results[tid] = TimestampedTaskResult(
-                completed_at=ttr['completed_at'],
-                exit_code=ttr['exit_code'],
-            )
 
         def gf(name, default=None):
             out = msg['status_flags'].get(name, default)
@@ -275,7 +261,6 @@ class GeneralStatusView:
         return GeneralStatusView(
             timestamp=msg['timestamp'],
             current_task_id=task_id,
-            timestamped_task_results=timestamped_task_results,
             alert_flags=alert_flags,
             status_flags=status_flags,
             temperature=temperature,
@@ -286,7 +271,7 @@ class GeneralStatusView:
         )
 
 
-def _unittest_codec_v1():
+def _unittest_general_status_view():
     from pytest import approx
     from decimal import Decimal
 
@@ -326,23 +311,7 @@ def _unittest_codec_v1():
         'temperature':                 {'cpu':   309.573974609375,
                                         'motor': 0.0,
                                         'vsi':   301.93438720703125},
-        'timestamp':                   Decimal('14.924033'),
-        'timestamped_task_results':    [{'completed_at': Decimal('0.000000'),
-                                         'exit_code':    0},
-                                        {'completed_at': Decimal('0.000000'),
-                                         'exit_code':    0},
-                                        {'completed_at': Decimal('4.088411'),
-                                         'exit_code':    0},
-                                        {'completed_at': Decimal('0.000000'),
-                                         'exit_code':    0},
-                                        {'completed_at': Decimal('3.526035'),
-                                         'exit_code':    0},
-                                        {'completed_at': Decimal('0.000000'),
-                                         'exit_code':    0},
-                                        {'completed_at': Decimal('0.000000'),
-                                         'exit_code':    0},
-                                        {'completed_at': Decimal('0.000000'),
-                                         'exit_code':    0}]
+        'timestamp':                   Decimal('14.924033')
     }
 
     gs = GeneralStatusView.populate(sample)
@@ -351,12 +320,3 @@ def _unittest_codec_v1():
     assert gs.timestamp == Decimal('14.924033')
 
     assert gs.temperature.cpu == approx(309.573974609375)
-
-    assert gs.timestamped_task_results[TaskID.BEEPING].completed_at == Decimal('4.088411')
-    assert gs.timestamped_task_results[TaskID.BEEPING].exit_code == 0
-
-    assert gs.timestamped_task_results[TaskID.HARDWARE_TEST].completed_at == Decimal('3.526035')
-    assert gs.timestamped_task_results[TaskID.HARDWARE_TEST].exit_code == 0
-
-    assert gs.timestamped_task_results[TaskID.RUNNING].completed_at == Decimal('0')
-    assert gs.timestamped_task_results[TaskID.RUNNING].exit_code == 0

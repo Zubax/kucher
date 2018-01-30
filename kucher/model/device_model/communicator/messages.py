@@ -24,7 +24,6 @@ from .exceptions import CommunicatorException
 U8  = con.Int8ul
 U16 = con.Int16ul
 U32 = con.Int32ul
-U56 = con.BytesInteger(7, signed=False, swapped=True)
 U64 = con.Int64ul
 F32 = con.Float32l
 
@@ -163,10 +162,10 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
 
 # noinspection PyUnresolvedReferences
 GeneralStatusMessageFormatV1 = con.Struct(
-    'timestamp' / TimeAdapter(U56),
-    'current_task_id' / TaskIDFormat,
-    'timestamped_task_results' / con.Array(8, ('completed_at' / TimeAdapter(U56) + 'exit_code' / U8)),
+    'timestamp' / TimeAdapter(U64),
     'status_flags' / StatusFlagsFormat,
+    'current_task_id' / TaskIDFormat,
+    con.Padding(3),
     'temperature' / con.Struct(
         'cpu'   / F32,
         'vsi'   / F32,
@@ -176,7 +175,6 @@ GeneralStatusMessageFormatV1 = con.Struct(
         'voltage' / F32,
         'current' / F32,
     ),
-    con.Padding(4),
     'pwm' / con.Struct(
         'period'        / F32,
         'dead_time'     / F32,
@@ -195,15 +193,14 @@ GeneralStatusMessageFormatV1 = con.Struct(
 def _unittest_general_status_message_v1():
     from binascii import unhexlify
     from pprint import pprint
-    sample_idle = unhexlify('01b9e30000000000000000000000000000000000000000005b623e0000000000000000000000000093cd350000'
-                            '000000000000000000000000000000000000000000000000000000000000000000002f78c99a439af796430000'
-                            '000044866e410000000000000000ae7db23795bfd633f2eb613f00000000000000000000000000')
+    sample_idle = unhexlify('b0ec8b2300000000000000000000002c0000000063be9a4365d89643000000002a59ae4100000000ae7db23795'
+                            'bfd633f2eb613f00000000000000000000000000')
     container = GeneralStatusMessageFormatV1.parse(sample_idle)
     pprint(container)
     assert container.current_task_id == 'idle'
     assert container.task_specific_status_report is None
     assert container['status_flags']['phase_current_agc_high_gain_selected']
-    assert container.status_flags.can_data_link_up
+    assert not container.status_flags.can_data_link_up
     assert sample_idle == GeneralStatusMessageFormatV1.build(container)
 
 
