@@ -40,8 +40,7 @@ def get_icon(name: str) -> QIcon:
     return QIcon(get_icon_path(name))
 
 
-@functools.lru_cache()
-def get_monospace_font() -> QFont:
+def get_monospace_font() -> QFont:  # We can't cache the result because it will become a shared singleton
     preferred = ['Consolas', 'DejaVu Sans Mono', 'Monospace', 'Lucida Console', 'Monaco']
     for name in preferred:
         font = QFont(name)
