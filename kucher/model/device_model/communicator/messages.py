@@ -147,6 +147,7 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
         'demand_factor'                 / F32,
         'electrical_angular_velocity'   / F32,
         'spinup_in_progress'            / con.Flag,
+        con.Padding(3),
     ),
     'hardware_test': con.Struct(
         'progress'                      / F32,
