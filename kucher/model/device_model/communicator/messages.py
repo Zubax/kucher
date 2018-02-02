@@ -249,6 +249,44 @@ def _unittest_device_characteristics_message_v1():
 SetpointMessageFormatV1 = 'value' / F32 + 'mode' / ControlModeFormat + con.Padding(3) + con.Terminated
 
 
+# noinspection PyUnresolvedReferences
+TaskStatisticsEntryFormatV1 = con.Struct(
+    'last_started_at'           / TimeAdapter(U64),
+    'last_stopped_at'           / TimeAdapter(U64),
+    'total_run_time'            / TimeAdapter(U64),
+    'number_of_times_started'   / U64,
+    'number_of_times_failed'    / U64,
+    con.Padding(6),
+    'last_exit_code'            / U8,
+    'task_id'                   / TaskIDFormat,
+)
+
+
+# noinspection PyUnresolvedReferences
+TaskStatisticsMessageFormatV1 = con.Struct(
+    'timestamp' / TimeAdapter(U64),
+    'entries' / TaskStatisticsEntryFormatV1[7:8],
+    con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
+)
+
+
+def _unittest_task_statistics_message_v1():
+    from binascii import unhexlify
+    from pprint import pprint
+    # One task per line below
+    sample = unhexlify(
+        '283fbc0100000000'
+        'ad0a2e0000000000d80a2e00000000003e0000000000000002000000000000000200000000000000000000000000c200'
+        'd80a2e0000000000ad0a2e000000000002699d0100000000030000000000000000000000000000000000000000000001'
+        '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002'
+        '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003'
+        'fd3f00000000000069e71e00000000006ba71e0000000000010000000000000001000000000000000000000000000204'
+        '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005'
+        '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006')
+    container = TaskStatisticsMessageFormatV1.parse(sample)
+    pprint(container)
+
+
 class MessageType(enum.Enum):
     GENERAL_STATUS = enum.auto()
     DEVICE_CHARACTERISTICS = enum.auto()
