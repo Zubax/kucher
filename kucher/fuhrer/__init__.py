@@ -18,7 +18,7 @@ from logging import getLogger
 import model.device_model
 from model.device_model import DeviceModel, DeviceInfoView
 from view.main_window import MainWindow
-import view.basic_device_info
+import view.device_model_representation
 
 
 _logger = getLogger(__name__)
@@ -50,7 +50,7 @@ class Fuhrer:
         else:
             raise TypeError(f'Invalid argument: {type(device_info_or_error)}')
 
-    async def _on_connection_request(self, port: str) -> view.basic_device_info.BasicDeviceInfo:
+    async def _on_connection_request(self, port: str) -> view.device_model_representation.BasicDeviceInfo:
         assert not self._device_model.is_connected
 
         def on_progress_report(stage_description: str, progress: float):
@@ -74,11 +74,11 @@ class Fuhrer:
             _logger.info('Controller task is stopping normally')
 
 
-def _make_view_basic_device_info(di: model.device_model.DeviceInfoView) -> view.basic_device_info.BasicDeviceInfo:
+def _make_view_basic_device_info(di: model.device_model.DeviceInfoView) -> view.device_model_representation.BasicDeviceInfo:
     """
     Decouples the model-specific device info representation from the view-specific device info representation.
     """
-    out = view.basic_device_info.BasicDeviceInfo()
+    out = view.device_model_representation.BasicDeviceInfo()
     out.name               = di.name
     out.description        = di.description
     out.globally_unique_id = di.globally_unique_id

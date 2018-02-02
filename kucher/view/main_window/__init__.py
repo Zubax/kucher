@@ -18,6 +18,7 @@ from PyQt5.QtGui import QKeySequence, QDesktopServices, QCloseEvent
 from PyQt5.QtCore import QUrl
 from ..utils import get_application_icon, get_icon
 from ..monitored_quantity import MonitoredQuantity
+from ..device_model_representation import GeneralStatusView, TaskStatisticsView
 from data_dir import LOG_DIR
 
 from .connection_management_widget import ConnectionManagementWidget, ConnectionRequestCallback, \
@@ -28,11 +29,6 @@ from .hardware_flag_counters_widget import HardwareFlagCountersWidget
 from .device_time_widget import DeviceTimeWidget
 from .vsi_status_widget import VSIStatusWidget
 from .active_alerts_widget import ActiveAlertsWidget
-
-# This is an undesirable coupling, but it allows us to avoid excessive code duplication.
-# We keep it this way while the codebase is new and fluid. In the future we may want to come up with an
-# independent state representation in View, and add a converter into Fuhrer.
-from model.device_model import GeneralStatusView
 
 
 class MainWindow(QMainWindow):

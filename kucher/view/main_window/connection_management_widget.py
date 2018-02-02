@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5 import QtSerialPort
 from ..utils import get_monospace_font, gui_test, time_tracked, make_button, show_error, get_icon
-from ..basic_device_info import BasicDeviceInfo
+from ..device_model_representation import BasicDeviceInfo
 from ..widgets import WidgetBase
 from ..widgets.group_box_widget import GroupBoxWidget
 
