@@ -12,7 +12,6 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import enum
 import popcop
 import typing
 import asyncio
@@ -99,6 +98,24 @@ class Connection:
         except CommunicationChannelClosedException as ex:
             raise ConnectionNotEstablishedException('Could not send the message because the communication channel is '
                                                     'closed') from ex
+
+    async def request(self,
+                      message_or_type: typing.Union[Message,
+                                                    MessageType,
+                                                    popcop.standard.MessageBase,
+                                                    typing.Type[popcop.standard.MessageBase]],
+                      timeout: typing.Optional[typing.Union[float, int]]=None,
+                      predicate: typing.Optional[typing.Callable[[typing.Union[Message,
+                                                                               popcop.standard.MessageBase]],
+                                                                 bool]]=None) ->\
+            typing.Union[Message, popcop.standard.MessageBase]:
+        try:
+            return await self._com.request(message_or_type,
+                                           timeout=timeout,
+                                           predicate=predicate)
+        except CommunicationChannelClosedException as ex:
+            raise ConnectionNotEstablishedException('Could not complete the request because the communication channel '
+                                                    'is closed') from ex
 
     async def _handle_connection_loss(self, reason: typing.Union[str, Exception]):
         # noinspection PyBroadException

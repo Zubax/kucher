@@ -21,6 +21,7 @@ from .communicator import MessageType, Message
 from .connection import connect, Connection, ConnectionNotEstablishedException
 from .device_info_view import DeviceInfoView
 from .general_status_view import GeneralStatusView
+from .task_statistics_view import TaskStatisticsView
 
 DEFAULT_GENERAL_STATUS_UPDATE_PERIOD = 0.5
 
@@ -29,6 +30,10 @@ _logger = getLogger(__name__)
 
 
 class DeviceModelException(Exception):
+    pass
+
+
+class RequestTimedOutException(DeviceModelException):
     pass
 
 
@@ -155,6 +160,14 @@ class DeviceModel:
             'mode': converted_mode
         }))
 
+    async def get_task_statistics(self) -> TaskStatisticsView:
+        self._ensure_connected()
+        out = await self._conn.request(MessageType.TASK_STATISTICS)
+        if out is not None:
+            return TaskStatisticsView.populate(out.fields)
+        else:
+            raise RequestTimedOutException('Task statistics request has timed out')
+
     async def stop(self):
         await self.set_setpoint(0, ControlMode.CURRENT)
 
@@ -217,7 +230,13 @@ def _unittest_device_model_connection():
         assert num_status_reports == 1
         assert num_connection_change_notifications == 1
 
+        print('Task statistics:')
+        print(await dm.get_task_statistics())
+
         await dm.disconnect()
+
+        with pytest.raises(ConnectionNotEstablishedException):
+            await dm.get_task_statistics()
 
         assert not dm.is_connected
         assert num_status_reports == 1

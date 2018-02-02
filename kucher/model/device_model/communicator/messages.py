@@ -291,6 +291,7 @@ class MessageType(enum.Enum):
     GENERAL_STATUS = enum.auto()
     DEVICE_CHARACTERISTICS = enum.auto()
     SETPOINT = enum.auto()
+    TASK_STATISTICS = enum.auto()
 
 
 class MessagingException(CommunicatorException):
@@ -388,6 +389,7 @@ class Codec:
             MessageType.GENERAL_STATUS:         (0, GeneralStatusMessageFormatV1),
             MessageType.DEVICE_CHARACTERISTICS: (1, DeviceCharacteristicsMessageFormatV1),
             MessageType.SETPOINT:               (2, SetpointMessageFormatV1),
+            MessageType.TASK_STATISTICS:        (3, TaskStatisticsMessageFormatV1),
         }
 
     def decode(self, frame: popcop.transport.ReceivedFrame) -> Message:
