@@ -150,6 +150,9 @@ class _TableView(QTableView):
         model.headerDataChanged.connect(self._update_header_settings)
         model.layoutChanged.connect(self._update_header_settings)
 
+        self.setSortingEnabled(False)
+        self.setSelectionMode(self.NoSelection)
+
     def _update_header_settings(self, *_):
         hh: QHeaderView = self.horizontalHeader()
         for si in range(self.model().columnCount()):
