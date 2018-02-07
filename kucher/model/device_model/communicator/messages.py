@@ -115,7 +115,7 @@ TaskIDFormat = con.Enum(
     running=3,
     hardware_test=4,
     motor_identification=5,
-    manual_control=6,
+    low_level_manipulation=6,
 )
 
 
@@ -154,7 +154,7 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
     'motor_identification': con.Struct(
         'progress'                      / F32,
     ),
-    'manual_control': con.Struct(
+    'low_level_manipulation': con.Struct(
         'sub_task_id'                   / U8,
     ),
 }, default=con.Padding(1))

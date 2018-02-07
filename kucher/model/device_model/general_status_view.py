@@ -29,7 +29,7 @@ class TaskID(enum.Enum):
     RUNNING                 = enum.auto()
     HARDWARE_TEST           = enum.auto()
     MOTOR_IDENTIFICATION    = enum.auto()
-    MANUAL_CONTROL          = enum.auto()
+    LOW_LEVEL_MANIPULATION  = enum.auto()
 
 
 @_struct_view
@@ -170,13 +170,13 @@ class TaskSpecific:
 
 
 TASK_ID_MAPPING = {
-    'idle':                 (TaskID.IDLE,                   None),
-    'fault':                (TaskID.FAULT,                  TaskSpecific.Fault),
-    'beeping':              (TaskID.BEEPING,                None),
-    'running':              (TaskID.RUNNING,                TaskSpecific.Running),
-    'hardware_test':        (TaskID.HARDWARE_TEST,          TaskSpecific.HardwareTest),
-    'motor_identification': (TaskID.MOTOR_IDENTIFICATION,   TaskSpecific.MotorIdentification),
-    'manual_control':       (TaskID.MANUAL_CONTROL,         TaskSpecific.ManualControl),
+    'idle':                   (TaskID.IDLE,                   None),
+    'fault':                  (TaskID.FAULT,                  TaskSpecific.Fault),
+    'beeping':                (TaskID.BEEPING,                None),
+    'running':                (TaskID.RUNNING,                TaskSpecific.Running),
+    'hardware_test':          (TaskID.HARDWARE_TEST,          TaskSpecific.HardwareTest),
+    'motor_identification':   (TaskID.MOTOR_IDENTIFICATION,   TaskSpecific.MotorIdentification),
+    'low_level_manipulation': (TaskID.LOW_LEVEL_MANIPULATION, TaskSpecific.ManualControl),
 }
 
 

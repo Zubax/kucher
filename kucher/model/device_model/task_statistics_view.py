@@ -110,7 +110,7 @@ def _unittest_task_statistics_view():
              'last_stopped_at':         Decimal('0.000000'),
              'number_of_times_failed':  0,
              'number_of_times_started': 0,
-             'task_id':                 'manual_control',
+             'task_id':                 'low_level_manipulation',
              'total_run_time':          Decimal('0.000000')}],
         'timestamp': Decimal('29.114152')
     }
