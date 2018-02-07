@@ -147,22 +147,13 @@ class _TableView(QTableView):
         super(_TableView, self).__init__(parent)
         self.setModel(model)
 
-        model.headerDataChanged.connect(self._update_header_settings)
-        model.layoutChanged.connect(self._update_header_settings)
+        self.horizontalHeader().setSectionResizeMode(self.horizontalHeader().ResizeToContents)
+        self.horizontalHeader().setStretchLastSection(True)
+
+        self.verticalHeader().setSectionResizeMode(self.verticalHeader().Stretch)
 
         self.setSortingEnabled(False)
         self.setSelectionMode(self.NoSelection)
-
-    def _update_header_settings(self, *_):
-        hh: QHeaderView = self.horizontalHeader()
-        for si in range(self.model().columnCount()):
-            hh.setSectionResizeMode(si, hh.ResizeToContents)
-
-        hh.setStretchLastSection(True)
-
-        vh: QHeaderView = self.verticalHeader()
-        for si in range(self.model().rowCount()):
-            vh.setSectionResizeMode(si, vh.Stretch)
 
 
 # noinspection PyMethodOverriding
