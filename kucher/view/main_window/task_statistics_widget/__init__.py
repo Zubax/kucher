@@ -169,6 +169,7 @@ class _TableView(QTableView):
 
         self.setSortingEnabled(False)
         self.setSelectionMode(self.NoSelection)
+        self.setAlternatingRowColors(True)
 
 
 # noinspection PyMethodOverriding

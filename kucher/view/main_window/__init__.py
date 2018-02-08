@@ -26,6 +26,7 @@ from .connection_management_widget import ConnectionManagementWidget, Connection
                                           DisconnectionRequestCallback
 from .main_dashboard_widget import MainDashboardWidget
 from .task_statistics_widget import TaskStatisticsWidget
+from .log_widget import LogWidget
 
 
 TaskStatisticsRequestCallback = typing.Callable[[], typing.Awaitable[typing.Optional[TaskStatisticsView]]]
@@ -67,6 +68,22 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
 
+    def on_connection_loss(self, reason: str):
+        self._connection_management_widget.on_connection_loss(reason)
+        self._main_dashboard_widget.on_connection_loss()
+
+    def on_connection_initialization_progress_report(self,
+                                                     stage_description: str,
+                                                     progress: float):
+        self._connection_management_widget.on_connection_initialization_progress_report(stage_description, progress)
+
+    def on_general_status_update(self, timestamp: float, status: GeneralStatusView):
+        self._main_dashboard_widget.on_general_status_update(timestamp, status)
+
+    def on_log_line_reception(self, monotonic_timestamp: float, text: str):
+        for w in self._tool_window_manager.select_widgets(LogWidget):
+            w.append_lines([text])
+
     def _configure_tool_windows(self,
                                 on_task_statistics_request: TaskStatisticsRequestCallback):
         def make_task_stats():
@@ -78,6 +95,17 @@ class MainWindow(QMainWindow):
                                            make_task_stats,
                                            Qt.BottomDockWidgetArea,
                                            'spreadsheet',
+                                           shown_by_default=True)
+
+        def make_log():
+            tw = ToolWindow(self)
+            tw.widget = LogWidget(tw)
+            return tw
+
+        self._tool_window_manager.register('Device log',
+                                           make_log,
+                                           Qt.BottomDockWidgetArea,
+                                           'log',
                                            shown_by_default=True)
 
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
@@ -106,18 +134,6 @@ class MainWindow(QMainWindow):
         help_menu.addAction(knowledge_base_action)
         help_menu.addAction(show_log_directory_action)
         # help_menu.addAction(about_action)                 # TODO: Implement this
-
-    def on_connection_loss(self, reason: str):
-        self._connection_management_widget.on_connection_loss(reason)
-        self._main_dashboard_widget.on_connection_loss()
-
-    def on_connection_initialization_progress_report(self,
-                                                     stage_description: str,
-                                                     progress: float):
-        self._connection_management_widget.on_connection_initialization_progress_report(stage_description, progress)
-
-    def on_general_status_update(self, timestamp: float, status: GeneralStatusView):
-        self._main_dashboard_widget.on_general_status_update(timestamp, status)
 
     def closeEvent(self, event: QCloseEvent):
         self._on_close()

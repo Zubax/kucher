@@ -38,6 +38,7 @@ class Fuhrer:
 
         self._device_model.device_status_update_event.connect(self._main_window.on_general_status_update)
         self._device_model.connection_status_change_event.connect(self._on_connection_status_change)
+        self._device_model.log_line_reception_event.connect(self._main_window.on_log_line_reception)
 
         self._should_stop = False
 
