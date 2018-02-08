@@ -14,9 +14,10 @@
 
 import typing
 import asyncio
+import functools
 from logging import getLogger
 import model.device_model
-from model.device_model import DeviceModel, DeviceInfoView
+from model.device_model import DeviceModel, DeviceInfoView, ConnectionNotEstablishedException
 from view.main_window import MainWindow
 import view.device_model_representation
 
@@ -30,7 +31,9 @@ class Fuhrer:
 
         self._main_window = MainWindow(on_close=self._on_main_window_close,
                                        on_connection_request=self._on_connection_request,
-                                       on_disconnection_request=self._on_disconnection_request)
+                                       on_disconnection_request=self._on_disconnection_request,
+                                       on_task_statistics_request=_return_none_if_not_connected(
+                                           self._device_model.get_task_statistics))
         self._main_window.show()
 
         self._device_model.device_status_update_event.connect(self._main_window.on_general_status_update)
@@ -74,7 +77,19 @@ class Fuhrer:
             _logger.info('Controller task is stopping normally')
 
 
-def _make_view_basic_device_info(di: model.device_model.DeviceInfoView) -> view.device_model_representation.BasicDeviceInfo:
+def _return_none_if_not_connected(target: typing.Callable):
+    @functools.wraps(target)
+    async def decorator(*args, **kwargs):
+        try:
+            return await target(*args, **kwargs)
+        except ConnectionNotEstablishedException:
+            return None
+
+    return decorator
+
+
+def _make_view_basic_device_info(di: model.device_model.DeviceInfoView) ->\
+        view.device_model_representation.BasicDeviceInfo:
     """
     Decouples the model-specific device info representation from the view-specific device info representation.
     """

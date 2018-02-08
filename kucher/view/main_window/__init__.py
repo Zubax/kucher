@@ -15,10 +15,11 @@
 import typing
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QAction
 from PyQt5.QtGui import QKeySequence, QDesktopServices, QCloseEvent
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import Qt, QUrl
 from ..utils import get_application_icon, get_icon
 from ..monitored_quantity import MonitoredQuantity
 from ..device_model_representation import GeneralStatusView, TaskStatisticsView
+from ..widgets.dockable_container_widget import DockableContainerWidget
 from data_dir import LOG_DIR
 
 from .connection_management_widget import ConnectionManagementWidget, ConnectionRequestCallback, \
@@ -29,6 +30,10 @@ from .hardware_flag_counters_widget import HardwareFlagCountersWidget
 from .device_time_widget import DeviceTimeWidget
 from .vsi_status_widget import VSIStatusWidget
 from .active_alerts_widget import ActiveAlertsWidget
+from .task_statistics_widget import TaskStatisticsWidget
+
+
+TaskStatisticsRequestCallback = typing.Callable[[], typing.Awaitable[typing.Optional[TaskStatisticsView]]]
 
 
 class MainWindow(QMainWindow):
@@ -36,7 +41,8 @@ class MainWindow(QMainWindow):
     def __init__(self,
                  on_close: typing.Callable[[], None],
                  on_connection_request: ConnectionRequestCallback,
-                 on_disconnection_request: DisconnectionRequestCallback):
+                 on_disconnection_request: DisconnectionRequestCallback,
+                 on_task_statistics_request: TaskStatisticsRequestCallback):
         super(MainWindow, self).__init__()
         self.setWindowTitle('Zubax Kucher')
         self.setWindowIcon(get_application_icon())
@@ -57,6 +63,8 @@ class MainWindow(QMainWindow):
         self._vsi_status_widget = VSIStatusWidget(self)
         self._active_alerts_widget = ActiveAlertsWidget(self)
 
+        self._configure_docks(on_task_statistics_request)
+
         self._configure_menu()
 
         # Layout
@@ -65,6 +73,7 @@ class MainWindow(QMainWindow):
         main_layout = QVBoxLayout()
         main_layout.addWidget(self._connection_management_widget)
 
+        # noinspection PyArgumentList
         def add_row(*widgets):
             inner = QHBoxLayout()
             for w in widgets:
@@ -83,10 +92,16 @@ class MainWindow(QMainWindow):
 
         add_row((self._device_time_widget, 1),
                 (self._vsi_status_widget, 2),
-                (self._active_alerts_widget, 2))
+                (self._active_alerts_widget, 3))
 
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
+
+    def _configure_docks(self,
+                         on_task_statistics_request: TaskStatisticsRequestCallback):
+        task_stats_dock = DockableContainerWidget(self, 'Task statistics')
+        task_stats_dock.widget = TaskStatisticsWidget(task_stats_dock, on_task_statistics_request)
+        self.addDockWidget(Qt.RightDockWidgetArea, task_stats_dock)
 
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
     def _configure_menu(self):

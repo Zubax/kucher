@@ -35,7 +35,7 @@ LOG_DIR = os.path.join(USER_SPECIFIC_DATA_DIR, 'log')
 
 _MAX_AGE_OF_LOG_FILE_IN_DAYS = 30
 _MIN_USEFUL_LOG_FILE_SIZE = 1
-_MAX_LOG_FILES_TO_KEEP = 50
+_MAX_LOG_FILES_TO_KEEP = 30
 
 
 def _create_directory(*path_items):

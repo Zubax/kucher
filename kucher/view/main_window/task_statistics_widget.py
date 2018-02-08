@@ -18,9 +18,10 @@ import datetime
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QTableView, QHeaderView, QSpinBox, QCheckBox, QLabel, QVBoxLayout, QHBoxLayout
 from PyQt5.QtCore import QTimer, Qt, QAbstractTableModel, QModelIndex, QVariant
+from PyQt5.QtGui import QFontMetrics, QFont
 from ..widgets import WidgetBase
-from ..utils import gui_test
-from ..device_model_representation import TaskStatisticsView
+from ..utils import gui_test, get_icon
+from ..device_model_representation import TaskStatisticsView, TaskID
 
 
 _DEFAULT_UPDATE_PERIOD = 2
@@ -33,7 +34,11 @@ class TaskStatisticsWidget(WidgetBase):
     # noinspection PyUnresolvedReferences,PyArgumentList
     def __init__(self,
                  parent: QWidget,
-                 async_update_delegate: typing.Callable[[], typing.Awaitable[TaskStatisticsView]]):
+                 async_update_delegate: typing.Callable[[], typing.Awaitable[typing.Optional[TaskStatisticsView]]]):
+        """
+        :param parent:
+        :param async_update_delegate: Returns TaskStatisticsView if connected, None otherwise
+        """
         super(TaskStatisticsWidget, self).__init__(parent)
         self.setAttribute(Qt.WA_DeleteOnClose)                  # This is required to stop background timers!
 
@@ -66,17 +71,16 @@ class TaskStatisticsWidget(WidgetBase):
                 self._display_status()      # Clear status
                 self._model.clear()         # Remove obsolete data from the model (this will trigger view update later)
                 launch_update_task()        # Request update ASAP
-                self._table_view.setEnabled(True)
                 self._update_interval_selector.setEnabled(True)
                 self._update_timer.start(self._update_interval_selector.value() * 1000)
             else:
                 self._display_status('Disabled')
                 self._table_view.setEnabled(False)
-                self._update_interval_selector.setEnabled(True)
+                self._update_interval_selector.setEnabled(False)
                 self._update_timer.stop()
 
         self._update_enabler = QCheckBox('Update every', self)
-        self._update_enabler.setChecked(True)
+        self._update_enabler.setChecked(False)
         self._update_enabler.stateChanged.connect(on_update_enabler_toggled)
 
         self._status_display = QLabel(self)
@@ -100,6 +104,8 @@ class TaskStatisticsWidget(WidgetBase):
         layout.addWidget(self._table_view, 1)
         self.setLayout(layout)
 
+        self.setMinimumWidth(400)
+
     def _display_status(self, text=None):
         self._status_display.setText(text)
 
@@ -108,12 +114,16 @@ class TaskStatisticsWidget(WidgetBase):
         try:
             self._display_status('Updating...')
             data = await self._async_update_delegate()
-            self._model.set_data(data)
+            if data is not None:
+                self._table_view.setEnabled(True)
+                self._model.set_data(data)
+                self._display_status('OK')
+            else:
+                self._table_view.setEnabled(False)
+                self._display_status('Data not available')
         except Exception as ex:
             _logger.exception('Update failed')
             self._display_status(f'Error: {ex}')
-        else:
-            self._display_status('OK')
 
 
 # noinspection PyArgumentList
@@ -150,7 +160,7 @@ class _TableView(QTableView):
         self.setModel(model)
 
         self.horizontalHeader().setSectionResizeMode(self.horizontalHeader().ResizeToContents)
-        self.horizontalHeader().setStretchLastSection(True)
+        # self.horizontalHeader().setStretchLastSection(True)
 
         self.verticalHeader().setSectionResizeMode(self.verticalHeader().Stretch)
 
@@ -163,12 +173,22 @@ class _TableModel(QAbstractTableModel):
     COLUMNS = [
         'Started',
         'Stopped',
-        'Last run time',
-        'Total run time',
+        'Last\nrun time',
+        'Total\nrun time',
         'Invocations',
         'Failures',
-        'Last exit code',
+        'Last\nexit code',
     ]
+
+    TASK_ENUM_TO_ICON_MAPPING = {
+        TaskID.IDLE:                   'sleep',
+        TaskID.FAULT:                  'skull',
+        TaskID.BEEPING:                'speaker',
+        TaskID.RUNNING:                'running',
+        TaskID.HARDWARE_TEST:          'pass-fail',
+        TaskID.MOTOR_IDENTIFICATION:   'caliper',
+        TaskID.LOW_LEVEL_MANIPULATION: 'ok-hand',
+    }
 
     def __init__(self, parent: QWidget):
         super(_TableModel, self).__init__(parent)
@@ -187,14 +207,22 @@ class _TableModel(QAbstractTableModel):
                 return self.COLUMNS[section]
             else:
                 task_enum = list(self._data.entries.keys())[section]
-                return ' '.join(map(str.capitalize, str(task_enum).split('.')[1].split('_')))
+                task_name = ' '.join(map(str.capitalize, str(task_enum).split('.')[1].split('_')))
+                return '\n'.join(task_name.rsplit(' ', 1))
+        if role == Qt.DecorationRole:
+            if orientation == Qt.Vertical:
+                task_enum = list(self._data.entries.keys())[section]
+                try:
+                    icon_name = self.TASK_ENUM_TO_ICON_MAPPING[task_enum]
+                except KeyError:
+                    pass
+                else:
+                    icon_size = QFontMetrics(QFont()).height()
+                    return get_icon(icon_name).pixmap(icon_size, icon_size)
         else:
             return QVariant()
 
     def data(self, index: QModelIndex, role=None):
-        if role != Qt.DisplayRole:
-            return QVariant()
-
         task_enums = list(self._data.entries.keys())
         task_id = task_enums[index.row()]
         entry = self._data.entries[task_id]
@@ -203,31 +231,36 @@ class _TableModel(QAbstractTableModel):
         def duration(secs):
             return datetime.timedelta(seconds=float(secs))
 
-        if column == 0:
-            return str(duration(entry.last_started_at)) if entry.last_started_at > 0 else 'Never'
+        if role == Qt.DisplayRole:
+            if column == 0:
+                return str(duration(entry.last_started_at)) if entry.last_started_at > 0 else 'Never'
 
-        if column == 1:
-            return str(duration(entry.last_stopped_at)) if entry.last_stopped_at > 0 else 'Never'
+            if column == 1:
+                return str(duration(entry.last_stopped_at)) if entry.last_stopped_at > 0 else 'Never'
 
-        if column == 2:
-            if entry.last_stopped_at >= entry.last_started_at:
-                return str(duration(entry.last_stopped_at - entry.last_started_at))
-            else:
-                return 'Running'
+            if column == 2:
+                if entry.last_stopped_at >= entry.last_started_at:
+                    return str(duration(entry.last_stopped_at - entry.last_started_at))
+                else:
+                    return 'Running'
 
-        if column == 3:
-            return str(duration(entry.total_run_time))
+            if column == 3:
+                return str(duration(entry.total_run_time))
 
-        if column == 4:
-            return str(entry.number_of_times_started)
+            if column == 4:
+                return str(entry.number_of_times_started)
 
-        if column == 5:
-            return str(entry.number_of_times_failed)
+            if column == 5:
+                return str(entry.number_of_times_failed)
 
-        if column == 6:
-            return str(entry.last_exit_code)
+            if column == 6:
+                return str(entry.last_exit_code)
 
-        raise ValueError(f'Invalid column index: {column}')
+            raise ValueError(f'Invalid column index: {column}')
+        elif role == Qt.DecorationRole:
+            pass        # Return icons if necessary
+
+        return QVariant()
 
     # noinspection PyUnresolvedReferences
     def set_data(self, view: TaskStatisticsView):
