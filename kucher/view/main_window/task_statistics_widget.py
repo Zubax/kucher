@@ -104,7 +104,10 @@ class TaskStatisticsWidget(WidgetBase):
         layout.addWidget(self._table_view, 1)
         self.setLayout(layout)
 
-        self.setMinimumWidth(400)
+        self.setMinimumSize(400, 350)
+
+    def __del__(self):
+        _logger.debug('Widget deleted')
 
     def _display_status(self, text=None):
         self._status_display.setText(text)
@@ -160,7 +163,7 @@ class _TableView(QTableView):
         self.setModel(model)
 
         self.horizontalHeader().setSectionResizeMode(self.horizontalHeader().ResizeToContents)
-        # self.horizontalHeader().setStretchLastSection(True)
+        self.horizontalHeader().setStretchLastSection(True)
 
         self.verticalHeader().setSectionResizeMode(self.verticalHeader().Stretch)
 
@@ -209,6 +212,7 @@ class _TableModel(QAbstractTableModel):
                 task_enum = list(self._data.entries.keys())[section]
                 task_name = ' '.join(map(str.capitalize, str(task_enum).split('.')[1].split('_')))
                 return '\n'.join(task_name.rsplit(' ', 1))
+
         if role == Qt.DecorationRole:
             if orientation == Qt.Vertical:
                 task_enum = list(self._data.entries.keys())[section]
@@ -219,8 +223,18 @@ class _TableModel(QAbstractTableModel):
                 else:
                     icon_size = QFontMetrics(QFont()).height()
                     return get_icon(icon_name).pixmap(icon_size, icon_size)
-        else:
-            return QVariant()
+
+        if role == Qt.TextAlignmentRole:
+            return Qt.AlignCenter
+
+        if role == Qt.FontRole:
+            if orientation == Qt.Vertical:
+                if list(self._data.entries.keys())[section] == self._get_running_task_id():
+                    font = QFont()
+                    font.setBold(True)
+                    return font
+
+        return QVariant()
 
     def data(self, index: QModelIndex, role=None):
         task_enums = list(self._data.entries.keys())
@@ -229,20 +243,23 @@ class _TableModel(QAbstractTableModel):
         column = index.column()
 
         def duration(secs):
-            return datetime.timedelta(seconds=float(secs))
+            if secs > 0:
+                return datetime.timedelta(seconds=float(secs))
+            else:
+                return ''
 
         if role == Qt.DisplayRole:
             if column == 0:
-                return str(duration(entry.last_started_at)) if entry.last_started_at > 0 else 'Never'
+                return str(duration(entry.last_started_at))
 
             if column == 1:
-                return str(duration(entry.last_stopped_at)) if entry.last_stopped_at > 0 else 'Never'
+                return str(duration(entry.last_stopped_at))
 
             if column == 2:
                 if entry.last_stopped_at >= entry.last_started_at:
                     return str(duration(entry.last_stopped_at - entry.last_started_at))
                 else:
-                    return 'Running'
+                    return str(duration(self._data.timestamp - entry.last_started_at))
 
             if column == 3:
                 return str(duration(entry.total_run_time))
@@ -257,7 +274,11 @@ class _TableModel(QAbstractTableModel):
                 return str(entry.last_exit_code)
 
             raise ValueError(f'Invalid column index: {column}')
-        elif role == Qt.DecorationRole:
+
+        if role == Qt.TextAlignmentRole:
+            return Qt.AlignCenter
+
+        if role == Qt.DecorationRole:
             pass        # Return icons if necessary
 
         return QVariant()
@@ -290,6 +311,11 @@ class _TableModel(QAbstractTableModel):
 
     def clear(self):
         self.set_data(TaskStatisticsView())
+
+    def _get_running_task_id(self) -> typing.Optional[TaskID]:
+        for tid, info in self._data.entries.items():
+            if info.last_started_at > info.last_stopped_at:
+                return tid
 
 
 # noinspection PyArgumentList

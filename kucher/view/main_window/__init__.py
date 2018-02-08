@@ -13,23 +13,17 @@
 #
 
 import typing
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QAction
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QAction
 from PyQt5.QtGui import QKeySequence, QDesktopServices, QCloseEvent
 from PyQt5.QtCore import Qt, QUrl
 from ..utils import get_application_icon, get_icon
-from ..monitored_quantity import MonitoredQuantity
 from ..device_model_representation import GeneralStatusView, TaskStatisticsView
 from ..widgets.dockable_container_widget import DockableContainerWidget
 from data_dir import LOG_DIR
 
 from .connection_management_widget import ConnectionManagementWidget, ConnectionRequestCallback, \
                                           DisconnectionRequestCallback
-from .dc_quantities_widget import DCQuantitiesWidget
-from .temperature_widget import TemperatureWidget
-from .hardware_flag_counters_widget import HardwareFlagCountersWidget
-from .device_time_widget import DeviceTimeWidget
-from .vsi_status_widget import VSIStatusWidget
-from .active_alerts_widget import ActiveAlertsWidget
+from .main_dashboard_widget import MainDashboardWidget
 from .task_statistics_widget import TaskStatisticsWidget
 
 
@@ -55,13 +49,7 @@ class MainWindow(QMainWindow):
             ConnectionManagementWidget(self,
                                        on_connection_request=on_connection_request,
                                        on_disconnection_request=on_disconnection_request)
-
-        self._dc_quantities_widget = DCQuantitiesWidget(self)
-        self._temperature_widget = TemperatureWidget(self)
-        self._hardware_flag_counters_widget = HardwareFlagCountersWidget(self)
-        self._device_time_widget = DeviceTimeWidget(self)
-        self._vsi_status_widget = VSIStatusWidget(self)
-        self._active_alerts_widget = ActiveAlertsWidget(self)
+        self._main_dashboard_widget = MainDashboardWidget(self)
 
         self._configure_docks(on_task_statistics_request)
 
@@ -72,27 +60,7 @@ class MainWindow(QMainWindow):
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self._connection_management_widget)
-
-        # noinspection PyArgumentList
-        def add_row(*widgets):
-            inner = QHBoxLayout()
-            for w in widgets:
-                if isinstance(w, tuple):
-                    w, stretch = w
-                else:
-                    w, stretch = w, 0
-
-                inner.addWidget(w, stretch)
-
-            main_layout.addLayout(inner)
-
-        add_row(self._dc_quantities_widget,
-                self._temperature_widget,
-                self._hardware_flag_counters_widget)
-
-        add_row((self._device_time_widget, 1),
-                (self._vsi_status_widget, 2),
-                (self._active_alerts_widget, 3))
+        main_layout.addWidget(self._main_dashboard_widget)
 
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
@@ -101,7 +69,7 @@ class MainWindow(QMainWindow):
                          on_task_statistics_request: TaskStatisticsRequestCallback):
         task_stats_dock = DockableContainerWidget(self, 'Task statistics')
         task_stats_dock.widget = TaskStatisticsWidget(task_stats_dock, on_task_statistics_request)
-        self.addDockWidget(Qt.RightDockWidgetArea, task_stats_dock)
+        self.addDockWidget(Qt.BottomDockWidgetArea, task_stats_dock)
 
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
     def _configure_menu(self):
@@ -130,82 +98,16 @@ class MainWindow(QMainWindow):
 
     def on_connection_loss(self, reason: str):
         self._connection_management_widget.on_connection_loss(reason)
-        self._dc_quantities_widget.reset()
-        self._temperature_widget.reset()
-        self._hardware_flag_counters_widget.reset()
-        self._device_time_widget.reset()
-        self._vsi_status_widget.reset()
-        self._active_alerts_widget.reset()
+        self._main_dashboard_widget.on_connection_loss()
 
     def on_connection_initialization_progress_report(self,
                                                      stage_description: str,
                                                      progress: float):
         self._connection_management_widget.on_connection_initialization_progress_report(stage_description, progress)
 
-    def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        # DC quantities
-        power = s.dc.voltage * s.dc.current
-        self._dc_quantities_widget.set(_make_monitored_quantity(s.dc.voltage,
-                                                                s.alert_flags.dc_undervoltage,
-                                                                s.alert_flags.dc_overvoltage),
-                                       _make_monitored_quantity(s.dc.current,
-                                                                s.alert_flags.dc_undercurrent,
-                                                                s.alert_flags.dc_overcurrent),
-                                       power)
-        # Temperature
-        k2c = s.temperature.convert_kelvin_to_celsius
-        self._temperature_widget.set(_make_monitored_quantity(k2c(s.temperature.cpu),
-                                                              s.alert_flags.cpu_cold,
-                                                              s.alert_flags.cpu_overheating),
-                                     _make_monitored_quantity(k2c(s.temperature.vsi),
-                                                              s.alert_flags.vsi_cold,
-                                                              s.alert_flags.vsi_overheating),
-                                     _make_monitored_quantity(k2c(s.temperature.motor) if s.temperature.motor else None,
-                                                              s.alert_flags.motor_cold,
-                                                              s.alert_flags.motor_overheating))
-        # Hardware flags
-        hfc_fs = HardwareFlagCountersWidget.FlagState
-        # noinspection PyArgumentList
-        self._hardware_flag_counters_widget.set(
-            lvps_malfunction=hfc_fs(event_count=s.hardware_flag_edge_counters.lvps_malfunction,
-                                    active=s.alert_flags.hardware_lvps_malfunction),
-            overload=hfc_fs(event_count=s.hardware_flag_edge_counters.overload,
-                            active=s.alert_flags.hardware_overload),
-            fault=hfc_fs(event_count=s.hardware_flag_edge_counters.fault,
-                         active=s.alert_flags.hardware_fault))
-
-        # Device time
-        self._device_time_widget.set(s.timestamp)
-
-        # VSI status
-        if s.status_flags.vsi_modulating:
-            vsi_status = 'modulating'
-        elif s.status_flags.vsi_enabled:
-            vsi_status = 'armed'
-        else:
-            vsi_status = 'idle'
-
-        self._vsi_status_widget.set(1 / s.pwm.period,
-                                    vsi_status,
-                                    s.status_flags.phase_current_agc_high_gain_selected)
-
-        # Active alerts
-        self._active_alerts_widget.set(s.alert_flags)
+    def on_general_status_update(self, timestamp: float, status: GeneralStatusView):
+        self._main_dashboard_widget.on_general_status_update(timestamp, status)
 
     def closeEvent(self, event: QCloseEvent):
         self._on_close()
         event.ignore()
-
-
-def _make_monitored_quantity(value: float,
-                             too_low: bool=False,
-                             too_high: bool=False) -> MonitoredQuantity:
-    mq = MonitoredQuantity(value)
-
-    if too_low:
-        mq.alert = mq.Alert.TOO_LOW
-
-    if too_high:
-        mq.alert = mq.Alert.TOO_HIGH
-
-    return mq

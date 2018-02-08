@@ -14,7 +14,7 @@
 
 from dataclasses import dataclass
 from PyQt5.QtWidgets import QWidget
-from ..widgets.value_display_group_widget import ValueDisplayGroupWidget, ValueDisplayWidget
+from view.widgets.value_display_group_widget import ValueDisplayGroupWidget, ValueDisplayWidget
 
 
 class HardwareFlagCountersWidget(ValueDisplayGroupWidget):

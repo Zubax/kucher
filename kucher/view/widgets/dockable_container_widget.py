@@ -13,8 +13,13 @@
 #
 
 import typing
+from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QDockWidget
+from PyQt5.QtCore import Qt
 from ..utils import get_icon_path
+
+
+_logger = getLogger(__name__)
 
 
 class DockableContainerWidget(QDockWidget):
@@ -23,9 +28,13 @@ class DockableContainerWidget(QDockWidget):
                  title:             str,
                  icon_name:         typing.Optional[str]=None):
         super(QDockWidget, self).__init__(title, parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)                  # This is required to stop background timers!
 
         if icon_name:
             self.set_icon(icon_name)
+
+    def __del__(self):
+        _logger.debug('Deleting %r', self)
 
     def set_icon(self, icon_name: str):
         raise NotImplementedError

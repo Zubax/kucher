@@ -44,6 +44,8 @@ logging.basicConfig(stream=sys.stderr,
                     level=LOGGING_LEVEL,
                     format='%(asctime)s pid=%(process)-5d %(levelname)s: %(name)s: %(message)s')
 
+logging.getLogger('quamash').setLevel(logging.INFO)
+
 _logger = logging.getLogger(__name__.replace('__', ''))
 
 #

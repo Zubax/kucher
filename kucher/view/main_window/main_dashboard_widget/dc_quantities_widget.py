@@ -13,9 +13,9 @@
 #
 
 from PyQt5.QtWidgets import QWidget
-from ..utils import gui_test
-from ..monitored_quantity import MonitoredQuantity, MonitoredQuantityPresenter
-from ..widgets.value_display_group_widget import ValueDisplayGroupWidget, ValueDisplayWidget
+from view.utils import gui_test
+from view.monitored_quantity import MonitoredQuantity, MonitoredQuantityPresenter
+from view.widgets.value_display_group_widget import ValueDisplayGroupWidget, ValueDisplayWidget
 
 
 class DCQuantitiesWidget(ValueDisplayGroupWidget):

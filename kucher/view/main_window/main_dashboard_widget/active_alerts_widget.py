@@ -14,8 +14,8 @@
 
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
-from ..widgets.group_box_widget import GroupBoxWidget
-from ..utils import get_monospace_font, gui_test
+from view.widgets.group_box_widget import GroupBoxWidget
+from view.utils import get_monospace_font, gui_test
 
 
 _ICON_OK = 'ok-strong'
