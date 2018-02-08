@@ -34,10 +34,10 @@ class DCQuantitiesWidget(ValueDisplayGroupWidget):
                                                    params_default=dp(comment='OK',
                                                                      icon_name='ok'),
                                                    params_when_low=dp(comment='Undervoltage',
-                                                                      icon_name='undervoltage',
+                                                                      icon_name='overload-negative',
                                                                       style=style.ALERT_LOW),
                                                    params_when_high=dp(comment='Overvoltage',
-                                                                       icon_name='overvoltage',
+                                                                       icon_name='overload',
                                                                        style=style.ALERT_HIGH))
 
         self._current = MonitoredQuantityPresenter(self.create_value_display('Current', placeholder),
