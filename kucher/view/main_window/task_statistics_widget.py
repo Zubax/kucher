@@ -30,6 +30,7 @@ _logger = getLogger(__name__)
 
 
 class TaskStatisticsWidget(WidgetBase):
+    # noinspection PyUnresolvedReferences,PyArgumentList
     def __init__(self,
                  parent: QWidget,
                  async_update_delegate: typing.Callable[[], typing.Awaitable[TaskStatisticsView]]):
@@ -115,6 +116,7 @@ class TaskStatisticsWidget(WidgetBase):
             self._display_status('OK')
 
 
+# noinspection PyArgumentList
 @gui_test
 def _unittest_task_statistics_widget():
     from PyQt5.QtWidgets import QApplication, QMainWindow
@@ -227,6 +229,7 @@ class _TableModel(QAbstractTableModel):
 
         raise ValueError(f'Invalid column index: {column}')
 
+    # noinspection PyUnresolvedReferences
     def set_data(self, view: TaskStatisticsView):
         # Note that we never update the list of columns, so the horizontal header doesn't ever need to be updated
         number_of_columns_changed = False
@@ -256,6 +259,7 @@ class _TableModel(QAbstractTableModel):
         self.set_data(TaskStatisticsView())
 
 
+# noinspection PyArgumentList
 @gui_test
 def _unittest_task_statistics_table_model():
     import time
