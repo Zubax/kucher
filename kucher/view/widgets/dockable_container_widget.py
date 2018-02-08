@@ -17,6 +17,7 @@ from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QDockWidget
 from PyQt5.QtCore import Qt
 from ..utils import get_icon_path
+from utils import Event
 
 
 _logger = getLogger(__name__)
@@ -33,8 +34,20 @@ class DockableContainerWidget(QDockWidget):
         if icon_name:
             self.set_icon(icon_name)
 
+        self._close_event = Event()
+
     def __del__(self):
         _logger.debug('Deleting %r', self)
+
+    # noinspection PyCallingNonCallable
+    def closeEvent(self, *_):
+        _logger.debug('Close event at %r', self)
+        self._close_event()
+
+    @property
+    def close_event(self):
+        """No arguments are passed, nothing is expected back."""
+        return self._close_event
 
     def set_icon(self, icon_name: str):
         raise NotImplementedError

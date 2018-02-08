@@ -19,9 +19,9 @@ from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QTableView, QHeaderView, QSpinBox, QCheckBox, QLabel, QVBoxLayout, QHBoxLayout
 from PyQt5.QtCore import QTimer, Qt, QAbstractTableModel, QModelIndex, QVariant
 from PyQt5.QtGui import QFontMetrics, QFont
-from ..widgets import WidgetBase
-from ..utils import gui_test, get_icon
-from ..device_model_representation import TaskStatisticsView, TaskID
+from view.widgets import WidgetBase
+from view.utils import gui_test, get_icon
+from view.device_model_representation import TaskStatisticsView, TaskID
 
 
 _DEFAULT_UPDATE_PERIOD = 2
