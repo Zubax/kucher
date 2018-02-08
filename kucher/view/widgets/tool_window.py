@@ -23,13 +23,17 @@ from utils import Event
 _logger = getLogger(__name__)
 
 
-class DockableContainerWidget(QDockWidget):
+class ToolWindow(QDockWidget):
+    # noinspection PyArgumentList
     def __init__(self,
                  parent:            QWidget,
-                 title:             str,
+                 title:             typing.Optional[str]=None,
                  icon_name:         typing.Optional[str]=None):
-        super(QDockWidget, self).__init__(title, parent)
+        super(QDockWidget, self).__init__(parent)
         self.setAttribute(Qt.WA_DeleteOnClose)                  # This is required to stop background timers!
+
+        if title:
+            self.setWindowTitle(title)
 
         if icon_name:
             self.set_icon(icon_name)
@@ -50,11 +54,11 @@ class DockableContainerWidget(QDockWidget):
         return self._close_event
 
     def set_icon(self, icon_name: str):
-        raise NotImplementedError
+        pass        # TODO: Icons?
 
     @property
     def widget(self) -> QWidget:
-        return super(DockableContainerWidget, self).widget()
+        return super(ToolWindow, self).widget()
 
     # noinspection PyMethodOverriding
     @widget.setter

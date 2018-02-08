@@ -18,7 +18,8 @@ from PyQt5.QtGui import QKeySequence, QDesktopServices, QCloseEvent
 from PyQt5.QtCore import Qt, QUrl
 from ..utils import get_application_icon, get_icon
 from ..device_model_representation import GeneralStatusView, TaskStatisticsView
-from ..widgets.dockable_container_widget import DockableContainerWidget
+from ..widgets.tool_window import ToolWindow
+from ..tool_window_manager import ToolWindowManager
 from data_dir import LOG_DIR
 
 from .connection_management_widget import ConnectionManagementWidget, ConnectionRequestCallback, \
@@ -44,6 +45,7 @@ class MainWindow(QMainWindow):
         self.statusBar().show()
 
         self._on_close = on_close
+        self._tool_window_manager = ToolWindowManager(self)
 
         self._connection_management_widget = \
             ConnectionManagementWidget(self,
@@ -51,9 +53,9 @@ class MainWindow(QMainWindow):
                                        on_disconnection_request=on_disconnection_request)
         self._main_dashboard_widget = MainDashboardWidget(self)
 
-        self._configure_docks(on_task_statistics_request)
-
-        self._configure_menu()
+        self._configure_file_menu()
+        self._configure_tool_windows(on_task_statistics_request)
+        self._configure_help_menu()
 
         # Layout
         central_widget = QWidget(self)
@@ -65,14 +67,21 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
 
-    def _configure_docks(self,
-                         on_task_statistics_request: TaskStatisticsRequestCallback):
-        task_stats_dock = DockableContainerWidget(self, 'Task statistics')
-        task_stats_dock.widget = TaskStatisticsWidget(task_stats_dock, on_task_statistics_request)
-        self.addDockWidget(Qt.BottomDockWidgetArea, task_stats_dock)
+    def _configure_tool_windows(self,
+                                on_task_statistics_request: TaskStatisticsRequestCallback):
+        def make_task_stats():
+            tw = ToolWindow(self)
+            tw.widget = TaskStatisticsWidget(tw, on_task_statistics_request)
+            return tw
+
+        self._tool_window_manager.register('Task statistics',
+                                           make_task_stats,
+                                           Qt.BottomDockWidgetArea,
+                                           'spreadsheet',
+                                           shown_by_default=True)
 
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
-    def _configure_menu(self):
+    def _configure_file_menu(self):
         # File menu
         quit_action = QAction(get_icon('exit'), '&Quit', self)
         quit_action.triggered.connect(self._on_close)
@@ -80,6 +89,8 @@ class MainWindow(QMainWindow):
         file_menu = self.menuBar().addMenu('&File')
         file_menu.addAction(quit_action)
 
+    # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
+    def _configure_help_menu(self):
         # Help menu
         website_action = QAction(get_icon('www'), 'Open Zubax Robotics &website', self)
         website_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('https://zubax.com')))

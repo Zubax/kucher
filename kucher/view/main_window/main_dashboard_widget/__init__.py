@@ -56,8 +56,8 @@ class MainDashboardWidget(WidgetBase):
                 self._temperature_widget,
                 self._hardware_flag_counters_widget)
 
-        add_row((self._device_time_widget, 1),
-                (self._vsi_status_widget, 2),
+        add_row((self._device_time_widget,   1),
+                (self._vsi_status_widget,    2),
                 (self._active_alerts_widget, 3))
 
         self.setLayout(main_layout)
