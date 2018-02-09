@@ -24,6 +24,9 @@ from view.utils import gui_test, make_button, get_monospace_font
 from view.device_model_representation import BasicDeviceInfo
 
 
+_MAX_LOG_LINES_TO_KEEP = 10000
+
+
 _logger = getLogger(__name__)
 
 
@@ -37,6 +40,8 @@ class LogWidget(WidgetBase):
         self._status_display = QLabel(self)
 
         self._model = _TableModel(self)
+        self._model.layoutChanged.connect(self._on_model_changed)
+
         self._table_view = _TableView(self, self._model)
 
         # View setup
@@ -51,9 +56,6 @@ class LogWidget(WidgetBase):
         self.setLayout(layout)
 
         self.setMinimumSize(400, 350)
-
-    def _do_clear(self):
-        self._model.clear()
 
     def append_lines(self, text_lines: typing.Iterable[str]):
         self._model.append_lines(text_lines)
@@ -77,6 +79,12 @@ class LogWidget(WidgetBase):
     def on_device_disconnected(self, reason: str):
         self._model.append_special_event(f'Disconnected: {reason}')
 
+    def _do_clear(self):
+        self._model.clear()
+
+    def _on_model_changed(self):
+        self._status_display.setText(f'{self._model.rowCount()} rows')
+
 
 class _TableView(QTableView):
     # noinspection PyUnresolvedReferences
@@ -84,7 +92,6 @@ class _TableView(QTableView):
         super(_TableView, self).__init__(parent)
         self.setModel(model)
 
-        model.dataChanged.connect(self._do_scroll)
         model.layoutChanged.connect(self._do_scroll)
 
         self.horizontalHeader().setSectionResizeMode(self.horizontalHeader().ResizeToContents)
@@ -106,6 +113,13 @@ class _TableView(QTableView):
 
         if relative_scroll_position > 0.99:
             self.scrollToBottom()
+
+
+def _model_modifier(method):
+    def decorator(self, *args, **kwargs):
+        return self._modifier_decorator(lambda: method(self, *args, **kwargs))
+
+    return decorator
 
 
 # noinspection PyMethodOverriding
@@ -185,9 +199,8 @@ class _TableModel(QAbstractTableModel):
         return QVariant()
 
     # noinspection PyUnresolvedReferences
+    @_model_modifier
     def append_lines(self, text_lines: typing.Iterable[str]):
-        self.layoutAboutToBeChanged.emit()
-
         # TODO: Better timestamping
         local_time = datetime.datetime.now()
 
@@ -206,25 +219,27 @@ class _TableModel(QAbstractTableModel):
                                    self.columnCount() - 1)
                 self.dataChanged.emit(index, index)
 
-        self.layoutChanged.emit()
-
     # noinspection PyUnresolvedReferences
+    @_model_modifier
     def append_special_event(self, text: str):
-        self.layoutAboutToBeChanged.emit()
-
         entry = self.Entry(local_time=datetime.datetime.now(),
                            text=text,
                            line_is_terminated=True,
                            is_special_event=True)
         self._rows.append(entry)
 
-        self.layoutChanged.emit()
+    # noinspection PyUnresolvedReferences
+    @_model_modifier
+    def clear(self):
+        self._rows.clear()
 
     # noinspection PyUnresolvedReferences
-    def clear(self):
+    def _modifier_decorator(self, target_function):
         self.layoutAboutToBeChanged.emit()
-        self._rows.clear()
+        out = target_function()
+        self._rows = self._rows[-_MAX_LOG_LINES_TO_KEEP:]
         self.layoutChanged.emit()
+        return out
 
 
 # noinspection PyArgumentList
