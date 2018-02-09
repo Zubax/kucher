@@ -12,13 +12,14 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import os
 import typing
 import datetime
 from dataclasses import dataclass
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QTableView, QLabel, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QWidget, QTableView, QLabel, QVBoxLayout, QHBoxLayout, QApplication
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, QVariant
-from PyQt5.QtGui import QFontMetrics, QFont, QPalette
+from PyQt5.QtGui import QFontMetrics, QFont, QPalette, QKeyEvent, QKeySequence
 from view.widgets import WidgetBase
 from view.utils import gui_test, make_button, get_monospace_font
 from view.device_model_representation import BasicDeviceInfo
@@ -90,6 +91,8 @@ class _TableView(QTableView):
     # noinspection PyUnresolvedReferences
     def __init__(self, parent, model: '_TableModel'):
         super(_TableView, self).__init__(parent)
+
+        self._model = model
         self.setModel(model)
 
         model.layoutChanged.connect(self._do_scroll)
@@ -104,6 +107,27 @@ class _TableView(QTableView):
         self.setSelectionMode(self.ExtendedSelection)
         self.setSelectionBehavior(self.SelectItems)
         self.setShowGrid(False)
+
+    # noinspection PyArgumentList
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.matches(QKeySequence.Copy):
+            selected_indexes = [(x.row(), x.column()) for x in self.selectionModel().selectedIndexes()]
+            _logger.info('Copying the following items to the clipboard: %r', selected_indexes)
+
+            # Dicts are ordered now. Yay!
+            by_row = {}
+            for row, column in sorted(selected_indexes):
+                by_row.setdefault(row, []).append(column)
+
+            out_strings = []
+            for row, column_list in by_row.items():
+                out_strings.append('\t'.join([self._model.render_item_for_clipboard(self._model.index(row, col))
+                                             for col in column_list]))
+
+            if out_strings:
+                QApplication.clipboard().setText(os.linesep.join(out_strings))
+        else:
+            super(_TableView, self).keyPressEvent(event)
 
     def _do_scroll(self):
         try:
@@ -232,6 +256,16 @@ class _TableModel(QAbstractTableModel):
     @_model_modifier
     def clear(self):
         self._rows.clear()
+
+    def render_item_for_clipboard(self, index: QModelIndex) -> str:
+        entry = self._rows[index.row()]
+        column = index.column()
+
+        if column == 0:
+            return entry.local_time.strftime('%Y-%m-%dT%H:%M:%S')
+
+        if column == 1:
+            return entry.text
 
     # noinspection PyUnresolvedReferences
     def _modifier_decorator(self, target_function):
