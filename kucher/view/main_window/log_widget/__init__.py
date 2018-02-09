@@ -62,14 +62,14 @@ class LogWidget(WidgetBase):
 
 
 class _TableView(QTableView):
-    def __init__(self, parent, model: QAbstractTableModel):
+    def __init__(self, parent, model: '_TableModel'):
         super(_TableView, self).__init__(parent)
         self.setModel(model)
 
         self.horizontalHeader().setSectionResizeMode(self.horizontalHeader().ResizeToContents)
         self.horizontalHeader().setStretchLastSection(True)
 
-        self.verticalHeader().setDefaultSectionSize(QFontMetrics(QFont()).height())
+        self.verticalHeader().setDefaultSectionSize(model.font_height)
         self.verticalHeader().setSectionResizeMode(self.verticalHeader().Fixed)
 
         self.setSortingEnabled(False)
@@ -97,6 +97,11 @@ class _TableModel(QAbstractTableModel):
         self._rows: typing.List[self.Entry] = []
 
         self._monospace_font = get_monospace_font()
+
+    @property
+    def font_height(self):
+        return max(QFontMetrics(self._monospace_font).height(),
+                   QFontMetrics(QFont()).height())
 
     def rowCount(self, _parent=None):
         return len(self._rows)
