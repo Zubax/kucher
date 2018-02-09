@@ -50,7 +50,8 @@ class Fuhrer:
         if isinstance(device_info_or_error, DeviceInfoView):
             self._main_window.on_connection_established(_make_view_basic_device_info(device_info_or_error))
         elif isinstance(device_info_or_error, (str, Exception)):
-            self._main_window.on_connection_loss(str(device_info_or_error))
+            reason = str(device_info_or_error) or repr(device_info_or_error)    # Some exceptions may not contain text
+            self._main_window.on_connection_loss(reason)
         else:
             raise TypeError(f'Invalid argument: {type(device_info_or_error)}')
 
