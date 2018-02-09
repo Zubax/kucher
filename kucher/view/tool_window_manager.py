@@ -17,8 +17,9 @@ import copy
 import typing
 from dataclasses import dataclass
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QMainWindow, QAction, QMenu, QTabWidget
+from PyQt5.QtWidgets import QWidget, QMainWindow, QAction, QMenu, QTabWidget, QTabBar
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from .widgets.tool_window import ToolWindow
 from .utils import get_icon
 
@@ -43,11 +44,16 @@ class ToolWindowGroupingCondition(enum.Enum):
 
 
 class ToolWindowManager:
+    # noinspection PyUnresolvedReferences
     def __init__(self, parent_window: QMainWindow):
         self._parent_window: QMainWindow = parent_window
+
         self._children: typing.List[ToolWindow] = []
         self._menu: QMenu = None
         self._arrangement_rules: typing.List[_ArrangementRule] = []
+        self._title_to_icon_mapping: typing.Dict[str, QIcon] = {}
+
+        self._parent_window.tabifiedDockWidgetActivated.connect(self._reiconize)
 
         # Set up the appearance
         self._parent_window.setTabPosition(Qt.TopDockWidgetArea,    QTabWidget.North)
@@ -107,7 +113,12 @@ class ToolWindowManager:
             else:
                 _logger.info(f'Spawned tool window {tw!r} {title!r} with icon {icon_name!r}')
 
-        action = QAction(get_icon(icon_name), title, self._parent_window)
+        icon = get_icon(icon_name)
+
+        # FIXME: This is not cool - a title collision will mess up our icons!
+        self._title_to_icon_mapping[title] = icon
+
+        action = QAction(icon, title, self._parent_window)
         action.triggered.connect(spawn)
         self._menu.addAction(action)
 
@@ -186,6 +197,25 @@ class ToolWindowManager:
             # We always show the freshly added widget on top.
             self._parent_window.tabifyDockWidget(tabify_with, what)
             break
+
+        self._reiconize()
+
+    def _reiconize(self, *_):
+        # https://stackoverflow.com/questions/46613165/qt-tab-icon-when-qdockwidget-becomes-docked
+        # In order to reduce the probability of hitting a false positive, we query only the direct children of the
+        # main window. Conveniently, the tab bars in the dock areas are direct descendants of the main window.
+        # It is assumed that this can never be the case with other widgets, since tab bars are usually nested into
+        # other widgets.
+        to_a_bar = self._parent_window.findChildren(QTabBar, '', Qt.FindDirectChildrenOnly)
+        for tab_walks in to_a_bar:      # ha ha
+            for index in range(tab_walks.count()):
+                title = tab_walks.tabText(index)
+                try:
+                    icon = self._title_to_icon_mapping[title]
+                except KeyError:
+                    continue
+
+                tab_walks.setTabIcon(index, icon)
 
 
 @dataclass
