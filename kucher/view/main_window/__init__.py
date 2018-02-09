@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QAction
 from PyQt5.QtGui import QKeySequence, QDesktopServices, QCloseEvent
 from PyQt5.QtCore import Qt, QUrl
 from ..utils import get_application_icon, get_icon
-from ..device_model_representation import GeneralStatusView, TaskStatisticsView
+from ..device_model_representation import GeneralStatusView, TaskStatisticsView, BasicDeviceInfo
 from ..widgets.tool_window import ToolWindow
 from ..tool_window_manager import ToolWindowManager
 from data_dir import LOG_DIR
@@ -68,9 +68,15 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
 
+    def on_connection_established(self, device_info: BasicDeviceInfo):
+        for w in self._tool_window_manager.select_widgets(LogWidget):
+            w.on_device_connected(device_info)
+
     def on_connection_loss(self, reason: str):
         self._connection_management_widget.on_connection_loss(reason)
         self._main_dashboard_widget.on_connection_loss()
+        for w in self._tool_window_manager.select_widgets(LogWidget):
+            w.on_device_disconnected(reason)
 
     def on_connection_initialization_progress_report(self,
                                                      stage_description: str,

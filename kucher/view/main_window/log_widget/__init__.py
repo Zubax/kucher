@@ -18,12 +18,10 @@ from dataclasses import dataclass
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QTableView, QLabel, QVBoxLayout, QHBoxLayout
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, QVariant
-from PyQt5.QtGui import QFontMetrics, QFont
+from PyQt5.QtGui import QFontMetrics, QFont, QPalette
 from view.widgets import WidgetBase
 from view.utils import gui_test, make_button, get_monospace_font
-
-
-_DEFAULT_UPDATE_PERIOD = 2
+from view.device_model_representation import BasicDeviceInfo
 
 
 _logger = getLogger(__name__)
@@ -60,11 +58,34 @@ class LogWidget(WidgetBase):
     def append_lines(self, text_lines: typing.Iterable[str]):
         self._model.append_lines(text_lines)
 
+    def on_device_connected(self, di: BasicDeviceInfo):
+        swv = di.software_version
+        hwv = di.hardware_version
+
+        sw_str = f'{swv.major}.{swv.minor}.{swv.vcs_commit_id:08x}'
+        if not swv.release_build:
+            sw_str += '-debug'
+
+        if swv.dirty_build:
+            sw_str += '-dirty'
+
+        hw_str = f'{hwv.major}.{hwv.minor}'
+
+        self._model.append_special_event(f'Connected to {di.name!r} SW v{sw_str} HW v{hw_str} '
+                                         f'#{di.globally_unique_id.hex()}')
+
+    def on_device_disconnected(self, reason: str):
+        self._model.append_special_event(f'Disconnected: {reason}')
+
 
 class _TableView(QTableView):
+    # noinspection PyUnresolvedReferences
     def __init__(self, parent, model: '_TableModel'):
         super(_TableView, self).__init__(parent)
         self.setModel(model)
+
+        model.dataChanged.connect(self._do_scroll)
+        model.layoutChanged.connect(self._do_scroll)
 
         self.horizontalHeader().setSectionResizeMode(self.horizontalHeader().ResizeToContents)
         self.horizontalHeader().setStretchLastSection(True)
@@ -77,6 +98,15 @@ class _TableView(QTableView):
         self.setSelectionBehavior(self.SelectItems)
         self.setShowGrid(False)
 
+    def _do_scroll(self):
+        try:
+            relative_scroll_position = self.verticalScrollBar().value() / self.verticalScrollBar().maximum()
+        except ZeroDivisionError:
+            relative_scroll_position = 1.0
+
+        if relative_scroll_position > 0.99:
+            self.scrollToBottom()
+
 
 # noinspection PyMethodOverriding
 class _TableModel(QAbstractTableModel):
@@ -88,8 +118,9 @@ class _TableModel(QAbstractTableModel):
 
     @dataclass(frozen=True)
     class Entry:
-        local_time:     datetime.datetime
-        text:           str
+        local_time:         datetime.datetime
+        text:               str
+        is_special_event:   bool = False
 
     def __init__(self, parent: QWidget):
         super(_TableModel, self).__init__(parent)
@@ -98,9 +129,13 @@ class _TableModel(QAbstractTableModel):
 
         self._monospace_font = get_monospace_font()
 
+        self._special_event_font = get_monospace_font()
+        self._special_event_font.setItalic(True)
+
     @property
     def font_height(self):
         return max(QFontMetrics(self._monospace_font).height(),
+                   QFontMetrics(self._special_event_font).height(),
                    QFontMetrics(QFont()).height())
 
     def rowCount(self, _parent=None):
@@ -136,8 +171,15 @@ class _TableModel(QAbstractTableModel):
             return Qt.AlignLeft + Qt.AlignVCenter
 
         if role == Qt.FontRole:
-            if column == 1:
-                return self._monospace_font
+            if column == (len(self.COLUMNS) - 1):
+                if entry.is_special_event:
+                    return self._special_event_font
+                else:
+                    return self._monospace_font
+
+        if role == Qt.BackgroundRole:
+            if entry.is_special_event:
+                return QPalette().color(QPalette.AlternateBase)
 
         return QVariant()
 
@@ -151,6 +193,17 @@ class _TableModel(QAbstractTableModel):
                                          text=text.rstrip()))
 
         # Note that we do not invoke dataChanged because we do not change any data once it is added to the log
+        self.layoutChanged.emit()
+
+    # noinspection PyUnresolvedReferences
+    def append_special_event(self, text: str):
+        self.layoutAboutToBeChanged.emit()
+
+        entry = self.Entry(local_time=datetime.datetime.now(),
+                           text=text,
+                           is_special_event=True)
+        self._rows.append(entry)
+
         self.layoutChanged.emit()
 
     # noinspection PyUnresolvedReferences
