@@ -231,7 +231,7 @@ class _TableModel(QAbstractTableModel):
         for text in text_lines:
             this_line_is_terminated = text.endswith('\n')
 
-            if self._rows[-1].line_is_terminated:
+            if not self._rows or self._rows[-1].line_is_terminated:
                 self._rows.append(self.Entry(local_time=local_time,
                                              text=text.rstrip(),
                                              line_is_terminated=this_line_is_terminated))
