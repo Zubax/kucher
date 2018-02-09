@@ -55,6 +55,12 @@ class ToolWindowManager:
         self._parent_window.setTabPosition(Qt.LeftDockWidgetArea,   QTabWidget.West)
         self._parent_window.setTabPosition(Qt.RightDockWidgetArea,  QTabWidget.East)
 
+        # We might want to enable nested docks in the future - may be useful for this application
+        # http://doc.qt.io/qt-5/qmainwindow.html#DockOption-enum
+        self._parent_window.setDockOptions(self._parent_window.AnimatedDocks |
+                                           # self._parent_window.AllowNestedDocks |
+                                           self._parent_window.AllowTabbedDocks)
+
     # noinspection PyUnresolvedReferences
     def register(self,
                  factory:                   typing.Union[typing.Type[QWidget],
