@@ -17,7 +17,7 @@ import copy
 import typing
 from dataclasses import dataclass
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QMainWindow, QAction, QMenu
+from PyQt5.QtWidgets import QWidget, QMainWindow, QAction, QMenu, QTabWidget
 from PyQt5.QtCore import Qt
 from .widgets.tool_window import ToolWindow
 from .utils import get_icon
@@ -49,6 +49,12 @@ class ToolWindowManager:
         self._menu: QMenu = None
         self._arrangement_rules: typing.List[_ArrangementRule] = []
 
+        # Set up the appearance
+        self._parent_window.setTabPosition(Qt.TopDockWidgetArea,    QTabWidget.North)
+        self._parent_window.setTabPosition(Qt.BottomDockWidgetArea, QTabWidget.South)
+        self._parent_window.setTabPosition(Qt.LeftDockWidgetArea,   QTabWidget.West)
+        self._parent_window.setTabPosition(Qt.RightDockWidgetArea,  QTabWidget.East)
+
     # noinspection PyUnresolvedReferences
     def register(self,
                  factory:                   typing.Union[typing.Type[QWidget],
@@ -72,15 +78,21 @@ class ToolWindowManager:
 
             # noinspection PyBroadException
             try:
+                # Instantiating the tool window and set up its widget using the client-provided factory
                 tw = ToolWindow(self._parent_window,
                                 title=title,
                                 icon_name=icon_name)
                 tw.widget = factory(tw)
 
+                # Set up the tool window
                 self._children.append(tw)
                 tw.close_event.connect(terminate)
-
                 self._allocate(tw)
+
+                # Below we're making sure that the newly added tool window ends up on top
+                # https://stackoverflow.com/questions/1290882/focusing-on-a-tabified-qdockwidget-in-pyqt
+                tw.show()
+                tw.raise_()
 
                 if not allow_multiple_instances:
                     action.setEnabled(False)
