@@ -116,10 +116,11 @@ class _TableModel(QAbstractTableModel):
         'Text',
     ]
 
-    @dataclass(frozen=True)
+    @dataclass
     class Entry:
         local_time:         datetime.datetime
         text:               str
+        line_is_terminated: bool
         is_special_event:   bool = False
 
     def __init__(self, parent: QWidget):
@@ -188,11 +189,23 @@ class _TableModel(QAbstractTableModel):
         self.layoutAboutToBeChanged.emit()
 
         # TODO: Better timestamping
-        for text in text_lines:
-            self._rows.append(self.Entry(local_time=datetime.datetime.now(),
-                                         text=text.rstrip()))
+        local_time = datetime.datetime.now()
 
-        # Note that we do not invoke dataChanged because we do not change any data once it is added to the log
+        for text in text_lines:
+            this_line_is_terminated = text.endswith('\n')
+
+            if self._rows[-1].line_is_terminated:
+                self._rows.append(self.Entry(local_time=local_time,
+                                             text=text.rstrip(),
+                                             line_is_terminated=this_line_is_terminated))
+            else:
+                self._rows[-1].text += text.rstrip()
+                self._rows[-1].line_is_terminated = this_line_is_terminated
+                # Reporting that the last row has changed
+                index = self.index(self.rowCount() - 1,
+                                   self.columnCount() - 1)
+                self.dataChanged.emit(index, index)
+
         self.layoutChanged.emit()
 
     # noinspection PyUnresolvedReferences
@@ -201,6 +214,7 @@ class _TableModel(QAbstractTableModel):
 
         entry = self.Entry(local_time=datetime.datetime.now(),
                            text=text,
+                           line_is_terminated=True,
                            is_special_event=True)
         self._rows.append(entry)
 
