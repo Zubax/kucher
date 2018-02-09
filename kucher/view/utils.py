@@ -27,7 +27,7 @@ _logger = getLogger(__name__)
 
 
 def get_application_icon() -> QIcon:
-    return QIcon(get_absolute_path('view', 'icons', 'zee-with-margins.png'))
+    return QIcon(get_absolute_path('view', 'icons', 'zee.png'))
 
 
 @functools.lru_cache(None)
