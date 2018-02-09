@@ -43,7 +43,12 @@ class ToolWindow(QDockWidget):
     def __del__(self):
         _logger.debug('Deleting %r', self)
 
-    # noinspection PyCallingNonCallable
+    def __str__(self):
+        return f'ToolWindow({self.widget!r})'
+
+    __repr__ = __str__
+
+    # noinspection PyCallingNonCallable,PyArgumentList
     def closeEvent(self, *_):
         _logger.debug('Close event at %r', self)
         self._close_event()

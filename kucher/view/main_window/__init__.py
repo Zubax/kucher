@@ -18,8 +18,7 @@ from PyQt5.QtGui import QKeySequence, QDesktopServices, QCloseEvent
 from PyQt5.QtCore import Qt, QUrl
 from ..utils import get_application_icon, get_icon
 from ..device_model_representation import GeneralStatusView, TaskStatisticsView, BasicDeviceInfo
-from ..widgets.tool_window import ToolWindow
-from ..tool_window_manager import ToolWindowManager
+from ..tool_window_manager import ToolWindowManager, ToolWindowLocation, ToolWindowGroupingCondition
 from data_dir import LOG_DIR
 
 from .connection_management_widget import ConnectionManagementWidget, ConnectionRequestCallback, \
@@ -92,25 +91,17 @@ class MainWindow(QMainWindow):
 
     def _configure_tool_windows(self,
                                 on_task_statistics_request: TaskStatisticsRequestCallback):
-        def make_task_stats():
-            tw = ToolWindow(self)
-            tw.widget = TaskStatisticsWidget(tw, on_task_statistics_request)
-            return tw
+        self._tool_window_manager.add_arrangement_rule(apply_to=[LogWidget, TaskStatisticsWidget],
+                                                       group_when=ToolWindowGroupingCondition.ALWAYS,
+                                                       location=ToolWindowLocation.BOTTOM)
 
-        self._tool_window_manager.register('Task statistics',
-                                           make_task_stats,
-                                           Qt.BottomDockWidgetArea,
+        self._tool_window_manager.register(lambda parent: TaskStatisticsWidget(parent, on_task_statistics_request),
+                                           'Task statistics',
                                            'spreadsheet',
                                            shown_by_default=True)
 
-        def make_log():
-            tw = ToolWindow(self)
-            tw.widget = LogWidget(tw)
-            return tw
-
-        self._tool_window_manager.register('Device log',
-                                           make_log,
-                                           Qt.BottomDockWidgetArea,
+        self._tool_window_manager.register(LogWidget,
+                                           'Device log',
                                            'log',
                                            shown_by_default=True)
 

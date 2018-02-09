@@ -12,17 +12,34 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import enum
+import copy
 import typing
+from dataclasses import dataclass
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QMainWindow, QAction, QMenu
+from PyQt5.QtCore import Qt
 from .widgets.tool_window import ToolWindow
 from .utils import get_icon
 
 
-_WidgetTypeVar = typing.NewType('W', QWidget)
+_WidgetTypeVar = typing.TypeVar('W')
 
 
 _logger = getLogger(__name__)
+
+
+class ToolWindowLocation(enum.IntEnum):
+    TOP    = Qt.TopDockWidgetArea
+    BOTTOM = Qt.BottomDockWidgetArea
+    LEFT   = Qt.LeftDockWidgetArea
+    RIGHT  = Qt.RightDockWidgetArea
+
+
+class ToolWindowGroupingCondition(enum.Enum):
+    NEVER           = enum.auto()
+    SAME_LOCATION   = enum.auto()
+    ALWAYS          = enum.auto()
 
 
 class ToolWindowManager:
@@ -30,42 +47,47 @@ class ToolWindowManager:
         self._parent_window: QMainWindow = parent_window
         self._children: typing.List[ToolWindow] = []
         self._menu: QMenu = None
+        self._arrangement_rules: typing.List[_ArrangementRule] = []
 
     # noinspection PyUnresolvedReferences
     def register(self,
+                 factory:                   typing.Union[typing.Type[QWidget],
+                                                         typing.Callable[[ToolWindow], QWidget]],
                  title:                     str,
-                 factory:                   typing.Callable[[], ToolWindow],
-                 default_location:          int,
                  icon_name:                 typing.Optional[str]=None,
                  allow_multiple_instances:  bool=False,
                  shown_by_default:          bool=False):
+        """
+        Adds the specified tool WIDGET (not window) to the set of known tools.
+        If requested, it can be instantiated automatically at the time of application startup.
+        The class will automatically register the menu item and do all of the other boring boilerplate stuff.
+        """
         if self._menu is None:
             self._menu = self._parent_window.menuBar().addMenu('&Tools')
 
         def spawn():
             def terminate():
-                self._children.remove(dock)
-                if not allow_multiple_instances:
-                    action.setEnabled(True)
+                self._children.remove(tw)
+                action.setEnabled(True)
 
             # noinspection PyBroadException
             try:
-                dock = factory()
-                dock.setWindowTitle(title)
-                if icon_name:
-                    dock.set_icon(icon_name)
+                tw = ToolWindow(self._parent_window,
+                                title=title,
+                                icon_name=icon_name)
+                tw.widget = factory(tw)
 
-                self._children.append(dock)
-                dock.close_event.connect(terminate)
+                self._children.append(tw)
+                tw.close_event.connect(terminate)
 
-                self._parent_window.addDockWidget(default_location, dock)
+                self._allocate(tw)
 
                 if not allow_multiple_instances:
                     action.setEnabled(False)
             except Exception:
                 _logger.exception(f'Could not spawn tool window {title!r} with icon {icon_name!r}')
             else:
-                _logger.info(f'Spawned tool window {dock!r} {title!r} with icon {icon_name!r}')
+                _logger.info(f'Spawned tool window {tw!r} {title!r} with icon {icon_name!r}')
 
         action = QAction(get_icon(icon_name), title, self._parent_window)
         action.triggered.connect(spawn)
@@ -74,9 +96,21 @@ class ToolWindowManager:
         if shown_by_default:
             spawn()
 
-    @property
-    def children(self) -> typing.List[ToolWindow]:
-        return self._children
+    def add_arrangement_rule(self,
+                             apply_to:      typing.Iterable[typing.Type[QWidget]],
+                             group_when:    ToolWindowGroupingCondition,
+                             location:      ToolWindowLocation):
+        """
+        :param apply_to:
+        :param group_when:  Grouping policy:
+                                NEVER         - do not group unless the user did that manually
+                                SAME_LOCATION - group only if the grouped widgets are at the same location
+                                ALWAYS        - group always, regardless of the location
+        :param location:    Default placement in the main window
+        """
+        self._arrangement_rules.append(_ArrangementRule(apply_to=list(apply_to),
+                                                        group_when=group_when,
+                                                        location=location))
 
     def select_widgets(self, widget_type: typing.Type[_WidgetTypeVar]) -> typing.List[_WidgetTypeVar]:
         """
@@ -84,4 +118,60 @@ class ToolWindowManager:
         specified type. This can be used to broadcast events and such.
         Specify the type as QWidget to iterate through all widgets.
         """
+        # noinspection PyTypeChecker
         return [win.widget for win in self._children if isinstance(win.widget, widget_type)]
+
+    def _select_tool_windows(self, widget_type: typing.Type[QWidget]) -> typing.List[ToolWindow]:
+        return [win for win in self._children if isinstance(win.widget, widget_type)]
+
+    def _select_applicable_arrangement_rules(self, widget_type: typing.Type[QWidget]) -> \
+            typing.List['_ArrangementRule']:
+        return [copy.deepcopy(ar) for ar in self._arrangement_rules if widget_type in ar.apply_to]
+
+    def _allocate(self, what: ToolWindow):
+        widget_type = type(what.widget)
+
+        rules = self._select_applicable_arrangement_rules(widget_type)
+        if not rules:
+            raise ValueError(f'Arrangement rules for widget of type {widget_type} could not be found')
+
+        self._parent_window.addDockWidget(int(rules[0].location), what)
+
+        # Oblaka, belogrivye loshadki...
+        for ar in rules:
+            matching_windows: typing.List[ToolWindow] = []
+            for applicable in ar.apply_to:
+                if applicable is not widget_type:
+                    matching_windows += self._select_tool_windows(applicable)
+
+            _logger.info(f'Existing tool windows matching the rule {ar} against {widget_type}: {matching_windows}')
+
+            if not matching_windows:
+                continue
+
+            if ar.group_when == ToolWindowGroupingCondition.NEVER:
+                continue
+
+            if ar.group_when == ToolWindowGroupingCondition.SAME_LOCATION:
+                tabify_with = None
+                for mw in matching_windows:
+                    if int(ar.location) == self._parent_window.dockWidgetArea(mw):
+                        tabify_with = mw
+                        break
+
+                if tabify_with is None:
+                    continue
+            else:
+                tabify_with = matching_windows[0]
+
+            # Observe that the order of arguments matters here. The second widget will end up on top.
+            # We always show the freshly added widget on top.
+            self._parent_window.tabifyDockWidget(tabify_with, what)
+            break
+
+
+@dataclass
+class _ArrangementRule:
+    apply_to:       typing.List[typing.Type[QWidget]]
+    group_when:     ToolWindowGroupingCondition
+    location:       ToolWindowLocation
