@@ -27,6 +27,9 @@ from .task_statistics_widget import TaskStatisticsWidget
 from .log_widget import LogWidget
 
 
+_WINDOW_TITLE_PREFIX = 'Zubax Kucher'
+
+
 TaskStatisticsRequestCallback = typing.Callable[[], typing.Awaitable[typing.Optional[TaskStatisticsView]]]
 
 
@@ -38,7 +41,7 @@ class MainWindow(QMainWindow):
                  on_disconnection_request: DisconnectionRequestCallback,
                  on_task_statistics_request: TaskStatisticsRequestCallback):
         super(MainWindow, self).__init__()
-        self.setWindowTitle('Zubax Kucher')
+        self.setWindowTitle(_WINDOW_TITLE_PREFIX)
         self.setWindowIcon(get_application_icon())
 
         self.statusBar().show()
@@ -61,10 +64,14 @@ class MainWindow(QMainWindow):
         for w in self._tool_window_manager.select_widgets(LogWidget):
             w.on_device_connected(device_info)
 
+        self.setWindowTitle(f'{_WINDOW_TITLE_PREFIX} - #{device_info.globally_unique_id.hex()}')
+
     def on_connection_loss(self, reason: str):
         self._main_widget.on_connection_loss(reason)
         for w in self._tool_window_manager.select_widgets(LogWidget):
             w.on_device_disconnected(reason)
+
+        self.setWindowTitle(_WINDOW_TITLE_PREFIX)
 
     def on_connection_initialization_progress_report(self,
                                                      stage_description: str,
