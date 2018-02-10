@@ -22,14 +22,14 @@ from PyQt5.QtCore import QTimer, Qt
 from view.utils import get_monospace_font, gui_test, make_button, show_error, get_icon
 from view.device_model_representation import BasicDeviceInfo
 from view.widgets import WidgetBase
-from view.widgets.group_box_widget import GroupBoxWidget
 from .port_discoverer import PortDiscoverer
+from .little_bobby_tables_widget import LittleBobbyTablesWidget
 
 
 _logger = getLogger(__name__)
 
 
-_DESCRIPTION_WHEN_NOT_CONNECTED = 'Not connected\n'
+_STATUS_WHEN_NOT_CONNECTED = 'Not connected'
 
 
 ConnectionRequestCallback = typing.Callable[[str], typing.Awaitable[BasicDeviceInfo]]
@@ -57,8 +57,10 @@ class ConnectionManagementWidget(WidgetBase):
 
         self._connect_button = make_button(self, 'Connect', 'disconnected', on_clicked=self._on_confirmation)
 
-        self._connected_device_description = QLabel(self)
-        self._connected_device_description.setText(_DESCRIPTION_WHEN_NOT_CONNECTED)
+        self._status_text = QLabel(self)
+        self._status_text.setText(_STATUS_WHEN_NOT_CONNECTED)
+
+        self._device_info_widget = LittleBobbyTablesWidget(self)
 
         combo_completer = QCompleter()
         combo_completer.setCaseSensitivity(Qt.CaseInsensitive)
@@ -95,7 +97,7 @@ class ConnectionManagementWidget(WidgetBase):
         """
         if self._connection_established:
             self._switch_state_disconnected()
-            self._connected_device_description.setText(f'Connection lost: {reason.strip() or "Unknown reason"}')
+            self._status_text.setText(f'Connection lost: {reason.strip() or "Unknown reason"}')
 
     def on_connection_initialization_progress_report(self,
                                                      stage_description: str,
@@ -133,12 +135,12 @@ class ConnectionManagementWidget(WidgetBase):
         operational_layout_top.addWidget(self._connect_button)
 
         operational_layout_bottom = QHBoxLayout()
-        operational_layout_bottom.addWidget(self._connected_device_description)
+        operational_layout_bottom.addWidget(self._status_text)
 
         operational_layout = QVBoxLayout()
         operational_layout.addLayout(operational_layout_top)
         operational_layout.addLayout(operational_layout_bottom)
-        operational_layout.addStretch(1)
+        operational_layout.addWidget(self._device_info_widget, 1)
 
         operational.setLayout(operational_layout)
         self._overlay.addWidget(operational)
@@ -176,20 +178,8 @@ class ConnectionManagementWidget(WidgetBase):
         self._connect_button.setText('Disconnect')
         self._connect_button.setIcon(get_icon('connected'))
 
-        sw = device_info.software_version
-        sw_ver = f'{sw.major}.{sw.minor}.{sw.vcs_commit_id:08x}'
-        if sw.dirty_build:
-            sw_ver += '-dirty'
-
-        if not sw.release_build:
-            sw_ver += '-debug'
-
-        hw_ver = f'{device_info.hardware_version.major}.{device_info.hardware_version.minor}'
-
-        full_description = f'Connected to: {device_info.description}\n' \
-                           f'UID {device_info.globally_unique_id.hex()}, SW v{sw_ver}, HW v{hw_ver}'
-
-        self._connected_device_description.setText(full_description)
+        self._status_text.setText('Connected')
+        self._device_info_widget.set(device_info)
 
     def _switch_state_disconnected(self):
         self._connection_established = False
@@ -201,7 +191,8 @@ class ConnectionManagementWidget(WidgetBase):
         self._connect_button.setText('Connect')
         self._connect_button.setIcon(get_icon('disconnected'))
 
-        self._connected_device_description.setText(_DESCRIPTION_WHEN_NOT_CONNECTED)
+        self._device_info_widget.clear()
+        self._status_text.setText(_STATUS_WHEN_NOT_CONNECTED)
 
         self._update_ports()
 
@@ -257,8 +248,6 @@ class ConnectionManagementWidget(WidgetBase):
                        'Cannot connect/disconnect while another connection/disconnection operation is still running',
                        f'Pending future: {self._last_task}',
                        self)
-            raise RuntimeError(f'Cannot (dis)connect while another (dis)connection operation is still running: '
-                               f'{self._last_task}')
         else:
             if not self._connection_established:
                 self._last_task = asyncio.get_event_loop().create_task(self._do_connect())
