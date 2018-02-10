@@ -58,7 +58,7 @@ class DashboardWidget(WidgetBase):
 
         add_row((self._device_time_widget,   1),
                 (self._vsi_status_widget,    2),
-                (self._active_alerts_widget, 3))
+                (self._active_alerts_widget, 2))
 
         main_layout.addStretch(1)
         self.setLayout(main_layout)

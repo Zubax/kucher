@@ -33,13 +33,14 @@ class ActiveAlertsWidget(GroupBoxWidget):
 
         font = get_monospace_font()
         font.setBold(True)
-        font.setPointSize(int(font.pointSize() * 0.8))
+        font.setPointSize(int(font.pointSize() * 0.7))
         self._content.setFont(font)
 
         layout = QVBoxLayout()
         layout.addStretch(1)
         layout.addWidget(self._content)
         layout.addStretch(1)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
         self.reset()
@@ -59,7 +60,7 @@ class ActiveAlertsWidget(GroupBoxWidget):
             if val:
                 attrs.append(at.replace('_', ' '))
 
-        text = '\n'.join(attrs).upper()
+        text = ', '.join(attrs).upper()
 
         # Changing icons is very expensive
         if text != str(self._content.text()):

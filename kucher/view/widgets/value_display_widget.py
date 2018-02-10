@@ -31,7 +31,7 @@ _logger = getLogger(__name__)
 @functools.lru_cache()
 def _get_large_font() -> QFont:
     font = QFont()
-    font.setPointSize(int(font.pointSize() * 1.5 + 0.5))
+    font.setPointSize(round(font.pointSize() * 1.5))
     return font
 
 
@@ -82,6 +82,7 @@ class ValueDisplayWidget(WidgetBase):
         outer_layout.addStretch(1)
         outer_layout.addLayout(layout)
         outer_layout.addStretch(1)
+        outer_layout.setContentsMargins(1, 0, 1, 0)  # Left, top, right, bottom
         self.setLayout(outer_layout)
 
         self.reset()
