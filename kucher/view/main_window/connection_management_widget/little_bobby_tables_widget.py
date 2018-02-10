@@ -12,10 +12,12 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import os
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QVBoxLayout
-from PyQt5.QtGui import QFont
-from view.utils import get_monospace_font, get_icon
+from PyQt5.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QApplication
+from PyQt5.QtGui import QKeyEvent, QKeySequence
+from PyQt5.QtCore import Qt
+from view.utils import get_monospace_font
 from view.device_model_representation import BasicDeviceInfo
 from view.widgets import WidgetBase
 
@@ -32,7 +34,6 @@ class LittleBobbyTablesWidget(WidgetBase):
         self._table.setColumnCount(1)
         self._table.horizontalHeader().hide()
         self._table.setFont(get_monospace_font())
-
         self._table.horizontalHeader().setSectionResizeMode(self._table.horizontalHeader().ResizeToContents)
         self._table.horizontalHeader().setStretchLastSection(True)
         self._table.verticalHeader().setSectionResizeMode(self._table.verticalHeader().ResizeToContents)
@@ -72,8 +73,32 @@ class LittleBobbyTablesWidget(WidgetBase):
             self._assign(k, v)
 
     def _assign(self, name: str, value):
+        def make_item(value):
+            data = QTableWidgetItem(value)
+            data.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+            return data
+
         row = self._table.rowCount()
         self._table.setRowCount(row + 1)
+        self._table.setVerticalHeaderItem(row, make_item(name))
+        self._table.setItem(row, 0, make_item(value))
 
-        self._table.setVerticalHeaderItem(row, QTableWidgetItem(name))
-        self._table.setItem(row, 0, QTableWidgetItem(value))
+    # noinspection PyArgumentList
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.matches(QKeySequence.Copy):
+            selected_rows = [x.row() for x in self._table.selectionModel().selectedIndexes()]
+            _logger.info('Copying the following rows to the clipboard: %r', selected_rows)
+
+            if len(selected_rows) == 1:
+                out_strings = [self._table.item(selected_rows[0], 0).text()]
+            else:
+                out_strings = []
+                for row in selected_rows:
+                    header = self._table.verticalHeaderItem(row).text()
+                    data = self._table.item(row, 0).text()
+                    out_strings.append(f'{header}\t{data}')
+
+            if out_strings:
+                QApplication.clipboard().setText(os.linesep.join(out_strings))
+        else:
+            super(LittleBobbyTablesWidget, self).keyPressEvent(event)
