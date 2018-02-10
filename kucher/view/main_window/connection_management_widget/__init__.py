@@ -14,104 +14,22 @@
 
 import typing
 import string
-import fnmatch
-import itertools
 import asyncio
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QCompleter, QStackedLayout, QLabel, QProgressBar
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5 import QtSerialPort
-from ..utils import get_monospace_font, gui_test, time_tracked, make_button, show_error, get_icon
-from ..device_model_representation import BasicDeviceInfo
-from ..widgets import WidgetBase
-from ..widgets.group_box_widget import GroupBoxWidget
+from view.utils import get_monospace_font, gui_test, make_button, show_error, get_icon
+from view.device_model_representation import BasicDeviceInfo
+from view.widgets import WidgetBase
+from view.widgets.group_box_widget import GroupBoxWidget
+from .port_discoverer import PortDiscoverer
 
 
 _logger = getLogger(__name__)
 
 
 _DESCRIPTION_WHEN_NOT_CONNECTED = 'Not connected\n'
-
-# This list defines serial ports that will float up the list of possible ports.
-# The objective is to always pre-select the best guess, best choice port, so that the user could connect in
-# just one click. Vendor-product pairs located at the beginning of the list are preferred.
-_PREFERABLE_VENDOR_PRODUCT_PATTERNS: typing.List[typing.Tuple[str, str]] = [
-    ('*zubax*', '*telega*'),
-]
-
-
-# TODO: This is probably blocking IO-heavy (perhaps not on all platforms); run this logic in a background worker?
-# noinspection PyArgumentList
-@time_tracked
-def _list_prospective_ports() -> typing.List[QtSerialPort.QSerialPortInfo]:
-    # https://github.com/UAVCAN/gui_tool/issues/21
-    def get_score(pi: QtSerialPort.QSerialPortInfo) -> int:
-        """Higher value --> better score"""
-        for idx, (vendor_wildcard, product_wildcard) in enumerate(_PREFERABLE_VENDOR_PRODUCT_PATTERNS):
-            vendor_match = fnmatch.fnmatch(pi.manufacturer().lower(), vendor_wildcard.lower())
-            product_match = fnmatch.fnmatch(pi.description().lower(), product_wildcard.lower())
-            if vendor_match and product_match:
-                return -idx
-
-        return -9999
-
-    ports = QtSerialPort.QSerialPortInfo.availablePorts()
-    ports = filter(lambda pi: not pi.isBusy(), ports)
-
-    # noinspection PyBroadException
-    try:
-        ports = sorted(ports, key=lambda pi: pi.manufacturer() + pi.description() + pi.systemLocation())
-    except Exception:
-        _logger.exception('Pre-sorting failed')
-
-    ports = sorted(ports, key=lambda pi: -get_score(pi))
-    return list(ports)
-
-
-def _update_port_list(ports: typing.List[QtSerialPort.QSerialPortInfo],
-                      combo: QComboBox) -> typing.Dict[str, str]:
-    known_keys = set()
-    remove_indices = []
-    was_empty = combo.count() == 0
-
-    def make_description(p: QtSerialPort.QSerialPortInfo) -> str:
-        out = f'{p.portName()}: {p.manufacturer() or "Unknown vendor"} - {p.description() or "Unknown product"}'
-        if p.serialNumber().strip():
-            out += ' #' + str(p.serialNumber())
-
-        return out
-
-    ports = {
-        make_description(x): x.systemLocation() for x in ports
-    }
-
-    # Marking known and scheduling for removal
-    for idx in itertools.count():
-        tx = combo.itemText(idx)
-        if not tx:
-            break
-
-        known_keys.add(tx)
-        if tx not in ports:
-            _logger.debug('Removing iface %r', tx)
-            remove_indices.append(idx)
-
-    # Removing - starting from the last item in order to retain indexes
-    for idx in remove_indices[::-1]:
-        combo.removeItem(idx)
-
-    # Adding new items - starting from the last item in order to retain the final order
-    for key in list(ports.keys())[::-1]:
-        if key not in known_keys:
-            _logger.debug('Adding iface %r', key)
-            combo.insertItem(0, key)
-
-    # Updating selection
-    if was_empty:
-        combo.setCurrentIndex(0)
-
-    return ports
 
 
 ConnectionRequestCallback = typing.Callable[[str], typing.Awaitable[BasicDeviceInfo]]
@@ -127,6 +45,7 @@ class ConnectionManagementWidget(WidgetBase):
         super(ConnectionManagementWidget, self).__init__(parent)
         self.setAttribute(Qt.WA_DeleteOnClose)                  # This is required to stop background timers!
 
+        self._port_discoverer = PortDiscoverer()
         self._port_mapping: typing.Dict[str: str] = {}
 
         self._port_combo = QComboBox(self)
@@ -236,13 +155,13 @@ class ConnectionManagementWidget(WidgetBase):
 
         # noinspection PyBroadException
         try:
-            ports = _list_prospective_ports()
+            ports = self._port_discoverer.get_ports()
         except Exception as ex:
             _logger.exception('Could not list ports')
             self.flash(f'Could not list ports: {ex}', duration=10)
             ports = []
 
-        self._port_mapping = _update_port_list(ports, self._port_combo)
+        self._port_mapping = self._port_discoverer.display_ports(ports, self._port_combo)
 
     def _switch_state_connected(self, device_info: BasicDeviceInfo):
         self._connection_established = True
@@ -350,9 +269,7 @@ def _unittest_connection_management_widget():
     import asyncio
     from PyQt5.QtWidgets import QApplication
 
-    global _list_prospective_ports
-
-    def list_prospective_ports_mock():
+    def list_prospective_ports_mock(*_):
         # noinspection PyPep8Naming
         class Mock:
             @staticmethod
@@ -377,7 +294,8 @@ def _unittest_connection_management_widget():
 
         return [Mock()]
 
-    _list_prospective_ports = list_prospective_ports_mock
+    original_get_ports = PortDiscoverer.get_ports
+    PortDiscoverer.get_ports = list_prospective_ports_mock
 
     good_night_sweet_prince = False
     throw = False
@@ -477,3 +395,6 @@ def _unittest_connection_management_widget():
         run_events(),
         walk()
     ))
+
+    # Restore the global state carefully
+    PortDiscoverer.get_ports = original_get_ports
