@@ -23,7 +23,7 @@ from data_dir import LOG_DIR
 
 from .connection_management_widget import ConnectionManagementWidget, ConnectionRequestCallback, \
                                           DisconnectionRequestCallback
-from .main_dashboard_widget import MainDashboardWidget
+from .dashboard_widget import DashboardWidget
 from .task_statistics_widget import TaskStatisticsWidget
 from .log_widget import LogWidget
 
@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
             ConnectionManagementWidget(self,
                                        on_connection_request=on_connection_request,
                                        on_disconnection_request=on_disconnection_request)
-        self._main_dashboard_widget = MainDashboardWidget(self)
+        self._dashboard_widget = DashboardWidget(self)
 
         self._configure_file_menu()
         self._configure_tool_windows(on_task_statistics_request)
@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self._connection_management_widget)
-        main_layout.addWidget(self._main_dashboard_widget)
+        main_layout.addWidget(self._dashboard_widget)
 
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
 
     def on_connection_loss(self, reason: str):
         self._connection_management_widget.on_connection_loss(reason)
-        self._main_dashboard_widget.on_connection_loss()
+        self._dashboard_widget.on_connection_loss()
         for w in self._tool_window_manager.select_widgets(LogWidget):
             w.on_device_disconnected(reason)
 
@@ -83,7 +83,7 @@ class MainWindow(QMainWindow):
         self._connection_management_widget.on_connection_initialization_progress_report(stage_description, progress)
 
     def on_general_status_update(self, timestamp: float, status: GeneralStatusView):
-        self._main_dashboard_widget.on_general_status_update(timestamp, status)
+        self._dashboard_widget.on_general_status_update(timestamp, status)
 
     def on_log_line_reception(self, monotonic_timestamp: float, text: str):
         for w in self._tool_window_manager.select_widgets(LogWidget):

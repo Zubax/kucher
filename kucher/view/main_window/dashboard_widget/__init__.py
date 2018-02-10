@@ -25,9 +25,9 @@ from .vsi_status_widget import VSIStatusWidget
 from .active_alerts_widget import ActiveAlertsWidget
 
 
-class MainDashboardWidget(WidgetBase):
+class DashboardWidget(WidgetBase):
     def __init__(self, parent: QWidget):
-        super(MainDashboardWidget, self).__init__(parent)
+        super(DashboardWidget, self).__init__(parent)
 
         self._dc_quantities_widget = DCQuantitiesWidget(self)
         self._temperature_widget = TemperatureWidget(self)
