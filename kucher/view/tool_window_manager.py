@@ -61,10 +61,16 @@ class ToolWindowManager:
         self._parent_window.setTabPosition(Qt.LeftDockWidgetArea,   QTabWidget.West)
         self._parent_window.setTabPosition(Qt.RightDockWidgetArea,  QTabWidget.East)
 
-        # We might want to enable nested docks in the future - may be useful for this application
+        # Now, most screens are wide but not very tall; we need to optimize the layout for that
+        # More info (this is for Qt4 but works for Qt5 as well): https://doc.qt.io/archives/4.6/qt4-mainwindow.html
+        self._parent_window.setCorner(Qt.TopLeftCorner,     Qt.LeftDockWidgetArea)
+        self._parent_window.setCorner(Qt.BottomLeftCorner,  Qt.LeftDockWidgetArea)
+        self._parent_window.setCorner(Qt.TopRightCorner,    Qt.RightDockWidgetArea)
+        self._parent_window.setCorner(Qt.BottomRightCorner, Qt.RightDockWidgetArea)
+
         # http://doc.qt.io/qt-5/qmainwindow.html#DockOption-enum
         self._parent_window.setDockOptions(self._parent_window.AnimatedDocks |
-                                           # self._parent_window.AllowNestedDocks |
+                                           self._parent_window.AllowNestedDocks |
                                            self._parent_window.AllowTabbedDocks)
 
     # noinspection PyUnresolvedReferences
