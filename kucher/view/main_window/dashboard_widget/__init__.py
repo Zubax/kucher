@@ -60,6 +60,7 @@ class DashboardWidget(WidgetBase):
                 (self._vsi_status_widget,    2),
                 (self._active_alerts_widget, 3))
 
+        main_layout.addStretch(1)
         self.setLayout(main_layout)
 
         self.setSizePolicy(QSizePolicy().Minimum, QSizePolicy().Minimum)

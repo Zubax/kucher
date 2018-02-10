@@ -81,35 +81,8 @@ class ConnectionManagementWidget(WidgetBase):
 
         # Layout
         self._overlay = QStackedLayout(self)
-
-        operational_group = GroupBoxWidget(self, 'Device connection', 'connector')
-
-        operational_layout_top = QHBoxLayout()
-        operational_layout_top.addWidget(QLabel('Port:'))
-        operational_layout_top.addWidget(self._port_combo, stretch=1)
-        operational_layout_top.addWidget(self._connect_button)
-
-        operational_layout_bottom = QHBoxLayout()
-        operational_layout_bottom.addWidget(self._connected_device_description)
-
-        operational_layout = QVBoxLayout()
-        operational_layout.addLayout(operational_layout_top)
-        operational_layout.addLayout(operational_layout_bottom)
-
-        operational_group.setLayout(operational_layout)
-        self._overlay.addWidget(operational_group)
-
-        progress_group = GroupBoxWidget(self, 'Device connection progress', 'hourglass')
-        progress_layout = QHBoxLayout()
-        progress_layout.addWidget(self._connection_progress_bar)
-        progress_group.setLayout(progress_layout)
-        self._overlay.addWidget(progress_group)
-
+        self._init_overlay_widgets()
         self.setLayout(self._overlay)
-
-        min_width = 800
-        self.setMinimumWidth(min_width)
-        self.setFixedHeight(self._overlay.minimumHeightForWidth(min_width))
 
         # Initialization
         self._update_ports()
@@ -148,6 +121,36 @@ class ConnectionManagementWidget(WidgetBase):
 
         self._connection_progress_bar.setValue(int(progress * 100))
         self._connection_progress_bar.setFormat(stage_description)
+
+    # noinspection PyArgumentList,PyUnresolvedReferences
+    def _init_overlay_widgets(self):
+        # Main widget
+        operational = WidgetBase(self)
+
+        operational_layout_top = QHBoxLayout()
+        operational_layout_top.addWidget(QLabel('Port:'))
+        operational_layout_top.addWidget(self._port_combo, stretch=1)
+        operational_layout_top.addWidget(self._connect_button)
+
+        operational_layout_bottom = QHBoxLayout()
+        operational_layout_bottom.addWidget(self._connected_device_description)
+
+        operational_layout = QVBoxLayout()
+        operational_layout.addLayout(operational_layout_top)
+        operational_layout.addLayout(operational_layout_bottom)
+        operational_layout.addStretch(1)
+
+        operational.setLayout(operational_layout)
+        self._overlay.addWidget(operational)
+
+        # Progress widget - shown while connecting/disconnecting
+        progress = WidgetBase(self)
+        progress_layout = QVBoxLayout()
+        progress_layout.addStretch(1)
+        progress_layout.addWidget(self._connection_progress_bar)
+        progress_layout.addStretch(1)
+        progress.setLayout(progress_layout)
+        self._overlay.addWidget(progress)
 
     def _update_ports(self):
         if self._connection_established:

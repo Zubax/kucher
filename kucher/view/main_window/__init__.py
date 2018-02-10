@@ -21,9 +21,8 @@ from ..device_model_representation import GeneralStatusView, TaskStatisticsView,
 from ..tool_window_manager import ToolWindowManager, ToolWindowLocation, ToolWindowGroupingCondition
 from data_dir import LOG_DIR
 
-from .connection_management_widget import ConnectionManagementWidget, ConnectionRequestCallback, \
-                                          DisconnectionRequestCallback
-from .dashboard_widget import DashboardWidget
+from .connection_management_widget import ConnectionRequestCallback, DisconnectionRequestCallback
+from .main_widget import MainWidget
 from .task_statistics_widget import TaskStatisticsWidget
 from .log_widget import LogWidget
 
@@ -47,43 +46,33 @@ class MainWindow(QMainWindow):
         self._on_close = on_close
         self._tool_window_manager = ToolWindowManager(self)
 
-        self._connection_management_widget = \
-            ConnectionManagementWidget(self,
+        self._main_widget = MainWidget(self,
                                        on_connection_request=on_connection_request,
                                        on_disconnection_request=on_disconnection_request)
-        self._dashboard_widget = DashboardWidget(self)
 
         self._configure_file_menu()
         self._configure_tool_windows(on_task_statistics_request)
         self._configure_help_menu()
 
-        # Layout
-        central_widget = QWidget(self)
-
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self._connection_management_widget)
-        main_layout.addWidget(self._dashboard_widget)
-
-        central_widget.setLayout(main_layout)
-        self.setCentralWidget(central_widget)
+        self.setCentralWidget(self._main_widget)
 
     def on_connection_established(self, device_info: BasicDeviceInfo):
+        self._main_widget.on_connection_established(device_info)
         for w in self._tool_window_manager.select_widgets(LogWidget):
             w.on_device_connected(device_info)
 
     def on_connection_loss(self, reason: str):
-        self._connection_management_widget.on_connection_loss(reason)
-        self._dashboard_widget.on_connection_loss()
+        self._main_widget.on_connection_loss(reason)
         for w in self._tool_window_manager.select_widgets(LogWidget):
             w.on_device_disconnected(reason)
 
     def on_connection_initialization_progress_report(self,
                                                      stage_description: str,
                                                      progress: float):
-        self._connection_management_widget.on_connection_initialization_progress_report(stage_description, progress)
+        self._main_widget.on_connection_initialization_progress_report(stage_description, progress)
 
     def on_general_status_update(self, timestamp: float, status: GeneralStatusView):
-        self._dashboard_widget.on_general_status_update(timestamp, status)
+        self._main_widget.on_general_status_update(timestamp, status)
 
     def on_log_line_reception(self, monotonic_timestamp: float, text: str):
         for w in self._tool_window_manager.select_widgets(LogWidget):
