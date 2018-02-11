@@ -25,6 +25,8 @@ class Widget(StatusWidgetBase):
     def __init__(self, parent: QWidget):
         super(Widget, self).__init__(parent)
 
+        self._last_displayed: TaskSpecificStatusReport.Fault = None
+
         self._line_height = QFontMetrics(QFont()).height()
 
         self._task_icon_display = QLabel(self)
@@ -37,20 +39,23 @@ class Widget(StatusWidgetBase):
         self._error_description_display = self._make_display()
         self._error_description_display.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
-        self.setLayout(lay_out_vertically(
-            lay_out_horizontally(QLabel('The task', self),
-                                 self._task_icon_display,
-                                 (self._task_name_display, 4),
-                                 QLabel('has failed with exit code', self),
-                                 (self._error_code_dec, 1),
-                                 (self._error_code_hex, 1),
-                                 (self._error_code_bin, 2),
-                                 QLabel('which is elaborated below', self)),
-            self._error_description_display,
-            (None, 1),
-        ))
+        self.setLayout(
+            lay_out_vertically(
+                lay_out_horizontally(QLabel('Task', self),
+                                     self._task_icon_display,
+                                     (self._task_name_display, 3),
+                                     QLabel('has failed with exit code', self),
+                                     (self._error_code_dec, 1),
+                                     (self._error_code_hex, 1),
+                                     (self._error_code_bin, 2)),
+                lay_out_horizontally(QLabel('which means', self),
+                                     (self._error_description_display, 1)),
+                (None, 1),
+            )
+        )
 
     def reset(self):
+        self._last_displayed = None
         self._task_icon_display.clear()
         self._task_name_display.clear()
         self._error_code_dec.clear()
@@ -60,6 +65,10 @@ class Widget(StatusWidgetBase):
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
         tssr = self._get_task_specific_status_report(TaskSpecificStatusReport.Fault, s)
+        if tssr == self._last_displayed:
+            return
+
+        self._last_displayed = tssr
 
         icon = get_icon(get_icon_name_for_task_id(tssr.failed_task_id))
         self._task_icon_display.setPixmap(icon.pixmap(self._line_height, self._line_height))
