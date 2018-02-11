@@ -22,13 +22,16 @@ from .placeholder_widget import PlaceholderWidget
 from .base import StatusWidgetBase
 
 
+_DEFAULT_ICON = 'question-mark'
+
+
 _logger = getLogger(__name__)
 
 
 class TaskSpecificStatusWidget(GroupBoxWidget):
     # noinspection PyArgumentList
     def __init__(self, parent: QWidget):
-        super(TaskSpecificStatusWidget, self).__init__(parent, 'Task-specific status information', 'question-mark')
+        super(TaskSpecificStatusWidget, self).__init__(parent, 'Task-specific status information', _DEFAULT_ICON)
 
         self._placeholder_widget = PlaceholderWidget(self)
 
@@ -64,6 +67,7 @@ class TaskSpecificStatusWidget(GroupBoxWidget):
 
     def reset(self):
         self._ensure_widget_active(self._placeholder_widget)
+        self.set_icon(_DEFAULT_ICON)
 
     def _ensure_widget_active(self, new_widget: StatusWidgetBase):
         if self._layout.currentWidget() is not new_widget:
