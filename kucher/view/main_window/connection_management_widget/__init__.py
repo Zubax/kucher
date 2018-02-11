@@ -59,6 +59,7 @@ class ConnectionManagementWidget(WidgetBase):
 
         self._status_text = QLabel(self)
         self._status_text.setText(_STATUS_WHEN_NOT_CONNECTED)
+        self._status_text.setWordWrap(True)
 
         self._device_info_widget = LittleBobbyTablesWidget(self)
 
