@@ -17,6 +17,7 @@ import asyncio
 import datetime
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QTableView, QHeaderView, QSpinBox, QCheckBox, QLabel, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtCore import QTimer, Qt, QAbstractTableModel, QModelIndex, QVariant
 from PyQt5.QtGui import QFontMetrics, QFont
 from view.widgets import WidgetBase
@@ -170,6 +171,9 @@ class _TableView(QTableView):
         self.setSortingEnabled(False)
         self.setSelectionMode(self.NoSelection)
         self.setAlternatingRowColors(True)
+
+        self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
 
 
 # noinspection PyMethodOverriding
