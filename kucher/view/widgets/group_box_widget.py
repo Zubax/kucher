@@ -13,9 +13,13 @@
 #
 
 import typing
+from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QGroupBox
 from PyQt5.QtGui import QFontMetrics, QFont
 from ..utils import get_icon_path
+
+
+_logger = getLogger(__name__)
 
 
 class GroupBoxWidget(QGroupBox):
@@ -25,10 +29,19 @@ class GroupBoxWidget(QGroupBox):
                  icon_name:     typing.Optional[str]=None):
         super(GroupBoxWidget, self).__init__(title, parent)
 
+        # Changing icons is very expensive, so we store last set icon in order to avoid re-setting it
+        self._current_icon: typing.Optional[str] = None
+
         if icon_name:
             self.set_icon(icon_name)
 
     def set_icon(self, icon_name: str):
+        if self._current_icon == icon_name:
+            return
+
+        _logger.debug('Changing icon from %r to %r', self._current_icon, icon_name)
+        self._current_icon = icon_name
+
         icon_size = QFontMetrics(QFont()).height()
         icon_path = get_icon_path(icon_name)
 
