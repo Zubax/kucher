@@ -20,7 +20,7 @@ from view.device_model_representation import GeneralStatusView
 from .dc_quantities_widget import DCQuantitiesWidget
 from .temperature_widget import TemperatureWidget
 from .hardware_flag_counters_widget import HardwareFlagCountersWidget
-from .device_time_widget import DeviceTimeWidget
+from .device_status_widget import DeviceStatusWidget
 from .vsi_status_widget import VSIStatusWidget
 from .active_alerts_widget import ActiveAlertsWidget
 
@@ -32,7 +32,7 @@ class DashboardWidget(WidgetBase):
         self._dc_quantities_widget = DCQuantitiesWidget(self)
         self._temperature_widget = TemperatureWidget(self)
         self._hardware_flag_counters_widget = HardwareFlagCountersWidget(self)
-        self._device_time_widget = DeviceTimeWidget(self)
+        self._device_status_widget = DeviceStatusWidget(self)
         self._vsi_status_widget = VSIStatusWidget(self)
         self._active_alerts_widget = ActiveAlertsWidget(self)
 
@@ -56,7 +56,7 @@ class DashboardWidget(WidgetBase):
                 self._temperature_widget,
                 self._hardware_flag_counters_widget)
 
-        add_row((self._device_time_widget,   1),
+        add_row((self._device_status_widget, 1),
                 (self._vsi_status_widget,    2),
                 (self._active_alerts_widget, 2))
 
@@ -69,7 +69,7 @@ class DashboardWidget(WidgetBase):
         self._dc_quantities_widget.reset()
         self._temperature_widget.reset()
         self._hardware_flag_counters_widget.reset()
-        self._device_time_widget.reset()
+        self._device_status_widget.reset()
         self._vsi_status_widget.reset()
         self._active_alerts_widget.reset()
 
@@ -105,19 +105,14 @@ class DashboardWidget(WidgetBase):
             fault=hfc_fs(event_count=s.hardware_flag_edge_counters.fault,
                          active=s.alert_flags.hardware_fault))
 
-        # Device time
-        self._device_time_widget.set(s.timestamp)
+        # Device status
+        self._device_status_widget.set(s.current_task_id,
+                                       s.timestamp)
 
         # VSI status
-        if s.status_flags.vsi_modulating:
-            vsi_status = 'modulating'
-        elif s.status_flags.vsi_enabled:
-            vsi_status = 'armed'
-        else:
-            vsi_status = 'idle'
-
         self._vsi_status_widget.set(1 / s.pwm.period,
-                                    vsi_status,
+                                    s.status_flags.vsi_enabled,
+                                    s.status_flags.vsi_modulating,
                                     s.status_flags.phase_current_agc_high_gain_selected)
 
         # Active alerts

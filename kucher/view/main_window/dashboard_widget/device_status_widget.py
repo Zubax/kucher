@@ -18,16 +18,39 @@ import decimal
 from decimal import Decimal
 from PyQt5.QtWidgets import QWidget
 from view.widgets.value_display_group_widget import ValueDisplayGroupWidget
+from view.device_model_representation import TaskID, get_icon_name_for_task_id
 
 
-class DeviceTimeWidget(ValueDisplayGroupWidget):
+class DeviceStatusWidget(ValueDisplayGroupWidget):
     def __init__(self, parent: QWidget):
-        super(DeviceTimeWidget, self).__init__(parent, 'Device time', 'clock')
-        self._time_display = self.create_value_display('Since boot', 'N/A')
+        super(DeviceStatusWidget, self).__init__(parent, 'Device status', 'question-mark')
 
-    def set(self, device_time: Decimal):
-        as_string = _duration_to_string(device_time)
-        self._time_display.set(as_string)
+        self._task_display = self.create_value_display('Current task', 'N/A',
+                                                       'Use the Task Statistics view for more information')
+
+        self._monotonic_time_display = self.create_value_display('Monotonic time', 'N/A',
+                                                                 'Time since boot')
+
+    def set(self,
+            current_task_id: TaskID,
+            monotonic_device_time: Decimal):
+        raw_task_name = str(current_task_id).split('.')[-1]
+        task_name_words = raw_task_name.split('_')
+        if len(task_name_words) > 1:
+            short_task_name = ''.join([w[0].upper() for w in task_name_words])
+        else:
+            short_task_name = task_name_words[0].capitalize()
+
+        self._task_display.set(short_task_name)
+        self._task_display.setToolTip(raw_task_name)
+
+        self._monotonic_time_display.set(_duration_to_string(monotonic_device_time))
+
+        self.set_icon(get_icon_name_for_task_id(current_task_id))
+
+    def reset(self):
+        super(DeviceStatusWidget, self).reset()
+        self.set_icon('question-mark')
 
 
 def _duration_to_string(dur: typing.Union[Decimal, float]) -> str:
