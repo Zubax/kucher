@@ -62,8 +62,8 @@ class ValueDisplayWidget(WidgetBase):
         else:
             self._comment = None
 
-        if tooltip:
-            self.setToolTip(tooltip)
+        self._default_tooltip = str(tooltip or '')
+        self.setToolTip(self._default_tooltip)
 
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignCenter)
@@ -90,6 +90,7 @@ class ValueDisplayWidget(WidgetBase):
     def reset(self):
         # TODO: handle style
         self._value_display.setText(self._placeholder_text)
+        self.setToolTip(self._default_tooltip)
         if isinstance(self._comment, _Subscript):
             self._comment.reset()
 

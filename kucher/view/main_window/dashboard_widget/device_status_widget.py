@@ -24,9 +24,9 @@ from view.device_model_representation import TaskID, get_icon_name_for_task_id
 class DeviceStatusWidget(ValueDisplayGroupWidget):
     def __init__(self, parent: QWidget):
         super(DeviceStatusWidget, self).__init__(parent, 'Device status', 'question-mark')
+        self.setToolTip('Use the Task Statistics view for more information')
 
-        self._task_display = self.create_value_display('Current task', 'N/A',
-                                                       'Use the Task Statistics view for more information')
+        self._task_display = self.create_value_display('Current task', 'N/A')
 
         self._monotonic_time_display = self.create_value_display('Monotonic time', 'N/A',
                                                                  'Time since boot')
