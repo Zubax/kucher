@@ -12,13 +12,34 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import typing
 import datetime
+import functools
 from dataclasses import dataclass
 
 # This is an undesirable coupling, but it allows us to avoid excessive code duplication.
 # We keep it this way while the codebase is new and fluid. In the future we may want to come up with an
 # independent state representation in View, and add a converter into Fuhrer.
 from model.device_model import GeneralStatusView, TaskStatisticsView, TaskID
+
+
+_TASK_ID_TO_ICON_MAPPING: typing.Dict[TaskID, str] = {
+    TaskID.IDLE:                   'sleep',
+    TaskID.FAULT:                  'skull',
+    TaskID.BEEPING:                'speaker',
+    TaskID.RUNNING:                'running',
+    TaskID.HARDWARE_TEST:          'pass-fail',
+    TaskID.MOTOR_IDENTIFICATION:   'caliper',
+    TaskID.LOW_LEVEL_MANIPULATION: 'ok-hand',
+}
+
+
+@functools.lru_cache()
+def get_icon_name_for_task_id(tid: TaskID) -> str:
+    try:
+        return _TASK_ID_TO_ICON_MAPPING[tid]
+    except KeyError:
+        return 'question-mark'
 
 
 @dataclass

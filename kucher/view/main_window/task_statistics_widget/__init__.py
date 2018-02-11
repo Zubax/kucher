@@ -22,7 +22,7 @@ from PyQt5.QtCore import QTimer, Qt, QAbstractTableModel, QModelIndex, QVariant
 from PyQt5.QtGui import QFontMetrics, QFont
 from view.widgets import WidgetBase
 from view.utils import gui_test, get_icon
-from view.device_model_representation import TaskStatisticsView, TaskID
+from view.device_model_representation import TaskStatisticsView, TaskID, get_icon_name_for_task_id
 
 
 _DEFAULT_UPDATE_PERIOD = 2
@@ -188,16 +188,6 @@ class _TableModel(QAbstractTableModel):
         'Last\nexit code',
     ]
 
-    TASK_ENUM_TO_ICON_MAPPING = {
-        TaskID.IDLE:                   'sleep',
-        TaskID.FAULT:                  'skull',
-        TaskID.BEEPING:                'speaker',
-        TaskID.RUNNING:                'running',
-        TaskID.HARDWARE_TEST:          'pass-fail',
-        TaskID.MOTOR_IDENTIFICATION:   'caliper',
-        TaskID.LOW_LEVEL_MANIPULATION: 'ok-hand',
-    }
-
     def __init__(self, parent: QWidget):
         super(_TableModel, self).__init__(parent)
 
@@ -222,7 +212,7 @@ class _TableModel(QAbstractTableModel):
             if orientation == Qt.Vertical:
                 task_enum = list(self._data.entries.keys())[section]
                 try:
-                    icon_name = self.TASK_ENUM_TO_ICON_MAPPING[task_enum]
+                    icon_name = get_icon_name_for_task_id(task_enum)
                 except KeyError:
                     pass
                 else:
