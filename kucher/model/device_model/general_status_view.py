@@ -17,7 +17,7 @@ import typing
 import dataclasses
 from decimal import Decimal
 
-__all__ = ['GeneralStatusView']
+__all__ = ['GeneralStatusView', 'TaskID', 'TaskSpecificStatusReport']
 
 _struct_view = dataclasses.dataclass(frozen=True)
 
@@ -105,7 +105,7 @@ class HardwareFlagEdgeCounters:
     fault:              int = 0
 
 
-class TaskSpecific:
+class TaskSpecificStatusReport:
     @_struct_view
     class Fault:
         failed_task_id:                 TaskID = TaskID.IDLE
@@ -113,7 +113,7 @@ class TaskSpecific:
 
         @staticmethod
         def populate(fields: typing.Mapping):
-            return TaskSpecific.Fault(
+            return TaskSpecificStatusReport.Fault(
                 failed_task_id=TASK_ID_MAPPING[fields['failed_task_id']][0],
                 failed_task_exit_code=fields['failed_task_exit_code'],
             )
@@ -128,7 +128,7 @@ class TaskSpecific:
 
         @staticmethod
         def populate(fields: typing.Mapping):
-            return TaskSpecific.Running(
+            return TaskSpecificStatusReport.Running(
                 stall_count=fields['stall_count'],
                 estimated_active_power=fields['estimated_active_power'],
                 demand_factor=fields['demand_factor'],
@@ -142,7 +142,7 @@ class TaskSpecific:
 
         @staticmethod
         def populate(fields: typing.Mapping):
-            return TaskSpecific.HardwareTest(
+            return TaskSpecificStatusReport.HardwareTest(
                 progress=fields['progress'],
             )
 
@@ -152,7 +152,7 @@ class TaskSpecific:
 
         @staticmethod
         def populate(fields: typing.Mapping):
-            return TaskSpecific.MotorIdentification(
+            return TaskSpecificStatusReport.MotorIdentification(
                 progress=fields['progress'],
             )
 
@@ -162,7 +162,7 @@ class TaskSpecific:
 
         @staticmethod
         def populate(fields: typing.Mapping):
-            return TaskSpecific.ManualControl(
+            return TaskSpecificStatusReport.ManualControl(
                 sub_task_id=fields['sub_task_id'],
             )
 
@@ -171,12 +171,12 @@ class TaskSpecific:
 
 TASK_ID_MAPPING = {
     'idle':                   (TaskID.IDLE,                   None),
-    'fault':                  (TaskID.FAULT,                  TaskSpecific.Fault),
+    'fault':                  (TaskID.FAULT,                  TaskSpecificStatusReport.Fault),
     'beeping':                (TaskID.BEEPING,                None),
-    'running':                (TaskID.RUNNING,                TaskSpecific.Running),
-    'hardware_test':          (TaskID.HARDWARE_TEST,          TaskSpecific.HardwareTest),
-    'motor_identification':   (TaskID.MOTOR_IDENTIFICATION,   TaskSpecific.MotorIdentification),
-    'low_level_manipulation': (TaskID.LOW_LEVEL_MANIPULATION, TaskSpecific.ManualControl),
+    'running':                (TaskID.RUNNING,                TaskSpecificStatusReport.Running),
+    'hardware_test':          (TaskID.HARDWARE_TEST,          TaskSpecificStatusReport.HardwareTest),
+    'motor_identification':   (TaskID.MOTOR_IDENTIFICATION,   TaskSpecificStatusReport.MotorIdentification),
+    'low_level_manipulation': (TaskID.LOW_LEVEL_MANIPULATION, TaskSpecificStatusReport.ManualControl),
 }
 
 
@@ -190,7 +190,7 @@ class GeneralStatusView:
     dc:                             DCQuantities = DCQuantities()
     pwm:                            PWMState = PWMState()
     hardware_flag_edge_counters:    HardwareFlagEdgeCounters = HardwareFlagEdgeCounters()
-    task_specific_status_report:    typing.Optional[TaskSpecific.Union] = None
+    task_specific_status_report:    typing.Optional[TaskSpecificStatusReport.Union] = None
 
     @staticmethod
     def populate(msg: typing.Mapping) -> 'GeneralStatusView':

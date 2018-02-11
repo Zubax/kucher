@@ -17,7 +17,7 @@ import time
 import typing
 import functools
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QWidget, QPushButton, QMessageBox, QLayout, QHBoxLayout, QVBoxLayout, QBoxLayout
 from PyQt5.QtGui import QFont, QFontInfo, QIcon
 from PyQt5.QtCore import Qt
 from resources import get_absolute_path
@@ -135,6 +135,53 @@ def time_tracked(target: typing.Callable):
         return output
 
     return decorator
+
+
+# noinspection PyArgumentList
+def lay_out(layout_object: QBoxLayout,
+            *items_or_items_with_stretch_factors: typing.Union[QWidget,
+                                                               QLayout,
+                                                               typing.Tuple[QWidget, int],
+                                                               typing.Tuple[QLayout, int],
+                                                               typing.Tuple[None, int]]):
+    for item in items_or_items_with_stretch_factors:
+        if isinstance(item, tuple):
+            item, stretch = item
+        else:
+            item, stretch = item, 0
+
+        if isinstance(item, QLayout):
+            layout_object.addLayout(item, stretch)
+        elif isinstance(item, QWidget):
+            layout_object.addWidget(item, stretch)
+        elif item is None:
+            layout_object.addStretch(stretch)
+        else:
+            raise TypeError(f'Unexpected type: {type(item)!r}')
+
+
+# noinspection PyArgumentList
+def lay_out_horizontally(*items_or_items_with_stretch_factors: typing.Union[QWidget,
+                                                                            QLayout,
+                                                                            typing.Tuple[QWidget, int],
+                                                                            typing.Tuple[QLayout, int],
+                                                                            typing.Tuple[None, int]]) -> QLayout:
+    """A simple convenience function that creates a horizontal layout in a Pythonic way"""
+    inner = QHBoxLayout()
+    lay_out(inner, *items_or_items_with_stretch_factors)
+    return inner
+
+
+# noinspection PyArgumentList
+def lay_out_vertically(*items_or_items_with_stretch_factors: typing.Union[QWidget,
+                                                                          QLayout,
+                                                                          typing.Tuple[QWidget, int],
+                                                                          typing.Tuple[QLayout, int],
+                                                                          typing.Tuple[None, int]]) -> QLayout:
+    """Like lay_out_horizontally(), but for vertical layouts."""
+    inner = QVBoxLayout()
+    lay_out(inner, *items_or_items_with_stretch_factors)
+    return inner
 
 
 def gui_test(test_case_function: typing.Callable):

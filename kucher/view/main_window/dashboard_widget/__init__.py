@@ -12,10 +12,11 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QSizePolicy
 from view.widgets import WidgetBase
 from view.monitored_quantity import MonitoredQuantity
 from view.device_model_representation import GeneralStatusView
+from view.utils import lay_out_horizontally, lay_out_vertically
 
 from .dc_quantities_widget import DCQuantitiesWidget
 from .temperature_widget import TemperatureWidget
@@ -23,6 +24,7 @@ from .hardware_flag_counters_widget import HardwareFlagCountersWidget
 from .device_status_widget import DeviceStatusWidget
 from .vsi_status_widget import VSIStatusWidget
 from .active_alerts_widget import ActiveAlertsWidget
+from .task_specific_status_widget import TaskSpecificStatusWidget
 
 
 class DashboardWidget(WidgetBase):
@@ -35,33 +37,15 @@ class DashboardWidget(WidgetBase):
         self._device_status_widget = DeviceStatusWidget(self)
         self._vsi_status_widget = VSIStatusWidget(self)
         self._active_alerts_widget = ActiveAlertsWidget(self)
+        self._task_specific_status_widget = TaskSpecificStatusWidget(self)
 
-        # Layout
-        main_layout = QVBoxLayout()
-
-        # noinspection PyArgumentList
-        def add_row(*widgets):
-            inner = QHBoxLayout()
-            for w in widgets:
-                if isinstance(w, tuple):
-                    w, stretch = w
-                else:
-                    w, stretch = w, 0
-
-                inner.addWidget(w, stretch)
-
-            main_layout.addLayout(inner)
-
-        add_row(self._dc_quantities_widget,
-                self._temperature_widget,
-                self._hardware_flag_counters_widget)
-
-        add_row((self._device_status_widget, 1),
-                (self._vsi_status_widget,    2),
-                (self._active_alerts_widget, 2))
-
-        main_layout.addStretch(1)
-        self.setLayout(main_layout)
+        self.setLayout(lay_out_vertically(lay_out_horizontally(self._dc_quantities_widget,
+                                                               self._temperature_widget,
+                                                               self._hardware_flag_counters_widget),
+                                          lay_out_horizontally(self._device_status_widget,
+                                                               self._vsi_status_widget,
+                                                               self._active_alerts_widget),
+                                          (self._task_specific_status_widget, 1)))
 
         self.setSizePolicy(QSizePolicy().Minimum, QSizePolicy().Minimum)
 
@@ -72,6 +56,7 @@ class DashboardWidget(WidgetBase):
         self._device_status_widget.reset()
         self._vsi_status_widget.reset()
         self._active_alerts_widget.reset()
+        self._task_specific_status_widget.reset()
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
         # DC quantities
@@ -117,6 +102,9 @@ class DashboardWidget(WidgetBase):
 
         # Active alerts
         self._active_alerts_widget.set(s.alert_flags)
+
+        # Task-specific
+        self._task_specific_status_widget.on_general_status_update(timestamp, s)
 
 
 def _make_monitored_quantity(value: float,
