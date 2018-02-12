@@ -35,5 +35,5 @@ class Widget(StatusWidgetBase):
         self._progress_bar.setValue(0)
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        tssr = self._get_task_specific_status_report(TaskSpecificStatusReport.MotorIdentification, s)
+        tssr = self._get_task_specific_status_report(TaskSpecificStatusReport.HardwareTest, s)
         self._progress_bar.setValue(round(tssr.progress * 100))

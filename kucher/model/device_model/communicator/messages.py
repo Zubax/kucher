@@ -144,9 +144,18 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
         'stall_count'                   / U32,
         'estimated_active_power'        / F32,
         'demand_factor'                 / F32,
+        # Velocity
         'electrical_angular_velocity'   / F32,
+        'mechanical_angular_velocity'   / F32,
+        # Rotating system parameters
+        'Udq'                           / con.Array(2, F32),
+        'Idq'                           / con.Array(2, F32),
+        # State flags
         'spinup_in_progress'            / con.Flag,
-        con.Padding(3),
+        'rotation_reversed'             / con.Flag,
+        'controller_saturated'          / con.Flag,
+        # Final padding to 4 bytes
+        con.Padding(1),
     ),
     'hardware_test': con.Struct(
         'progress'                      / F32,

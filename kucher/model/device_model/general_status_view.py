@@ -123,17 +123,33 @@ class TaskSpecificStatusReport:
         stall_count:                    int = 0
         estimated_active_power:         float = 0
         demand_factor:                  float = 0
+        # Velocity
         electrical_angular_velocity:    float = 0
+        mechanical_angular_velocity:    float = 0
+        # Rotating system parameters
+        Udq:                            typing.Tuple[float, float] = (0.0, 0.0)
+        Idq:                            typing.Tuple[float, float] = (0.0, 0.0)
+        # Flags
         spinup_in_progress:             bool = False
+        rotation_reversed:              bool = False
+        controller_saturated:           bool = False
 
         @staticmethod
         def populate(fields: typing.Mapping):
+            def tuplize(what):
+                return tuple(x for x in what)
+
             return TaskSpecificStatusReport.Running(
                 stall_count=fields['stall_count'],
                 estimated_active_power=fields['estimated_active_power'],
                 demand_factor=fields['demand_factor'],
                 electrical_angular_velocity=fields['electrical_angular_velocity'],
+                mechanical_angular_velocity=fields['mechanical_angular_velocity'],
+                Udq=tuplize(fields['Udq']),
+                Idq=tuplize(fields['Idq']),
                 spinup_in_progress=fields['spinup_in_progress'],
+                rotation_reversed=fields['rotation_reversed'],
+                controller_saturated=fields['controller_saturated'],
             )
 
     @_struct_view
