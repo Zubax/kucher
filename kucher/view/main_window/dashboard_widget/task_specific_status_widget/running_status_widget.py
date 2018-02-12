@@ -20,6 +20,7 @@ from PyQt5.QtCore import Qt
 from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport
 from view.utils import lay_out_vertically, lay_out_horizontally
 from view.widgets.value_display_widget import ValueDisplayWidget, make_value_display_label
+from view.widgets.flag_display_widget import FlagDisplayWidget
 
 
 class Widget(StatusWidgetBase):
@@ -49,6 +50,21 @@ class Widget(StatusWidgetBase):
 
         self._dq_display = _DQDisplayWidget(self)
 
+        self._reverse_flag_display = \
+            FlagDisplayWidget(self,
+                              FlagDisplayWidget.StateDefinition('Forward rotation', 'jog-forward'),
+                              FlagDisplayWidget.StateDefinition('Reverse rotation', 'jog-reverse'))
+
+        self._spinup_flag_display = \
+            FlagDisplayWidget(self,
+                              FlagDisplayWidget.StateDefinition('Started', 'ok-strong'),
+                              FlagDisplayWidget.StateDefinition('Starting...', 'warning'))
+
+        self._saturation_flag_display = \
+            FlagDisplayWidget(self,
+                              FlagDisplayWidget.StateDefinition('Not saturated', 'ok-strong'),
+                              FlagDisplayWidget.StateDefinition('Control saturation', 'warning'))
+
         self.setLayout(
             lay_out_horizontally(
                 lay_out_vertically(
@@ -57,6 +73,10 @@ class Widget(StatusWidgetBase):
                                          self._demand_factor_display,
                                          self._estimated_active_power_display,
                                          self._stall_count_display),
+                    lay_out_horizontally(self._reverse_flag_display,
+                                         self._spinup_flag_display,
+                                         self._saturation_flag_display,
+                                         (None, 1)),
                     (None, 1),
                 ),
                 lay_out_vertically(self._dq_display,
@@ -70,7 +90,11 @@ class Widget(StatusWidgetBase):
             num_reset += 1
             ch.reset()
 
-        assert num_reset > 4        # Simple paranoid check that PyQt is working as I expect it to
+        for ch in self.findChildren(FlagDisplayWidget):
+            num_reset += 1
+            ch.reset()
+
+        assert num_reset > 7        # Simple paranoid check that PyQt is working as I expect it to
 
         self._dq_display.reset()
 
@@ -90,6 +114,10 @@ class Widget(StatusWidgetBase):
             f'{_angular_velocity_to_frequency(tssr.electrical_angular_velocity):.1f} Hz')
 
         self._dq_display.set(tssr.Udq, tssr.Idq)
+
+        self._reverse_flag_display.set(tssr.rotation_reversed)
+        self._spinup_flag_display.set(tssr.spinup_in_progress)
+        self._saturation_flag_display.set(tssr.controller_saturated)
 
     def _make_display(self, title: str, tooltip: str) -> ValueDisplayWidget:
         return ValueDisplayWidget(self,

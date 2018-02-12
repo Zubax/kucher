@@ -28,8 +28,8 @@ _logger = getLogger(__name__)
 class FlagDisplayWidget(WidgetBase):
     @dataclass
     class StateDefinition:
-        icon_name:      str = ''
         text:           str = ''
+        icon_name:      str = ''
 
     # noinspection PyArgumentList
     def __init__(self,
@@ -43,6 +43,7 @@ class FlagDisplayWidget(WidgetBase):
 
         self._text_label = QLabel(self)
         self._text_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self._text_label.setWordWrap(True)
 
         icon_height = QFontMetrics(QFont()).height()
 
@@ -85,7 +86,7 @@ def _unittest_flag_display_widget():
 
     fd = FlagDisplayWidget(win,
                            FlagDisplayWidget.StateDefinition(icon_name='cold', text='Cleared'),
-                           FlagDisplayWidget.StateDefinition(icon_name='fire', text='Set'))
+                           FlagDisplayWidget.StateDefinition('Set', 'fire'))
 
     win.setCentralWidget(fd)
     win.show()
