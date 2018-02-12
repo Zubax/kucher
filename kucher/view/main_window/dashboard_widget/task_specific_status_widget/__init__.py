@@ -75,7 +75,7 @@ class TaskSpecificStatusWidget(GroupBoxWidget):
             try:
                 self._layout.currentWidget().reset()
             except Exception:
-                _logger.exception(f'Task-specific widget reset failed; widget {type(w)!r}')
+                _logger.exception(f'Task-specific widget reset failed; widget {type(new_widget)!r}')
 
             self._layout.setCurrentWidget(new_widget)
 
