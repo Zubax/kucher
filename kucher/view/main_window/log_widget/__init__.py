@@ -56,8 +56,6 @@ class LogWidget(WidgetBase):
         layout.addWidget(self._table_view, 1)
         self.setLayout(layout)
 
-        self.setMinimumSize(400, 350)
-
     def append_lines(self, text_lines: typing.Iterable[str]):
         self._model.append_lines(text_lines)
 
