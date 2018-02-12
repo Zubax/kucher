@@ -13,11 +13,13 @@
 #
 
 import math
+import typing
 from .base import StatusWidgetBase
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout
+from PyQt5.QtCore import Qt
 from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport
 from view.utils import lay_out_vertically, lay_out_horizontally
-from view.widgets.value_display_widget import ValueDisplayWidget
+from view.widgets.value_display_widget import ValueDisplayWidget, make_value_display_label
 
 
 class Widget(StatusWidgetBase):
@@ -45,13 +47,20 @@ class Widget(StatusWidgetBase):
             self._make_display('Current frequency',
                                'Phase current/voltage frequency')
 
+        self._dq_display = _DQDisplayWidget(self)
+
         self.setLayout(
-            lay_out_vertically(
-                lay_out_horizontally(self._mechanical_rpm_display,
-                                     self._current_frequency_display,
-                                     self._demand_factor_display,
-                                     self._estimated_active_power_display,
-                                     self._stall_count_display)
+            lay_out_horizontally(
+                lay_out_vertically(
+                    lay_out_horizontally(self._mechanical_rpm_display,
+                                         self._current_frequency_display,
+                                         self._demand_factor_display,
+                                         self._estimated_active_power_display,
+                                         self._stall_count_display),
+                    (None, 1),
+                ),
+                lay_out_vertically(self._dq_display,
+                                   (None, 1)),
             )
         )
 
@@ -62,6 +71,8 @@ class Widget(StatusWidgetBase):
             ch.reset()
 
         assert num_reset > 4        # Simple paranoid check that PyQt is working as I expect it to
+
+        self._dq_display.reset()
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
         tssr = self._get_task_specific_status_report(TaskSpecificStatusReport.Running, s)
@@ -78,10 +89,70 @@ class Widget(StatusWidgetBase):
         self._current_frequency_display.set(
             f'{_angular_velocity_to_frequency(tssr.electrical_angular_velocity):.1f} Hz')
 
+        self._dq_display.set(tssr.Udq, tssr.Idq)
+
     def _make_display(self, title: str, tooltip: str) -> ValueDisplayWidget:
         return ValueDisplayWidget(self,
                                   title=title,
                                   tooltip=tooltip)
+
+
+class _DQDisplayWidget(QWidget):
+    # noinspection PyArgumentList
+    def __init__(self, parent: QWidget):
+        super(_DQDisplayWidget, self).__init__(parent)
+
+        self._ud = make_value_display_label(self)
+        self._uq = make_value_display_label(self)
+        self._id = make_value_display_label(self)
+        self._iq = make_value_display_label(self)
+
+        self._ud.setToolTip('Direct axis voltage')
+        self._uq.setToolTip('Quadrature axis voltage')
+        self._id.setToolTip('Direct axis current')
+        self._iq.setToolTip('Quadrature axis current')
+
+        layout = QGridLayout(self)
+
+        def sign(text: str, right=False) -> QLabel:
+            w = QLabel(text, self)
+            if right:
+                w.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+            else:
+                w.setAlignment(Qt.AlignCenter)
+
+            return w
+
+        # 0 1  2
+        # 1 Ud Id
+        # 2 Uq Iq
+        layout.addWidget(sign('   Voltage   '), 0, 1)
+        layout.addWidget(sign('   Current   '), 0, 2)
+        layout.addWidget(sign('D', True), 1, 0)
+        layout.addWidget(sign('Q', True), 2, 0)
+
+        layout.addWidget(self._ud, 1, 1)
+        layout.addWidget(self._uq, 2, 1)
+        layout.addWidget(self._id, 1, 2)
+        layout.addWidget(self._iq, 2, 2)
+
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+
+    def set(self,
+            udq: typing.Tuple[float, float],
+            idq: typing.Tuple[float, float]):
+        def fmt(x: float) -> str:
+            return f'{x:.1f}'
+
+        self._ud.setText(fmt(udq[0]))
+        self._uq.setText(fmt(udq[1]))
+        self._id.setText(fmt(idq[0]))
+        self._iq.setText(fmt(idq[1]))
+
+    def reset(self):
+        for w in (self._ud, self._uq, self._id, self._iq):
+            w.setText('0')
 
 
 _2PI = math.pi * 2

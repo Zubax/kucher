@@ -28,11 +28,11 @@ from . import WidgetBase
 _logger = getLogger(__name__)
 
 
-@functools.lru_cache()
-def _get_large_font() -> QFont:
-    font = QFont()
-    font.setPointSize(round(font.pointSize() * 1.5))
-    return font
+def make_value_display_label(parent: QWidget) -> QLabel:
+    w = QLabel(parent)
+    w.setAlignment(Qt.AlignCenter)
+    w.setFont(_get_large_font())
+    return w
 
 
 class ValueDisplayWidget(WidgetBase):
@@ -53,9 +53,7 @@ class ValueDisplayWidget(WidgetBase):
 
         self._placeholder_text = str(placeholder_text or '')
 
-        self._value_display = QLabel()
-        self._value_display.setAlignment(Qt.AlignCenter)
-        self._value_display.setFont(_get_large_font())
+        self._value_display = make_value_display_label(self)
 
         if with_comment:
             self._comment = _Subscript(self)
@@ -109,6 +107,13 @@ class ValueDisplayWidget(WidgetBase):
             self._comment.set_icon(icon_name)
         elif comment or icon_name:
             warnings.warn('Attempting to set comment, but the instance is configured to not use one')
+
+
+@functools.lru_cache()
+def _get_large_font() -> QFont:
+    font = QFont()
+    font.setPointSize(round(font.pointSize() * 1.5))
+    return font
 
 
 # noinspection PyArgumentList
