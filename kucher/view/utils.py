@@ -36,9 +36,12 @@ def get_icon_path(name: str) -> str:
         return get_absolute_path('view', 'icons', f'{name}.{ext}', check_existence=True)
 
     try:
-        return attempt('png')
+        out = attempt('png')
     except ValueError:
-        return attempt('svg')
+        out = attempt('svg')
+
+    _logger.info(f'Icon {name!r} found at {out!r}')
+    return out
 
 
 @functools.lru_cache(None)
