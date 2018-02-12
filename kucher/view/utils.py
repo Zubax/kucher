@@ -32,7 +32,13 @@ def get_application_icon() -> QIcon:
 
 @functools.lru_cache(None)
 def get_icon_path(name: str) -> str:
-    return get_absolute_path('view', 'icons', f'{name}.png', check_existence=True)
+    def attempt(ext: str) -> str:
+        return get_absolute_path('view', 'icons', f'{name}.{ext}', check_existence=True)
+
+    try:
+        return attempt('png')
+    except ValueError:
+        return attempt('svg')
 
 
 @functools.lru_cache(None)

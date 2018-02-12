@@ -63,7 +63,7 @@ class Widget(StatusWidgetBase):
         self._saturation_flag_display = \
             FlagDisplayWidget(self,
                               FlagDisplayWidget.StateDefinition('Not saturated', 'ok-strong'),
-                              FlagDisplayWidget.StateDefinition('Control saturation', 'warning'))
+                              FlagDisplayWidget.StateDefinition('Control saturation', 'control-saturation'))
 
         self.setLayout(
             lay_out_horizontally(
