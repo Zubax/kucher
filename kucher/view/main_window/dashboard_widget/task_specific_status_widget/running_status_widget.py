@@ -81,7 +81,7 @@ class Widget(StatusWidgetBase):
 
         self._estimated_active_power_display.set(f'{tssr.estimated_active_power:.0f} W')
 
-        self._demand_factor_display.set(f'{tssr.demand_factor:.0f}%')
+        self._demand_factor_display.set(f'{tssr.demand_factor * 100.0:.0f}%')
 
         self._mechanical_rpm_display.set(
             f'{_angular_velocity_to_rpm(tssr.mechanical_angular_velocity):.0f} RPM')
@@ -123,7 +123,7 @@ class _DQDisplayWidget(QWidget):
 
             return w
 
-        # 0 1  2
+        # 0  1  2
         # 1 Ud Id
         # 2 Uq Iq
         layout.addWidget(sign('   Voltage   '), 0, 1)
