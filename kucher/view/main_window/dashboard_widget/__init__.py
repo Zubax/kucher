@@ -25,6 +25,7 @@ from .device_status_widget import DeviceStatusWidget
 from .vsi_status_widget import VSIStatusWidget
 from .active_alerts_widget import ActiveAlertsWidget
 from .task_specific_status_widget import TaskSpecificStatusWidget
+from .control_widget import ControlWidget
 
 
 class DashboardWidget(WidgetBase):
@@ -37,15 +38,29 @@ class DashboardWidget(WidgetBase):
         self._device_status_widget = DeviceStatusWidget(self)
         self._vsi_status_widget = VSIStatusWidget(self)
         self._active_alerts_widget = ActiveAlertsWidget(self)
+
         self._task_specific_status_widget = TaskSpecificStatusWidget(self)
 
-        self.setLayout(lay_out_vertically(lay_out_horizontally(self._dc_quantities_widget,
-                                                               self._temperature_widget,
-                                                               self._hardware_flag_counters_widget),
-                                          lay_out_horizontally((self._device_status_widget, 1),
-                                                               (self._vsi_status_widget, 1),
-                                                               (self._active_alerts_widget, 1)),
-                                          (self._task_specific_status_widget, 1)))
+        self._control_widget = ControlWidget(self)
+
+        self.setLayout(
+            lay_out_horizontally(
+                (lay_out_vertically(
+                    lay_out_horizontally(
+                        self._dc_quantities_widget,
+                        self._temperature_widget,
+                        self._hardware_flag_counters_widget,
+                    ),
+                    lay_out_horizontally(
+                        (self._device_status_widget, 1),
+                        (self._vsi_status_widget, 1),
+                        (self._active_alerts_widget, 1),
+                    ),
+                    (self._task_specific_status_widget, 1)
+                ), 1),
+                (self._control_widget, 1),
+            )
+        )
 
         self.setSizePolicy(QSizePolicy().Minimum, QSizePolicy().Minimum)
 

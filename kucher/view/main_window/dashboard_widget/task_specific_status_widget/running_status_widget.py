@@ -15,7 +15,7 @@
 import math
 import typing
 from .base import StatusWidgetBase
-from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QFrame
 from PyQt5.QtCore import Qt
 from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport
 from view.utils import lay_out_vertically, lay_out_horizontally
@@ -50,37 +50,48 @@ class Widget(StatusWidgetBase):
 
         self._dq_display = _DQDisplayWidget(self)
 
+        flags_box = QFrame(self)
+        flags_box.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
+
         self._reverse_flag_display = \
-            FlagDisplayWidget(self,
+            FlagDisplayWidget(flags_box,
                               FlagDisplayWidget.StateDefinition('Forward rotation', 'jog-forward'),
                               FlagDisplayWidget.StateDefinition('Reverse rotation', 'jog-reverse'))
 
         self._spinup_flag_display = \
-            FlagDisplayWidget(self,
+            FlagDisplayWidget(flags_box,
                               FlagDisplayWidget.StateDefinition('Started', 'ok-strong'),
                               FlagDisplayWidget.StateDefinition('Starting...', 'warning'))
 
         self._saturation_flag_display = \
-            FlagDisplayWidget(self,
+            FlagDisplayWidget(flags_box,
                               FlagDisplayWidget.StateDefinition('Not saturated', 'ok-strong'),
                               FlagDisplayWidget.StateDefinition('Control saturation', 'control-saturation'))
+
+        flags_box.setLayout(lay_out_horizontally(
+            (self._reverse_flag_display, 1),
+            (self._spinup_flag_display, 1),
+            (self._saturation_flag_display, 1),
+        ))
+        flags_box.layout().setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(
             lay_out_horizontally(
                 lay_out_vertically(
-                    lay_out_horizontally(self._mechanical_rpm_display,
-                                         self._current_frequency_display,
-                                         self._demand_factor_display,
-                                         self._estimated_active_power_display,
-                                         self._stall_count_display),
-                    lay_out_horizontally(self._reverse_flag_display,
-                                         self._spinup_flag_display,
-                                         self._saturation_flag_display,
-                                         (None, 1)),
+                    lay_out_horizontally(
+                        self._mechanical_rpm_display,
+                        self._current_frequency_display,
+                        self._demand_factor_display,
+                        self._estimated_active_power_display,
+                        self._stall_count_display,
+                    ),
+                    flags_box,
                     (None, 1),
                 ),
-                lay_out_vertically(self._dq_display,
-                                   (None, 1)),
+                lay_out_vertically(
+                    self._dq_display,
+                    (None, 1)
+                ),
             )
         )
 
