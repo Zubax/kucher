@@ -113,7 +113,8 @@ class Widget(StatusWidgetBase):
         self._current_frequency_display.set(
             f'{_angular_velocity_to_frequency(tssr.electrical_angular_velocity):.1f} Hz')
 
-        self._dq_display.set(tssr.Udq, tssr.Idq)
+        self._dq_display.set(tssr.u_dq,
+                             tssr.i_dq)
 
         self._reverse_flag_display.set(tssr.rotation_reversed)
         self._spinup_flag_display.set(tssr.spinup_in_progress)
@@ -168,15 +169,15 @@ class _DQDisplayWidget(QWidget):
         self.setLayout(layout)
 
     def set(self,
-            udq: typing.Tuple[float, float],
-            idq: typing.Tuple[float, float]):
+            u_dq: typing.Tuple[float, float],
+            i_dq: typing.Tuple[float, float]):
         def fmt(x: float) -> str:
             return f'{x:.1f}'
 
-        self._ud.setText(fmt(udq[0]))
-        self._uq.setText(fmt(udq[1]))
-        self._id.setText(fmt(idq[0]))
-        self._iq.setText(fmt(idq[1]))
+        self._ud.setText(fmt(u_dq[0]))
+        self._uq.setText(fmt(u_dq[1]))
+        self._id.setText(fmt(i_dq[0]))
+        self._iq.setText(fmt(i_dq[1]))
 
     def reset(self):
         for w in (self._ud, self._uq, self._id, self._iq):

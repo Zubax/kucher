@@ -148,8 +148,8 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
         'electrical_angular_velocity'   / F32,
         'mechanical_angular_velocity'   / F32,
         # Rotating system parameters
-        'Udq'                           / con.Array(2, F32),
-        'Idq'                           / con.Array(2, F32),
+        'u_dq'                          / con.Array(2, F32),
+        'i_dq'                          / con.Array(2, F32),
         # State flags
         'spinup_in_progress'            / con.Flag,
         'rotation_reversed'             / con.Flag,

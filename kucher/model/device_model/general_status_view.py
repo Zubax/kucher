@@ -127,8 +127,8 @@ class TaskSpecificStatusReport:
         electrical_angular_velocity:    float = 0
         mechanical_angular_velocity:    float = 0
         # Rotating system parameters
-        Udq:                            typing.Tuple[float, float] = (0.0, 0.0)
-        Idq:                            typing.Tuple[float, float] = (0.0, 0.0)
+        u_dq:                           typing.Tuple[float, float] = (0.0, 0.0)
+        i_dq:                           typing.Tuple[float, float] = (0.0, 0.0)
         # Flags
         spinup_in_progress:             bool = False
         rotation_reversed:              bool = False
@@ -145,8 +145,8 @@ class TaskSpecificStatusReport:
                 demand_factor=fields['demand_factor'],
                 electrical_angular_velocity=fields['electrical_angular_velocity'],
                 mechanical_angular_velocity=fields['mechanical_angular_velocity'],
-                Udq=tuplize(fields['Udq']),
-                Idq=tuplize(fields['Idq']),
+                u_dq=tuplize(fields['u_dq']),
+                i_dq=tuplize(fields['i_dq']),
                 spinup_in_progress=fields['spinup_in_progress'],
                 rotation_reversed=fields['rotation_reversed'],
                 controller_saturated=fields['controller_saturated'],
