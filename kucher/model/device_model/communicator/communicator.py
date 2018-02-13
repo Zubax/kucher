@@ -294,9 +294,9 @@ def _unittest_communicator_message_matcher():
     mt = MessageType
 
     assert mm(mt.GENERAL_STATUS, Message(mt.GENERAL_STATUS))
-    assert not mm(Message(mt.GENERAL_STATUS), Message(mt.SETPOINT))
-    assert not mm(mt.SETPOINT, NodeInfoMessage())
-    assert not mm(Message(mt.SETPOINT), NodeInfoMessage())
+    assert not mm(Message(mt.GENERAL_STATUS), Message(mt.COMMAND))
+    assert not mm(mt.COMMAND, NodeInfoMessage())
+    assert not mm(Message(mt.COMMAND), NodeInfoMessage())
     assert mm(Message(mt.DEVICE_CHARACTERISTICS), Message(mt.DEVICE_CHARACTERISTICS))
     assert mm(NodeInfoMessage, NodeInfoMessage())
     assert mm(NodeInfoMessage(), NodeInfoMessage())
@@ -313,11 +313,11 @@ async def _async_unittest_communicator_loopback():
     async def sender():
         com._ch.send_raw(b'Hello world!')
         with raises(CommunicatorException):
-            await com.send(Message(MessageType.SETPOINT, {'value': 123.456, 'mode': 'current'}))
+            await com.send(Message(MessageType.COMMAND, {'task_id': 'hardware_test', 'task_specific_command': {}}))
 
         com.set_protocol_version((1, 2))
-        print('Sending SETPOINT...')
-        await com.send(Message(MessageType.SETPOINT, {'value': 123.456, 'mode': 'current'}))
+        print('Sending COMMAND...')
+        await com.send(Message(MessageType.COMMAND, {'task_id': 'hardware_test', 'task_specific_command': {}}))
 
         print('Requesting GENERAL_STATUS...')
         status_response = await com.request(Message(MessageType.GENERAL_STATUS), 1)
@@ -335,9 +335,9 @@ async def _async_unittest_communicator_loopback():
         msg = await com.receive()
         print('Received:', msg)
         assert isinstance(msg, Message)
-        assert msg.type == MessageType.SETPOINT
-        assert msg.fields.value == approx(123.456)
-        assert msg.fields.mode == 'current'
+        assert msg.type == MessageType.COMMAND
+        assert msg.fields.task_id == 'hardware_test'
+        assert msg.fields.task_specific_command == {}
 
     async def log_reader():
         accumulator = ''
@@ -364,7 +364,7 @@ async def _async_unittest_communicator_loopback():
         await com.close()
 
         with raises(CommunicationChannelClosedException):
-            await com.send(Message(MessageType.SETPOINT, {'value': 123.456, 'mode': 'current'}))
+            await com.send(Message(MessageType.COMMAND, {'task_id': 'hardware_test', 'task_specific_command': {}}))
 
         with raises(CommunicationChannelClosedException):
             await com.read_log()

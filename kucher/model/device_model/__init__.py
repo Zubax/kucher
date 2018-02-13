@@ -22,6 +22,7 @@ from .connection import connect, Connection, ConnectionNotEstablishedException
 from .device_info_view import DeviceInfoView
 from .general_status_view import GeneralStatusView, TaskID, TaskSpecificStatusReport
 from .task_statistics_view import TaskStatisticsView
+from .commander import Commander, ControlMode, MotorIdentificationMode, LowLevelManipulationMode
 
 DEFAULT_GENERAL_STATUS_UPDATE_PERIOD = 0.5
 
@@ -37,24 +38,25 @@ class RequestTimedOutException(DeviceModelException):
     pass
 
 
-class ControlMode(enum.Enum):
-    RATIOMETRIC_CURRENT          = enum.auto()
-    RATIOMETRIC_ANGULAR_VELOCITY = enum.auto()
-    RATIOMETRIC_VOLTAGE          = enum.auto()
-    CURRENT                      = enum.auto()
-    MECHANICAL_RPM               = enum.auto()
-    VOLTAGE                      = enum.auto()
-
-
 class DeviceModel:
     def __init__(self, event_loop: asyncio.AbstractEventLoop):
         self._event_loop = event_loop
 
         self._conn: Connection = None
 
+        async def send_command(msg: Message):
+            self._ensure_connected()
+            await self._conn.send(msg)
+
+        self._commander = Commander(send_command)
+
         self._evt_device_status_update = Event()
         self._evt_log_line = Event()
         self._evt_connection_status_change = Event()
+
+    @property
+    def commander(self) -> Commander:
+        return self._commander
 
     @property
     def device_status_update_event(self):
@@ -140,26 +142,6 @@ class DeviceModel:
         if self._conn:
             return self._conn.last_general_status_with_timestamp
 
-    async def set_setpoint(self, value: float, mode: ControlMode):
-        self._ensure_connected()
-
-        try:
-            converted_mode = {
-                ControlMode.RATIOMETRIC_CURRENT:          'ratiometric_current',
-                ControlMode.RATIOMETRIC_ANGULAR_VELOCITY: 'ratiometric_angular_velocity',
-                ControlMode.RATIOMETRIC_VOLTAGE:          'ratiometric_voltage',
-                ControlMode.CURRENT:                      'current',
-                ControlMode.MECHANICAL_RPM:               'mechanical_rpm',
-                ControlMode.VOLTAGE:                      'voltage',
-            }[mode]
-        except KeyError:
-            raise ValueError(f'Unsupported control mode: {mode}') from None
-
-        await self._conn.send(Message(MessageType.SETPOINT, {
-            'value': float(value),
-            'mode': converted_mode
-        }))
-
     async def get_task_statistics(self) -> TaskStatisticsView:
         self._ensure_connected()
         out = await self._conn.request(MessageType.TASK_STATISTICS)
@@ -167,9 +149,6 @@ class DeviceModel:
             return TaskStatisticsView.populate(out.fields)
         else:
             raise RequestTimedOutException('Task statistics request has timed out')
-
-    async def stop(self):
-        await self.set_setpoint(0, ControlMode.CURRENT)
 
     def _on_connection_loss(self, reason: typing.Union[str, Exception]):
         _logger.info('Connection instance reported connection loss; reason: %r', reason)

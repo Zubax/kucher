@@ -131,6 +131,24 @@ ControlModeFormat = con.Enum(
 )
 
 
+MotorIdentificationModeFormat = con.Enum(
+    U8,
+
+    r_l=0,
+    phi=1,
+    r_l_phi=2,
+)
+
+
+LowLevelManipulationModeFormat = con.Enum(
+    U8,
+
+    calibration=0,
+    phase_manipulation=1,
+    scalar_control=2,
+)
+
+
 # Observe that by default we use padding of one byte rather than an empty sequence.
 # This is because the firmware reports empty task-specific structures as a zeroed-out byte sequence of length one byte.
 # The firmware does that because in the world of C/C++ a sizeof() cannot be zero.
@@ -255,7 +273,35 @@ def _unittest_device_characteristics_message_v1():
 
 
 # noinspection PyUnresolvedReferences
-SetpointMessageFormatV1 = 'value' / F32 + 'mode' / ControlModeFormat + con.Padding(3) + con.Terminated
+CommandMessageFormatV1 = con.Struct(
+    'task_id'                   / TaskIDFormat,
+    con.Padding(3),
+    'task_specific_command'     / con.Switch(con.this.task_id, {
+        'idle': con.Struct(),
+        'fault': con.Struct(
+            'magic'             / U32,
+        ),
+        'beeping': con.Struct(
+            'frequency'         / F32,
+            'duration'          / F32,
+        ),
+        'running': con.Struct(
+            'mode'              / ControlModeFormat,
+            con.Padding(3),
+            'value'             / F32,
+        ),
+        'hardware_test': con.Struct(),
+        'motor_identification': con.Struct(
+            'mode'              / MotorIdentificationModeFormat,
+        ),
+        'low_level_manipulation': con.Struct(
+            'mode'              / LowLevelManipulationModeFormat,
+            con.Padding(3),
+            'parameters'        / con.Array(4, F32),
+        ),
+    }),
+    con.Terminated      # This is only meaningful for parsing, but we add it anyway for consistency.
+)
 
 
 # noinspection PyUnresolvedReferences
@@ -299,7 +345,7 @@ def _unittest_task_statistics_message_v1():
 class MessageType(enum.Enum):
     GENERAL_STATUS = enum.auto()
     DEVICE_CHARACTERISTICS = enum.auto()
-    SETPOINT = enum.auto()
+    COMMAND = enum.auto()
     TASK_STATISTICS = enum.auto()
 
 
@@ -397,7 +443,7 @@ class Codec:
         self._type_mapping: typing.Dict[MessageType, typing.Tuple[int, con.Struct]] = {
             MessageType.GENERAL_STATUS:         (0, GeneralStatusMessageFormatV1),
             MessageType.DEVICE_CHARACTERISTICS: (1, DeviceCharacteristicsMessageFormatV1),
-            MessageType.SETPOINT:               (2, SetpointMessageFormatV1),
+            MessageType.COMMAND:                (2, CommandMessageFormatV1),
             MessageType.TASK_STATISTICS:        (3, TaskStatisticsMessageFormatV1),
         }
 
@@ -444,9 +490,12 @@ def _unittest_codec():
 
     c = Codec((1, 2))
 
-    msg = Message(MessageType.SETPOINT)
-    msg.fields.value = 1.234
-    msg.fields.mode = 'current'
+    msg = Message(MessageType.COMMAND)
+    msg.fields.task_id = 'running'
+    msg.fields.task_specific_command = {
+        'mode': 'current',
+        'value': 123.456,
+    }
 
     ftp, payload = c.encode(msg)
     print(ftp)
@@ -455,7 +504,7 @@ def _unittest_codec():
     msg = c.decode(popcop.transport.ReceivedFrame(ftp, payload, time.monotonic()))
     print(msg)
 
-    ftp, payload = c.encode(Message(MessageType.SETPOINT))
+    ftp, payload = c.encode(Message(MessageType.COMMAND))
     assert len(payload) == 0
 
     msg = c.decode(popcop.transport.ReceivedFrame(ftp, payload, time.monotonic()))
