@@ -108,7 +108,7 @@ class Commander:
 
     async def emergency(self):
         await self._send('fault', magic=0xBADC0FFE)
-        _logger.warning('Emergency command sent')
+        _logger.info('Emergency command sent')
 
     async def _send(self, converted_task_id: str, **kwargs):
         await self._sender(Message(MessageType.COMMAND, {

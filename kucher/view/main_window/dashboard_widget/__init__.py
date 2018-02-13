@@ -66,6 +66,9 @@ class DashboardWidget(WidgetBase):
 
         self.setSizePolicy(QSizePolicy().Minimum, QSizePolicy().Minimum)
 
+    def on_connection_established(self):
+        self._control_widget.on_connection_established()
+
     def on_connection_loss(self):
         self._dc_quantities_widget.reset()
         self._temperature_widget.reset()
@@ -74,6 +77,8 @@ class DashboardWidget(WidgetBase):
         self._vsi_status_widget.reset()
         self._active_alerts_widget.reset()
         self._task_specific_status_widget.reset()
+
+        self._control_widget.on_connection_loss()
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
         # DC quantities

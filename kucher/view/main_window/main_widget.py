@@ -42,6 +42,7 @@ class MainWidget(QTabWidget):
         self.setCurrentWidget(self._connection_management_widget)
 
     def on_connection_established(self, device_info: BasicDeviceInfo):
+        self._dashboard_widget.on_connection_established()
         self.setCurrentWidget(self._dashboard_widget)
 
     def on_connection_loss(self, reason: str):
