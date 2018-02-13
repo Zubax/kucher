@@ -12,10 +12,11 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import asyncio
-from PyQt5.QtWidgets import QWidget
-from view.device_model_representation import Commander, GeneralStatusView
+from PyQt5.QtWidgets import QWidget, QPushButton, QSizePolicy, QToolButton, QAction
+from PyQt5.QtCore import Qt
+from view.device_model_representation import Commander, GeneralStatusView, TaskID, MotorIdentificationMode
 from .base import SpecializedControlWidgetBase
+from view.utils import get_icon, lay_out_vertically, lay_out_horizontally
 
 
 class MotorIdentificationControlWidget(SpecializedControlWidgetBase):
@@ -26,11 +27,63 @@ class MotorIdentificationControlWidget(SpecializedControlWidgetBase):
 
         self._commander = commander
 
+        mode_button = QToolButton(self)
+        mode_button.setText('Launch...')
+        mode_button.setIcon(get_icon('play'))
+        mode_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        mode_button.setPopupMode(QToolButton.InstantPopup)
+        mode_button.setSizePolicy(QSizePolicy.MinimumExpanding,
+                                  QSizePolicy.MinimumExpanding)
+
+        # noinspection PyUnresolvedReferences
+        def create(mid: MotorIdentificationMode):
+            raw_name = str(mid).split('.')[-1]
+            human_name = _humanize(mid)
+            action = QAction(human_name, self)
+            action.setToolTip(raw_name)
+            action.setStatusTip(raw_name)
+            action.triggered.connect(lambda *_: self._execute(mid))
+            mode_button.addAction(action)
+
+        # noinspection PyTypeChecker
+        for motor_id_mode in sorted(MotorIdentificationMode,
+                                    key=lambda x: x != MotorIdentificationMode.R_L_PHI):
+            create(motor_id_mode)
+
+        self.setLayout(
+            lay_out_vertically(
+                mode_button,
+                (None, 1)
+            )
+        )
+
     def start(self):
         pass
 
     def stop(self):
-        pass
+        self.setEnabled(False)
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        pass
+        if s.current_task_id in (TaskID.RUNNING,
+                                 TaskID.BEEPING,
+                                 TaskID.HARDWARE_TEST,
+                                 TaskID.LOW_LEVEL_MANIPULATION,
+                                 TaskID.MOTOR_IDENTIFICATION):
+            self.setEnabled(False)
+        else:
+            self.setEnabled(True)
+
+    def _execute(self, mid: MotorIdentificationMode):
+        self.setEnabled(False)
+        self._launch_async(self._commander.begin_motor_identification(mid))
+
+
+def _humanize(mid: MotorIdentificationMode) -> str:
+    try:
+        return {
+            MotorIdentificationMode.R_L:        'Resistance,\nInductance',
+            MotorIdentificationMode.PHI:        'Flux\nlinkage',
+            MotorIdentificationMode.R_L_PHI:    'Resistance, Inductance,\nFlux linkage',
+        }[mid]
+    except KeyError:
+        return str(mid).upper().split('.')[-1].replace('_', ' ')
