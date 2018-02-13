@@ -15,7 +15,7 @@
 from PyQt5.QtWidgets import QWidget, QSizePolicy
 from view.widgets import WidgetBase
 from view.monitored_quantity import MonitoredQuantity
-from view.device_model_representation import GeneralStatusView
+from view.device_model_representation import GeneralStatusView, Commander
 from view.utils import lay_out_horizontally, lay_out_vertically
 
 from .dc_quantities_widget import DCQuantitiesWidget
@@ -29,7 +29,9 @@ from .control_widget import ControlWidget
 
 
 class DashboardWidget(WidgetBase):
-    def __init__(self, parent: QWidget):
+    def __init__(self,
+                 parent:    QWidget,
+                 commander: Commander):
         super(DashboardWidget, self).__init__(parent)
 
         self._dc_quantities_widget = DCQuantitiesWidget(self)
@@ -41,7 +43,7 @@ class DashboardWidget(WidgetBase):
 
         self._task_specific_status_widget = TaskSpecificStatusWidget(self)
 
-        self._control_widget = ControlWidget(self)
+        self._control_widget = ControlWidget(self, commander)
 
         self.setLayout(
             lay_out_horizontally(

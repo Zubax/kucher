@@ -20,7 +20,7 @@ from dataclasses import dataclass
 # This is an undesirable coupling, but it allows us to avoid excessive code duplication.
 # We keep it this way while the codebase is new and fluid. In the future we may want to come up with an
 # independent state representation in View, and add a converter into Fuhrer.
-from model.device_model import GeneralStatusView, TaskStatisticsView, TaskID, TaskSpecificStatusReport
+from model.device_model import GeneralStatusView, TaskStatisticsView, TaskID, TaskSpecificStatusReport, Commander
 
 
 _TASK_ID_TO_ICON_MAPPING: typing.Dict[TaskID, str] = {

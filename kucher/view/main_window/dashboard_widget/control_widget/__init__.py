@@ -15,6 +15,7 @@
 import typing
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QTabWidget
+from view.device_model_representation import Commander
 from view.widgets.group_box_widget import GroupBoxWidget
 from view.utils import make_button, lay_out_vertically
 
@@ -23,26 +24,35 @@ _logger = getLogger(__name__)
 
 
 class ControlWidget(GroupBoxWidget):
-    def __init__(self, parent: QWidget):
+    def __init__(self,
+                 parent:    QWidget,
+                 commander: Commander):
         super(ControlWidget, self).__init__(parent, 'Controls', 'adjust')
+
+        self._commander: Commander = commander
 
         self._tabs = QTabWidget(self)
 
-        self._stop_button = make_button(self,
-                                        text='Stop',
-                                        icon_name='hand-stop',
-                                        tool_tip='Unconditionally send a stop command',
-                                        on_clicked=self._do_stop)
-        # self._stop_button.setStyleSheet('''QPushButton {
-        #      background-color: #f55; border: 1px solid #f00;
-        # }''')
+        self._emergency_button =\
+            make_button(self,
+                        text='EMERGENCY\nSTOP',
+                        tool_tip='Stops the motor unconditionally and locks down the hardware until restarted',
+                        on_clicked=self._emergency)
+        self._emergency_button.setStyleSheet('''QPushButton {
+             background-color: #f33;
+             border: 1px solid #800;
+             font-weight: 600;
+             color: #300;
+        }''')
 
         self.setLayout(
             lay_out_vertically(
                 (self._tabs, 1),
-                self._stop_button,
+                self._emergency_button,
             )
         )
 
-    def _do_stop(self):
+    def _emergency(self):
         pass
+        _logger.warning('Emergency button clicked')
+        self.window().statusBar().showMessage("DON'T PANIC. The hardware will remain unusable until restarted.")

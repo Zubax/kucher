@@ -33,7 +33,8 @@ class Fuhrer:
                                        on_connection_request=self._on_connection_request,
                                        on_disconnection_request=self._on_disconnection_request,
                                        on_task_statistics_request=_return_none_if_not_connected(
-                                           self._device_model.get_task_statistics))
+                                           self._device_model.get_task_statistics),
+                                       commander=self._device_model.commander)
         self._main_window.show()
 
         self._device_model.device_status_update_event.connect(self._main_window.on_general_status_update)

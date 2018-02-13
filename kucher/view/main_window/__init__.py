@@ -13,11 +13,11 @@
 #
 
 import typing
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QAction
-from PyQt5.QtGui import QKeySequence, QDesktopServices, QCloseEvent
-from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtWidgets import QMainWindow, QAction
+from PyQt5.QtGui import QDesktopServices, QCloseEvent
+from PyQt5.QtCore import QUrl
 from ..utils import get_application_icon, get_icon
-from ..device_model_representation import GeneralStatusView, TaskStatisticsView, BasicDeviceInfo
+from ..device_model_representation import GeneralStatusView, TaskStatisticsView, BasicDeviceInfo, Commander
 from ..tool_window_manager import ToolWindowManager, ToolWindowLocation, ToolWindowGroupingCondition
 from data_dir import LOG_DIR
 
@@ -36,10 +36,11 @@ TaskStatisticsRequestCallback = typing.Callable[[], typing.Awaitable[typing.Opti
 class MainWindow(QMainWindow):
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
     def __init__(self,
-                 on_close: typing.Callable[[], None],
-                 on_connection_request: ConnectionRequestCallback,
-                 on_disconnection_request: DisconnectionRequestCallback,
-                 on_task_statistics_request: TaskStatisticsRequestCallback):
+                 on_close:                   typing.Callable[[], None],
+                 on_connection_request:      ConnectionRequestCallback,
+                 on_disconnection_request:   DisconnectionRequestCallback,
+                 on_task_statistics_request: TaskStatisticsRequestCallback,
+                 commander:                  Commander):
         super(MainWindow, self).__init__()
         self.setWindowTitle(_WINDOW_TITLE_PREFIX)
         self.setWindowIcon(get_application_icon())
@@ -51,7 +52,8 @@ class MainWindow(QMainWindow):
 
         self._main_widget = MainWidget(self,
                                        on_connection_request=on_connection_request,
-                                       on_disconnection_request=on_disconnection_request)
+                                       on_disconnection_request=on_disconnection_request,
+                                       commander=commander)
 
         self._configure_file_menu()
         self._configure_tool_windows(on_task_statistics_request)

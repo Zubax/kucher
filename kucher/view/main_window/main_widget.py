@@ -14,7 +14,7 @@
 
 from PyQt5.QtWidgets import QTabWidget, QWidget
 from ..utils import get_icon
-from ..device_model_representation import GeneralStatusView, BasicDeviceInfo
+from ..device_model_representation import GeneralStatusView, BasicDeviceInfo, Commander
 
 from .connection_management_widget import ConnectionManagementWidget,\
     ConnectionRequestCallback, DisconnectionRequestCallback
@@ -23,9 +23,10 @@ from .dashboard_widget import DashboardWidget
 
 class MainWidget(QTabWidget):
     def __init__(self,
-                 parent: QWidget,
-                 on_connection_request: ConnectionRequestCallback,
-                 on_disconnection_request: DisconnectionRequestCallback):
+                 parent:                    QWidget,
+                 on_connection_request:     ConnectionRequestCallback,
+                 on_disconnection_request:  DisconnectionRequestCallback,
+                 commander:                 Commander):
         super(MainWidget, self).__init__(parent)
 
         self._connection_management_widget =\
@@ -33,7 +34,7 @@ class MainWidget(QTabWidget):
                                        on_connection_request=on_connection_request,
                                        on_disconnection_request=on_disconnection_request)
 
-        self._dashboard_widget = DashboardWidget(self)
+        self._dashboard_widget = DashboardWidget(self, commander)
 
         self.addTab(self._connection_management_widget, get_icon('connector'), 'Connection')
         self.addTab(self._dashboard_widget, get_icon('dashboard'), 'Dashboard')
