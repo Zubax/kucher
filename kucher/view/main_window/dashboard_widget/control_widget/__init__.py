@@ -49,10 +49,10 @@ class ControlWidget(GroupBoxWidget):
         self._low_level_manipulation_widget = LowLevelManipulationControlWidget(self, commander)
 
         self._panel.addItem(self._run_widget, get_icon('running'), 'Run')
-        self._panel.addItem(self._motor_identification_widget, get_icon('caliper'), 'Motor ID')
+        self._panel.addItem(self._motor_identification_widget, get_icon('caliper'), 'Motor identification')
         self._panel.addItem(self._hardware_test_widget, get_icon('pass-fail'), 'Self-test')
         self._panel.addItem(self._misc_widget, get_icon('ellipsis'), 'Miscellaneous')
-        self._panel.addItem(self._low_level_manipulation_widget, get_icon('ok-hand'), 'LL manipulation')
+        self._panel.addItem(self._low_level_manipulation_widget, get_icon('ok-hand'), 'Low-level manipulation')
 
         self._panel.setCurrentWidget(self._hardware_test_widget)
 
@@ -68,7 +68,7 @@ class ControlWidget(GroupBoxWidget):
 
         self._emergency_button =\
             make_button(self,
-                        text='EMERGENCY\nSTOP',
+                        text='EMERGENCY',
                         tool_tip='Stops the motor unconditionally and locks down the hardware until restarted',
                         on_clicked=self._do_emergency_stop)
         self._emergency_button.setSizePolicy(QSizePolicy().MinimumExpanding,

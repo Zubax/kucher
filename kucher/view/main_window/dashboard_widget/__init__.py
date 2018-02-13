@@ -59,7 +59,7 @@ class DashboardWidget(WidgetBase):
                         (self._active_alerts_widget, 1),
                     ),
                     (self._task_specific_status_widget, 1)
-                ), 4),
+                ), 3),
                 (self._control_widget, 1),
             )
         )
