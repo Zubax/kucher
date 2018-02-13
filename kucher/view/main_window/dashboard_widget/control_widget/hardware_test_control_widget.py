@@ -13,8 +13,9 @@
 #
 
 from PyQt5.QtWidgets import QWidget
-from view.device_model_representation import Commander
+from view.device_model_representation import Commander, GeneralStatusView, TaskID
 from .base import SpecializedControlWidgetBase
+from view.utils import make_button, lay_out_vertically
 
 
 class HardwareTestControlWidget(SpecializedControlWidgetBase):
@@ -25,8 +26,29 @@ class HardwareTestControlWidget(SpecializedControlWidgetBase):
 
         self._commander = commander
 
+        self.setLayout(
+            lay_out_vertically(
+                make_button(self, text='Run self-test', icon_name='play', on_clicked=self._execute),
+                (None, 1),
+            )
+        )
+
     def start(self):
         pass
 
     def stop(self):
-        pass
+        self.setEnabled(False)
+
+    def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
+        if s.current_task_id in (TaskID.RUNNING,
+                                 TaskID.BEEPING,
+                                 TaskID.HARDWARE_TEST,
+                                 TaskID.LOW_LEVEL_MANIPULATION,
+                                 TaskID.MOTOR_IDENTIFICATION):
+            self.setEnabled(False)
+        else:
+            self.setEnabled(True)
+
+    def _execute(self):
+        self.setEnabled(False)
+        self._launch_async(self._commander.begin_hardware_test())

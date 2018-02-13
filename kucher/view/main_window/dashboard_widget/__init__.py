@@ -128,6 +128,9 @@ class DashboardWidget(WidgetBase):
         # Task-specific
         self._task_specific_status_widget.on_general_status_update(timestamp, s)
 
+        # Control widget
+        self._control_widget.on_general_status_update(timestamp, s)
+
 
 def _make_monitored_quantity(value: float,
                              too_low: bool=False,

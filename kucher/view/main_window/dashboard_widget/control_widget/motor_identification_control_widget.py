@@ -14,7 +14,7 @@
 
 import asyncio
 from PyQt5.QtWidgets import QWidget
-from view.device_model_representation import Commander
+from view.device_model_representation import Commander, GeneralStatusView
 from .base import SpecializedControlWidgetBase
 
 
@@ -30,4 +30,7 @@ class MotorIdentificationControlWidget(SpecializedControlWidgetBase):
         pass
 
     def stop(self):
+        pass
+
+    def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
         pass

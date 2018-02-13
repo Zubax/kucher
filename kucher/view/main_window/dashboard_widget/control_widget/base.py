@@ -12,7 +12,10 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import typing
+import asyncio
 from PyQt5.QtWidgets import QWidget
+from view.device_model_representation import GeneralStatusView
 
 
 class SpecializedControlWidgetBase(QWidget):
@@ -25,3 +28,10 @@ class SpecializedControlWidgetBase(QWidget):
 
     def stop(self):
         raise NotImplementedError
+
+    def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
+        raise NotImplementedError
+
+    @staticmethod
+    def _launch_async(coro: typing.Awaitable[None]):
+        asyncio.get_event_loop().create_task(coro)
