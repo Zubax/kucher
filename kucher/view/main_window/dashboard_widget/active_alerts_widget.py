@@ -13,9 +13,10 @@
 #
 
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
+from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 from view.widgets.group_box_widget import GroupBoxWidget
-from view.utils import get_monospace_font, gui_test
+from view.utils import gui_test
 
 
 _ICON_OK = 'ok-strong'
@@ -31,9 +32,9 @@ class ActiveAlertsWidget(GroupBoxWidget):
         self._content.setWordWrap(True)
         self._content.setAlignment(Qt.AlignCenter)
 
-        font = get_monospace_font()
+        font = QFont()
         font.setBold(True)
-        font.setPointSize(int(font.pointSize() * 0.7))
+        font.setPointSize(round(font.pointSize() * 0.8))
         self._content.setFont(font)
 
         layout = QVBoxLayout()
