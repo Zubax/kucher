@@ -15,17 +15,12 @@
 import math
 import typing
 from dataclasses import dataclass
-from contextlib import contextmanager
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QCheckBox, QComboBox, QSlider, QDoubleSpinBox, QLabel
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QWidget, QCheckBox, QComboBox, QLabel
 from view.device_model_representation import Commander, GeneralStatusView, ControlMode, TaskID, TaskSpecificStatusReport
 from view.utils import get_icon, lay_out_vertically, lay_out_horizontally
+from view.widgets.spinbox_linked_with_slider import SpinboxLinkedWithSlider
 from .base import SpecializedControlWidgetBase
-
-
-_SLIDER_HALF_RANGE = 1000
-_HUNDRED_PERCENT = 100
 
 
 _logger = getLogger(__name__)
@@ -54,20 +49,12 @@ class RunControlWidget(SpecializedControlWidgetBase):
         self._guru_mode_checkbox.setIcon(get_icon('guru'))
         self._guru_mode_checkbox.toggled.connect(self._on_guru_mode_toggled)
 
-        self._spinbox = QDoubleSpinBox(self)
-        self._spinbox.setToolTip(f'To stop the motor, press {STOP_SHORTCUT} or click the Stop button')
-        self._spinbox.setStatusTip(self._spinbox.toolTip())
-
-        self._slider = QSlider(Qt.Horizontal, self)
-        self._slider.setRange(-_SLIDER_HALF_RANGE,
-                              +_SLIDER_HALF_RANGE)
-        self._slider.setTickInterval(_SLIDER_HALF_RANGE)
-        self._slider.setTickPosition(QSlider.TicksBothSides)
-
-        # Linking the spin box and the slider. We unlink them every time either of them is changed in order
-        # to synchronize the values, and then we immediately link them back again; see _unlinker() for more info.
-        self._spinbox.valueChanged[float].connect(self._on_spinbox_changed)
-        self._slider.valueChanged.connect(self._on_slider_moved)
+        self._setpoint_control =\
+            SpinboxLinkedWithSlider(self,
+                                    slider_orientation=SpinboxLinkedWithSlider.SliderOrientation.HORIZONTAL)
+        self._setpoint_control.tool_tip = f'To stop the motor, press {STOP_SHORTCUT} or click the Stop button'
+        self._setpoint_control.status_tip = self._setpoint_control.tool_tip
+        self._setpoint_control.value_change_event.connect(self._on_setpoint_changed)
 
         self._mode_selector = QComboBox(self)
         self._mode_selector.setEditable(False)
@@ -85,11 +72,11 @@ class RunControlWidget(SpecializedControlWidgetBase):
                     self._mode_selector,
                     (None, 1),
                     QLabel('Setpoint', self),
-                    (self._spinbox, 1),
+                    (self._setpoint_control.spinbox, 1),
                     (None, 1),
                     self._guru_mode_checkbox,
                 ),
-                self._slider,
+                self._setpoint_control.slider,
                 (None, 1)
             )
         )
@@ -100,7 +87,7 @@ class RunControlWidget(SpecializedControlWidgetBase):
 
     def stop(self):
         self._last_status = None
-        self._spinbox.setValue(0.0)
+        self._setpoint_control.value = 0
         self._launch_async(self._commander.stop())      # Super paranoia
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
@@ -116,30 +103,20 @@ class RunControlWidget(SpecializedControlWidgetBase):
 
         self._mode_selector.setEnabled((s.current_task_id == TaskID.IDLE) or self._guru_mode_checkbox.isChecked())
 
-        if abs(self._spinbox.value()) > 1e-6:
+        if abs(self._setpoint_control.value) > 1e-6:
             # We do not emit zero setpoints periodically - that is not necessary because the device will
             # always automatically stop by timeout if setpoints are not refreshed periodically.
             self._emit_setpoint()
 
     def _emit_setpoint(self):
         cp = self._get_current_control_policy()
-        value = self._spinbox.value()
+        value = self._setpoint_control.value
         if cp.is_ratiometric:
             value *= 0.01           # Percent scaling
 
         self._launch_async(self._commander.run(mode=cp.mode, value=value))
 
-    def _on_spinbox_changed(self, value: float):
-        # For consistency, we always try to maintain the slider at the same value as the spinbox.
-        with self._unlinker():
-            self._slider.setValue((value / _HUNDRED_PERCENT) * _SLIDER_HALF_RANGE)
-
-        self._emit_setpoint()
-
-    def _on_slider_moved(self, new_value: int):
-        with self._unlinker():
-            self._spinbox.setValue(new_value * _HUNDRED_PERCENT / _SLIDER_HALF_RANGE)
-
+    def _on_setpoint_changed(self, _value: float):
         self._emit_setpoint()
 
     def _on_control_mode_changed(self):
@@ -155,40 +132,16 @@ class RunControlWidget(SpecializedControlWidgetBase):
 
         _logger.info(f'Initial value of the new control mode: {initial_value} {cp.unit}')
 
-        # Updating the spinbox ranges and the initial value
-        # WARNING!
-        # The on-changed signal MUST be disconnected, otherwise we may end up emitting erroneous setpoints
-        # while the values are being updated. Another problem with the signals is that they go through the slider,
-        # if it is enabled, which breaks the value configured in the spin box. This is how it's happening (I had
-        # to look into the Qt's sources in order to find this out):
-        #       setRange() updates the limits. If the currently set value is outside of the limits, it is updated.
-        #       Assuming that the old value doesn't fit the new limits, setRange() invokes setValue(), which, in turn,
-        #       invokes the on-change event handler in this class. The on-change event handler then moves the slider,
-        #       in order to keep it in sync with the value. If the value exceeds the range of the slider, the slider
-        #       will silently clip it, and then set the clipped value back to the spinbox from its event handler.
-        #       A catastrophe! We lost the proper value and ended up with a clipped one. This is how it happens, if
-        #       we were to print() out the relevant values from handlers:
-        #           CONFIGURING RANGE AND VALUE...
-        #           SPINBOX CHANGED TO 678.52           <-- this is the correct value
-        #           SLIDER MOVED TO 100%                <-- doesn't fit into the slider's range, so it gets clipped
-        #           SPINBOX CHANGED TO 100.0            <-- the clipped value fed back (and sent to the device!)
-        #           RANGE AND VALUE CONFIGURED
-        # So we disconnect the signal before changing stuff, and then connect the signal back.
         assert cp.setpoint_range[1] > cp.setpoint_range[0]
         assert cp.setpoint_range[1] >= 0
         assert cp.setpoint_range[0] <= 0
 
-        with self._unlinker():
-            self._spinbox.setRange(*cp.setpoint_range)
-            self._spinbox.setSingleStep(cp.setpoint_step)
-            self._spinbox.setSuffix(f' {cp.unit}')
-
-        # The spinbox has been configured, now we can apply the new value and it will be propagated to the slider
-        self._spinbox.setValue(initial_value)
-
-        # The slider is visible only for ratiometric modes.
-        # We do not update its value explicitly here, it will be updated via the callback.
-        self._slider.setVisible(cp.is_ratiometric)
+        self._setpoint_control.update_atomically(minimum=cp.setpoint_range[0],
+                                                 maximum=cp.setpoint_range[1],
+                                                 step=cp.setpoint_step,
+                                                 value=initial_value)
+        self._setpoint_control.spinbox.setSuffix(f' {cp.unit}')
+        self._setpoint_control.slider_visible = cp.is_ratiometric
 
     def _on_guru_mode_toggled(self, active: bool):
         _logger.warning(f'GURU MODE TOGGLED. New state: {"ACTIVE" if active else "inactive"}')
@@ -216,15 +169,6 @@ class RunControlWidget(SpecializedControlWidgetBase):
 
     def _get_current_control_policy(self) -> '_ControlPolicy':
         return self._named_control_policies[self._mode_selector.currentText().strip()]
-
-    # noinspection PyUnresolvedReferences
-    @contextmanager
-    def _unlinker(self):
-        self._slider.valueChanged.disconnect(self._on_slider_moved)
-        self._spinbox.valueChanged[float].disconnect(self._on_spinbox_changed)
-        yield
-        self._slider.valueChanged.connect(self._on_slider_moved)
-        self._spinbox.valueChanged[float].connect(self._on_spinbox_changed)
 
 
 @dataclass(frozen=True)

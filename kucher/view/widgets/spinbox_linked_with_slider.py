@@ -34,9 +34,30 @@ class SpinboxLinkedWithSlider:
 
     Note that this is not a widget. The user will have to allocate the two linked widgets on their own.
     They are accessible via the respective properties. Note that the user must NEVER attempt to modify the
-    values in the widgets manually, as that will break the class' own behavior.
+    values in the widgets manually, as that will break the class' own behavior. This is why the widget accessor
+    properties are annotated as the most generic widget type - QWidget.
 
-    TODO: make it impossible for the users to modify the sensitive parameters of the contained widgets.
+    I wrote the comment below in a different piece of code trying to document the dangers of flawed synchronization
+    between a spin box and a slider. Ultimately, that was why I decided to separate that logic out into a separate
+    class. The comment is provided here verbatim for historical reasons:
+
+        The on-changed signal MUST be disconnected, otherwise we may end up emitting erroneous setpoints
+        while the values are being updated. Another problem with the signals is that they go through the slider,
+        if it is enabled, which breaks the value configured in the spin box. This is how it's happening (I had
+        to look into the Qt's sources in order to find this out):
+              setRange() updates the limits. If the currently set value is outside of the limits, it is updated.
+              Assuming that the old value doesn't fit the new limits, setRange() invokes setValue(), which, in turn,
+              invokes the on-change event handler in this class. The on-change event handler then moves the slider,
+              in order to keep it in sync with the value. If the value exceeds the range of the slider, the slider
+              will silently clip it, and then set the clipped value back to the spinbox from its event handler.
+              A catastrophe! We lost the proper value and ended up with a clipped one. This is how it happens, if
+              we were to print() out the relevant values from handlers:
+                  CONFIGURING RANGE AND VALUE...
+                  SPINBOX CHANGED TO 678.52           <-- this is the correct value
+                  SLIDER MOVED TO 100%                <-- doesn't fit into the slider's range, so it gets clipped
+                  SPINBOX CHANGED TO 100.0            <-- the clipped value fed back (and sent to the device!)
+                  RANGE AND VALUE CONFIGURED
+        So we disconnect the signal before changing stuff, and then connect the signal back.
     """
 
     class SliderOrientation(enum.IntEnum):
@@ -50,11 +71,13 @@ class SpinboxLinkedWithSlider:
                  maximum:               float=100.0,
                  step:                  float=1.0,
                  slider_orientation:    SliderOrientation=SliderOrientation.VERTICAL):
-        self._events_suppressed = False
+        self._events_suppression_depth = 0
 
         # Instantiating the widgets
         self._box = QDoubleSpinBox(parent)
         self._sld = QSlider(int(slider_orientation), parent)
+
+        self._sld.setTickPosition(QSlider.TicksBothSides)       # Perhaps expose this via API later
 
         # This stuff breaks if I remove lambdas, no clue why, investigate later
         self._box.valueChanged[float].connect(lambda v: self._on_box_changed(v))
@@ -72,11 +95,19 @@ class SpinboxLinkedWithSlider:
         return self._value_change_event
 
     @property
-    def spinbox(self) -> QDoubleSpinBox:
+    def spinbox(self) -> QWidget:
+        """
+        Annotated as QWidget in order to prevent direct access to the critical functionality of the widgets,
+        as that may break the inner logic of the class. This property should only be used for layout purposes.
+        """
         return self._box
 
     @property
-    def slider(self) -> QSlider:
+    def slider(self) -> QWidget:
+        """
+        Annotated as QWidget in order to prevent direct access to the critical functionality of the widgets,
+        as that may break the inner logic of the class. This property should only be used for layout purposes.
+        """
         return self._sld
 
     @property
@@ -103,6 +134,8 @@ class SpinboxLinkedWithSlider:
         with self._with_events_suppressed():
             self._sld.setMaximum(self._value_to_int(value))
 
+        self._refresh_invariants()
+
         _logger.debug('New maximum: %r %r', value, self._value_to_int(value))
 
     @property
@@ -121,6 +154,8 @@ class SpinboxLinkedWithSlider:
             self._sld.setMaximum(self._value_to_int(self.maximum))
             self._sld.setValue(self._value_to_int(self.value))
 
+        self._refresh_invariants()
+
         _logger.debug('New step: %r; resulting range of the slider: [%r, %r]',
                       value, self._sld.minimum(), self._sld.maximum())
 
@@ -135,12 +170,81 @@ class SpinboxLinkedWithSlider:
         with self._with_events_suppressed():
             self._sld.setValue(self._value_to_int(value))
 
+    @property
+    def tool_tip(self) -> str:
+        return self._box.toolTip()
+
+    @tool_tip.setter
+    def tool_tip(self, value: str):
+        self._box.setToolTip(value)
+        self._sld.setToolTip(value)
+
+    @property
+    def status_tip(self) -> str:
+        return self._box.statusTip()
+
+    @status_tip.setter
+    def status_tip(self, value: str):
+        self._box.setStatusTip(value)
+        self._sld.setStatusTip(value)
+
+    @property
+    def spinbox_suffix(self) -> str:
+        return self._box.suffix()
+
+    @spinbox_suffix.setter
+    def spinbox_suffix(self, value: str):
+        self._box.setSuffix(value)
+
+    @property
+    def slider_visible(self) -> bool:
+        return self._sld.isVisible()
+
+    @slider_visible.setter
+    def slider_visible(self, value: bool):
+        self._sld.setVisible(value)
+
     def set_range(self, minimum: float, maximum: float):
+        if minimum >= maximum:
+            raise ValueError(f'Minimum must be less than maximum: min={minimum} max={maximum}')
+
         self.minimum = minimum
         self.maximum = maximum
 
+    def update_atomically(self,
+                          minimum:  typing.Optional[float]=None,
+                          maximum:  typing.Optional[float]=None,
+                          step:     typing.Optional[float]=None,
+                          value:    typing.Optional[float]=None):
+        """
+        This function updates all of the parameters, and invokes the change event only once at the end, provided
+        that the new value is different from the old value.
+        Parameters that are set to None will be left as-is, unchanged.
+        """
+        if (minimum is not None) and (maximum is not None):
+            if minimum >= maximum:
+                raise ValueError(f'Minimum must be less than maximum: min={minimum} max={maximum}')
+
+        original_value = self.value
+
+        with self._with_events_suppressed():
+            if minimum is not None:
+                self.minimum = minimum
+
+            if maximum is not None:
+                self.maximum = maximum
+
+            if step is not None:
+                self.step = step
+
+            if value is not None:
+                self.value = value
+
+        if original_value != self.value:
+            self._value_change_event.emit(self.value)
+
     def _on_box_changed(self, value: float):
-        if self._events_suppressed:
+        if self._events_suppression_depth > 0:
             return
 
         with self._with_events_suppressed():
@@ -150,7 +254,7 @@ class SpinboxLinkedWithSlider:
         self._value_change_event.emit(value)
 
     def _on_sld_changed(self, scaled_int_value: int):
-        if self._events_suppressed:
+        if self._events_suppression_depth > 0:
             return
 
         value = self._value_from_int(scaled_int_value)
@@ -166,12 +270,18 @@ class SpinboxLinkedWithSlider:
     def _value_from_int(self, value: int) -> int:
         return value * self._box.singleStep()
 
+    def _refresh_invariants(self):
+        assert self._events_suppression_depth >= 0
+        self._sld.setTickInterval((self._sld.maximum() - self._sld.minimum()) // 2)
+
     # noinspection PyUnresolvedReferences
     @contextmanager
     def _with_events_suppressed(self):
-        self._events_suppressed = True
+        assert self._events_suppression_depth >= 0
+        self._events_suppression_depth += 1
         yield
-        self._events_suppressed = False
+        self._events_suppression_depth -= 1
+        assert self._events_suppression_depth >= 0
 
 
 # noinspection PyArgumentList
