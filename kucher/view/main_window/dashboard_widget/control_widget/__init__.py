@@ -30,6 +30,10 @@ from .misc_control_widget import MiscControlWidget
 from .low_level_manipulation_control_widget import LowLevelManipulationControlWidget
 
 
+STOP_SHORTCUT = 'Esc'
+EMERGENCY_SHORTCUT = 'Ctrl+Space'
+
+
 _logger = getLogger(__name__)
 
 
@@ -84,16 +88,16 @@ class ControlWidget(GroupBoxWidget):
                                              QSizePolicy().MinimumExpanding)
 
         # Observe that the shortcuts are children of the window! This is needed to make them global.
-        self._stop_shortcut = QShortcut(QKeySequence('Esc'), self.window())
+        self._stop_shortcut = QShortcut(QKeySequence(STOP_SHORTCUT), self.window())
         self._stop_shortcut.setAutoRepeat(False)
 
-        self._emergency_shortcut = QShortcut(QKeySequence('Ctrl+Space'), self.window())
+        self._emergency_shortcut = QShortcut(QKeySequence(EMERGENCY_SHORTCUT), self.window())
         self._emergency_shortcut.setAutoRepeat(False)
 
         self.setEnabled(False)
 
         # Layout
-        def make_tiny_label(text: str, alignment: int):
+        def make_tiny_label(text: str, alignment: int) -> QLabel:
             lbl = QLabel(text, self)
             lbl.setAlignment(alignment | Qt.AlignHCenter)
             font: QFont = lbl.font()
@@ -106,8 +110,8 @@ class ControlWidget(GroupBoxWidget):
                 (self._panel, 1),
                 lay_out_vertically(
                     (self._stop_button, 1),
-                    make_tiny_label('\u2191 Esc \u2191', Qt.AlignTop),
-                    make_tiny_label('\u2193 Ctrl+Space \u2193', Qt.AlignBottom),
+                    make_tiny_label(f'\u2191 {STOP_SHORTCUT} \u2191', Qt.AlignTop),
+                    make_tiny_label(f'\u2193 {EMERGENCY_SHORTCUT} \u2193', Qt.AlignBottom),
                     (self._emergency_button, 1),
                 )
             )
@@ -166,6 +170,7 @@ class ControlWidget(GroupBoxWidget):
         _logger.info('Stop button clicked (or shortcut activated)')
         self.window().statusBar().showMessage('Stop command has been sent. '
                                               'The device may choose to disregard it, depending on the current task.')
+        self._current_widget.stop()
 
     def _do_emergency_stop(self):
         for _ in range(3):
@@ -173,6 +178,8 @@ class ControlWidget(GroupBoxWidget):
 
         _logger.warning('Emergency button clicked (or shortcut activated)')
         self.window().statusBar().showMessage("DON'T PANIC. The hardware will remain unusable until restarted.")
+
+        self._current_widget.stop()
 
     @staticmethod
     def _launch(coro: typing.Awaitable[None]):
