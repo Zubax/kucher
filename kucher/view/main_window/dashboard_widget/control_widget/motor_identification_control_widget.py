@@ -12,14 +12,14 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-from PyQt5.QtWidgets import QWidget, QPushButton, QSizePolicy, QToolButton, QAction
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QWidget, QPushButton, QComboBox, QLabel
 from view.device_model_representation import Commander, GeneralStatusView, TaskID, MotorIdentificationMode
 from .base import SpecializedControlWidgetBase
 from view.utils import get_icon, lay_out_vertically, lay_out_horizontally
 
 
 class MotorIdentificationControlWidget(SpecializedControlWidgetBase):
+    # noinspection PyUnresolvedReferences
     def __init__(self,
                  parent:    QWidget,
                  commander: Commander):
@@ -27,32 +27,33 @@ class MotorIdentificationControlWidget(SpecializedControlWidgetBase):
 
         self._commander = commander
 
-        mode_button = QToolButton(self)
-        mode_button.setText('Launch...')
-        mode_button.setIcon(get_icon('play'))
-        mode_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        mode_button.setPopupMode(QToolButton.InstantPopup)
-        mode_button.setSizePolicy(QSizePolicy.MinimumExpanding,
-                                  QSizePolicy.MinimumExpanding)
+        self._mode_map = {
+            _humanize(mid): mid for mid in MotorIdentificationMode
+        }
 
-        # noinspection PyUnresolvedReferences
-        def create(mid: MotorIdentificationMode):
-            raw_name = str(mid).split('.')[-1]
-            human_name = _humanize(mid)
-            action = QAction(human_name, self)
-            action.setToolTip(raw_name)
-            action.setStatusTip(raw_name)
-            action.triggered.connect(lambda *_: self._execute(mid))
-            mode_button.addAction(action)
-
+        self._mode_selector = QComboBox(self)
+        self._mode_selector.setEditable(False)
         # noinspection PyTypeChecker
-        for motor_id_mode in sorted(MotorIdentificationMode,
-                                    key=lambda x: x != MotorIdentificationMode.R_L_PHI):
-            create(motor_id_mode)
+        self._mode_selector.addItems(map(_humanize,
+                                         sorted(MotorIdentificationMode,
+                                                key=lambda x: x != MotorIdentificationMode.R_L_PHI)))
+
+        go_button = QPushButton(get_icon('play'), 'Launch', self)
+        go_button.clicked.connect(self._execute)
 
         self.setLayout(
             lay_out_vertically(
-                mode_button,
+                lay_out_horizontally(
+                    QLabel('Select parameters to estimate:', self),
+                    self._mode_selector,
+                    (None, 1),
+                ),
+                lay_out_horizontally(
+                    QLabel('Then click', self),
+                    go_button,
+                    QLabel('and wait. The process will take a few minutes to complete.', self),
+                    (None, 1),
+                ),
                 (None, 1)
             )
         )
@@ -73,17 +74,18 @@ class MotorIdentificationControlWidget(SpecializedControlWidgetBase):
         else:
             self.setEnabled(True)
 
-    def _execute(self, mid: MotorIdentificationMode):
+    def _execute(self):
         self.setEnabled(False)
+        mid = self._mode_map[self._mode_selector.currentText().strip()]
         self._launch_async(self._commander.begin_motor_identification(mid))
 
 
 def _humanize(mid: MotorIdentificationMode) -> str:
     try:
         return {
-            MotorIdentificationMode.R_L:        'Resistance,\nInductance',
-            MotorIdentificationMode.PHI:        'Flux\nlinkage',
-            MotorIdentificationMode.R_L_PHI:    'Resistance, Inductance,\nFlux linkage',
+            MotorIdentificationMode.R_L:        'Resistance, Inductance',
+            MotorIdentificationMode.PHI:        'Flux linkage',
+            MotorIdentificationMode.R_L_PHI:    'Resistance, Inductance, Flux linkage',
         }[mid]
     except KeyError:
         return str(mid).upper().split('.')[-1].replace('_', ' ')

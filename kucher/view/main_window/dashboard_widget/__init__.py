@@ -46,22 +46,20 @@ class DashboardWidget(WidgetBase):
         self._control_widget = ControlWidget(self, commander)
 
         self.setLayout(
-            lay_out_horizontally(
-                (lay_out_vertically(
-                    lay_out_horizontally(
-                        self._dc_quantities_widget,
-                        self._temperature_widget,
-                        self._hardware_flag_counters_widget,
-                    ),
-                    lay_out_horizontally(
-                        (self._device_status_widget, 1),
-                        (self._vsi_status_widget, 1),
-                        (self._active_alerts_widget, 1),
-                    ),
-                    (self._task_specific_status_widget, 1)
-                ), 3),
-                (self._control_widget, 1),
-            )
+            lay_out_vertically(
+                lay_out_horizontally(
+                    self._dc_quantities_widget,
+                    self._temperature_widget,
+                    self._hardware_flag_counters_widget,
+                ),
+                lay_out_horizontally(
+                    (self._device_status_widget, 1),
+                    (self._vsi_status_widget, 1),
+                    (self._active_alerts_widget, 1),
+                ),
+                (self._task_specific_status_widget, 1),
+                (self._control_widget, 1)
+            ),
         )
 
         self.setSizePolicy(QSizePolicy().Minimum, QSizePolicy().Minimum)

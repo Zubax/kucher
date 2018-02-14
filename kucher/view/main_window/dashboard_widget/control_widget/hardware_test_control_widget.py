@@ -12,10 +12,10 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QLabel
 from view.device_model_representation import Commander, GeneralStatusView, TaskID
 from .base import SpecializedControlWidgetBase
-from view.utils import make_button, lay_out_vertically
+from view.utils import make_button, lay_out_vertically, lay_out_horizontally
 
 
 class HardwareTestControlWidget(SpecializedControlWidgetBase):
@@ -28,7 +28,12 @@ class HardwareTestControlWidget(SpecializedControlWidgetBase):
 
         self.setLayout(
             lay_out_vertically(
-                make_button(self, text='Run self-test', icon_name='play', on_clicked=self._execute),
+                QLabel('The motor must be connected in order for the self test to succeed.', self),
+                lay_out_horizontally(
+                    (None, 1),
+                    make_button(self, text='Run self-test', icon_name='play', on_clicked=self._execute),
+                    (None, 1),
+                ),
                 (None, 1),
             )
         )

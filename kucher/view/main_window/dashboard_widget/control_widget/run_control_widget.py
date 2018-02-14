@@ -14,10 +14,10 @@
 
 import re
 import typing
-from PyQt5.QtWidgets import QWidget, QCheckBox, QToolButton, QAction, QSlider, QDoubleSpinBox, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QCheckBox, QToolButton, QAction, QSlider, QDoubleSpinBox, QSizePolicy, QLabel
 from PyQt5.QtCore import Qt
 from view.device_model_representation import Commander, GeneralStatusView, ControlMode
-from view.utils import get_icon, lay_out_vertically
+from view.utils import get_icon, lay_out_vertically, lay_out_horizontally
 from .base import SpecializedControlWidgetBase
 
 
@@ -75,9 +75,16 @@ class RunControlWidget(SpecializedControlWidgetBase):
 
         self.setLayout(
             lay_out_vertically(
-                self._guru_mode_check_box,
-                mode_button,
-                self._spinbox,
+                lay_out_horizontally(
+                    mode_button,
+                    (None, 1),
+                    self._guru_mode_check_box,
+                ),
+                lay_out_horizontally(
+                    QLabel('Setpoint:', self),
+                    (self._spinbox, 1),
+                    QLabel('RPM', self),
+                ),
                 self._slider,
                 (None, 1)
             )

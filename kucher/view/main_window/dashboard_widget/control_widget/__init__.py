@@ -15,7 +15,9 @@
 import typing
 import asyncio
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QToolBox, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QTabWidget, QSizePolicy, QShortcut, QLabel
+from PyQt5.QtGui import QKeySequence, QFont
+from PyQt5.QtCore import Qt
 from view.device_model_representation import Commander, GeneralStatusView
 from view.widgets.group_box_widget import GroupBoxWidget
 from view.utils import make_button, lay_out_vertically, lay_out_horizontally, get_icon
@@ -48,13 +50,13 @@ class ControlWidget(GroupBoxWidget):
         self._misc_widget = MiscControlWidget(self, commander)
         self._low_level_manipulation_widget = LowLevelManipulationControlWidget(self, commander)
 
-        self._panel = QToolBox(self)
+        self._panel = QTabWidget(self)
 
-        self._panel.addItem(self._run_widget, get_icon('running'), 'Run')
-        self._panel.addItem(self._motor_identification_widget, get_icon('caliper'), 'Motor identification')
-        self._panel.addItem(self._hardware_test_widget, get_icon('pass-fail'), 'Self-test')
-        self._panel.addItem(self._misc_widget, get_icon('ellipsis'), 'Miscellaneous')
-        self._panel.addItem(self._low_level_manipulation_widget, get_icon('ok-hand'), 'Low-level manipulation')
+        self._panel.addTab(self._run_widget, get_icon('running'), 'Run')
+        self._panel.addTab(self._motor_identification_widget, get_icon('caliper'), 'Motor identification')
+        self._panel.addTab(self._hardware_test_widget, get_icon('pass-fail'), 'Self-test')
+        self._panel.addTab(self._misc_widget, get_icon('ellipsis'), 'Miscellaneous')
+        self._panel.addTab(self._low_level_manipulation_widget, get_icon('ok-hand'), 'Low-level manipulation')
 
         self._current_widget: SpecializedControlWidgetBase = self._hardware_test_widget
         self._panel.setCurrentWidget(self._hardware_test_widget)
@@ -62,6 +64,7 @@ class ControlWidget(GroupBoxWidget):
         # Configuring the event handler in the last order, because it might fire while we're configuring the widgets!
         self._panel.currentChanged.connect(self._on_current_widget_changed)
 
+        # Shared buttons
         self._stop_button =\
             make_button(self,
                         text='Stop',
@@ -74,18 +77,37 @@ class ControlWidget(GroupBoxWidget):
 
         self._emergency_button =\
             make_button(self,
-                        text='EMERGENCY',
-                        tool_tip='Stops the motor unconditionally and locks down the hardware until restarted',
+                        text='EMERGENCY\nSHUTDOWN',
+                        tool_tip='Unconditionally  disables and locks down the VSI until restarted',
                         on_clicked=self._do_emergency_stop)
         self._emergency_button.setSizePolicy(QSizePolicy().MinimumExpanding,
                                              QSizePolicy().MinimumExpanding)
 
-        self._disable()
+        # Observe that the shortcuts are children of the window! This is needed to make them global.
+        self._stop_shortcut = QShortcut(QKeySequence('Esc'), self.window())
+        self._stop_shortcut.setAutoRepeat(False)
+
+        self._emergency_shortcut = QShortcut(QKeySequence('Ctrl+Space'), self.window())
+        self._emergency_shortcut.setAutoRepeat(False)
+
+        self.setEnabled(False)
+
+        # Layout
+        def make_tiny_label(text: str, alignment: int):
+            lbl = QLabel(text, self)
+            lbl.setAlignment(alignment | Qt.AlignHCenter)
+            font: QFont = lbl.font()
+            font.setPointSize(round(font.pointSize() * 0.7))
+            lbl.setFont(font)
+            return lbl
+
         self.setLayout(
-            lay_out_vertically(
+            lay_out_horizontally(
                 (self._panel, 1),
-                lay_out_horizontally(
+                lay_out_vertically(
                     (self._stop_button, 1),
+                    make_tiny_label('\u2191 Esc \u2191', Qt.AlignTop),
+                    make_tiny_label('\u2193 Ctrl+Space \u2193', Qt.AlignBottom),
                     (self._emergency_button, 1),
                 )
             )
@@ -121,7 +143,10 @@ class ControlWidget(GroupBoxWidget):
         if self._last_seen_timestamped_general_status is not None:
             self._current_widget.on_general_status_update(*self._last_seen_timestamped_general_status)
 
+    # noinspection PyUnresolvedReferences
     def _enable(self):
+        self._stop_shortcut.activated.connect(self._do_regular_stop)
+        self._emergency_shortcut.activated.connect(self._do_emergency_stop)
         self.setEnabled(True)
         self._emergency_button.setStyleSheet('''QPushButton {
              background-color: #f00;
@@ -129,13 +154,16 @@ class ControlWidget(GroupBoxWidget):
              color: #300;
         }''')
 
+    # noinspection PyUnresolvedReferences
     def _disable(self):
+        self._stop_shortcut.activated.disconnect(self._do_regular_stop)
+        self._emergency_shortcut.activated.disconnect(self._do_emergency_stop)
         self.setEnabled(False)
         self._emergency_button.setStyleSheet('')
 
     def _do_regular_stop(self):
         self._launch(self._commander.stop())
-        _logger.info('Stop button clicked')
+        _logger.info('Stop button clicked (or shortcut activated)')
         self.window().statusBar().showMessage('Stop command has been sent. '
                                               'The device may choose to disregard it, depending on the current task.')
 
@@ -143,7 +171,7 @@ class ControlWidget(GroupBoxWidget):
         for _ in range(3):
             self._launch(self._commander.emergency())
 
-        _logger.warning('Emergency button clicked')
+        _logger.warning('Emergency button clicked (or shortcut activated)')
         self.window().statusBar().showMessage("DON'T PANIC. The hardware will remain unusable until restarted.")
 
     @staticmethod
