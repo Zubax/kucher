@@ -21,6 +21,9 @@ from .general_status_view import GeneralStatusView
 from logging import getLogger
 
 
+STATUS_REQUEST_TIMEOUT = 0.5
+
+
 _logger = getLogger(__name__)
 
 
@@ -130,7 +133,8 @@ class Connection:
         while True:
             await asyncio.sleep(self._general_status_update_period, loop=self._event_loop)
 
-            response = await self._com.request(MessageType.GENERAL_STATUS)
+            response = await self._com.request(MessageType.GENERAL_STATUS,
+                                               timeout=STATUS_REQUEST_TIMEOUT)
             if not response:
                 raise ConnectionLostException('General status request has timed out')
 
