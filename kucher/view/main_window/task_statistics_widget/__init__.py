@@ -285,6 +285,8 @@ class _TableModel(QAbstractTableModel):
 
         number_of_rows_changed = len(view.entries) != self.rowCount()
 
+        previous_running_task_id = self._get_running_task_id()
+
         layout_change_required = number_of_rows_changed or number_of_columns_changed
         if layout_change_required:
             self.layoutAboutToBeChanged.emit()
@@ -297,7 +299,7 @@ class _TableModel(QAbstractTableModel):
         if number_of_columns_changed:
             self.headerDataChanged.emit(Qt.Horizontal, 0, self.columnCount())
 
-        if number_of_rows_changed:
+        if number_of_rows_changed or (previous_running_task_id != self._get_running_task_id()):
             self.headerDataChanged.emit(Qt.Vertical, 0, self.rowCount())
 
         self.dataChanged.emit(self.index(0, 0),
