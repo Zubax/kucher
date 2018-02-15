@@ -45,9 +45,6 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
     def get_widget_name_and_icon_name(self):
         return 'Calibration', 'scales'
 
-    def start(self):
-        pass
-
     def stop(self):
         pass
 

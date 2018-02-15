@@ -58,9 +58,6 @@ class MotorIdentificationControlWidget(SpecializedControlWidgetBase):
             )
         )
 
-    def start(self):
-        pass
-
     def stop(self):
         self.setEnabled(False)
 

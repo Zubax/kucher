@@ -27,7 +27,7 @@ class SpecializedControlWidgetBase(QWidget):
         """
         This method is invoked once when the current widget becomes activated.
         """
-        raise NotImplementedError
+        pass
 
     def stop(self):
         """

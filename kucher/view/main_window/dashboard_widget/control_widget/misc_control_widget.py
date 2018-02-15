@@ -25,9 +25,6 @@ class MiscControlWidget(SpecializedControlWidgetBase):
 
         self._commander = commander
 
-    def start(self):
-        pass
-
     def stop(self):
         pass
 

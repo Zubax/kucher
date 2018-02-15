@@ -91,11 +91,6 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
     def get_widget_name_and_icon_name(self):
         return 'Phase manipulation', 'sine'
 
-    def start(self):
-        # We'll wait for a status update to decide whether we should be re-enabled or not
-        with self._with_events_suppressed():
-            pass
-
     def stop(self):
         self.setEnabled(False)      # Safety first
 

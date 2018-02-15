@@ -81,9 +81,6 @@ class RunControlWidget(SpecializedControlWidgetBase):
             )
         )
 
-    def start(self):
-        self._last_status = None
-
     def stop(self):
         # Note that we do not invoke stop when switching out, because we don't want to interfere with other tasks
         self._last_status = None
