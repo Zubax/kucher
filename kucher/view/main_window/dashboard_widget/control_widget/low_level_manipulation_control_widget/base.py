@@ -12,25 +12,16 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import asyncio
+import typing
 from PyQt5.QtWidgets import QWidget
-from view.device_model_representation import Commander, GeneralStatusView
-from .base import SpecializedControlWidgetBase
+from ..base import SpecializedControlWidgetBase
 
 
-class LowLevelManipulationControlWidget(SpecializedControlWidgetBase):
-    def __init__(self,
-                 parent:    QWidget,
-                 commander: Commander):
-        super(LowLevelManipulationControlWidget, self).__init__(parent)
+# noinspection PyAbstractClass
+class LowLevelManipulationControlSubWidgetBase(SpecializedControlWidgetBase):
+    # noinspection PyArgumentList
+    def __init__(self, parent: QWidget):
+        super(LowLevelManipulationControlSubWidgetBase, self).__init__(parent)
 
-        self._commander = commander
-
-    def start(self):
-        pass
-
-    def stop(self):
-        pass
-
-    def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        pass
+    def get_widget_name_and_icon_name(self) -> typing.Tuple[str, str]:
+        raise NotImplementedError

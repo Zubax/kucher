@@ -72,7 +72,7 @@ class ControlWidget(GroupBoxWidget):
         self._stop_button =\
             make_button(self,
                         text='Stop',
-                        icon_name='cancel',
+                        icon_name='stop',
                         tool_tip='Sends a regular stop command which instructs the controller to abandon the current'
                                  'task and activate the Idle task',
                         on_clicked=self._do_regular_stop)
