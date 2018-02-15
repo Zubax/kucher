@@ -14,9 +14,9 @@
 
 from contextlib import contextmanager
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QLabel, QLayout
+from PyQt5.QtWidgets import QWidget, QLayout
 from model.device_model import Commander, LowLevelManipulationMode, GeneralStatusView, TaskID
-from view.utils import lay_out_horizontally, get_icon, make_button
+from view.utils import lay_out_horizontally, make_button
 from view.widgets.spinbox_linked_with_slider import SpinboxLinkedWithSlider
 from .base import LowLevelManipulationControlSubWidgetBase
 
@@ -120,6 +120,7 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
         # Restore the safest state by default (but don't touch any settings except target frequency)
         self._send_button.setChecked(False)
         self._send_button.setStyleSheet('')
+        # This will not trigger any reaction from the callback because we're disabled already
         self._target_frequency_control.value = 0
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
