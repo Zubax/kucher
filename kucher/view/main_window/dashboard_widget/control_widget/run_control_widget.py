@@ -83,12 +83,13 @@ class RunControlWidget(SpecializedControlWidgetBase):
 
     def start(self):
         self._last_status = None
-        self.setEnabled(True)
 
     def stop(self):
+        # Note that we do not invoke stop when switching out, because we don't want to interfere with other tasks
         self._last_status = None
+        self.setEnabled(False)
+        # Disable first, then reset to zero - this way we won't emit unnecessary zero setpoints when switching out
         self._setpoint_control.value = 0
-        self._launch_async(self._commander.stop())      # Super paranoia
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
         if isinstance(s.task_specific_status_report, TaskSpecificStatusReport.Running):
@@ -100,10 +101,11 @@ class RunControlWidget(SpecializedControlWidgetBase):
             self.setEnabled(True)
         else:
             self.setEnabled(False)
+            self._setpoint_control.value = 0
 
         self._mode_selector.setEnabled((s.current_task_id == TaskID.IDLE) or self._guru_mode_checkbox.isChecked())
 
-        if abs(self._setpoint_control.value) > 1e-6:
+        if self.isEnabled() and (abs(self._setpoint_control.value) > 1e-6):
             # We do not emit zero setpoints periodically - that is not necessary because the device will
             # always automatically stop by timeout if setpoints are not refreshed periodically.
             self._emit_setpoint()
@@ -117,7 +119,8 @@ class RunControlWidget(SpecializedControlWidgetBase):
         self._launch_async(self._commander.run(mode=cp.mode, value=value))
 
     def _on_setpoint_changed(self, _value: float):
-        self._emit_setpoint()
+        if self.isEnabled():
+            self._emit_setpoint()
 
     def _on_control_mode_changed(self):
         cp = self._get_current_control_policy()
