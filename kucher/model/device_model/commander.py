@@ -65,6 +65,7 @@ class Commander:
             await self._send('running', mode=mode, value=value)
 
     async def stop(self):
+        _logger.info('Requesting stop')
         await self._send('idle')
 
     async def beep(self, frequency: float, duration: float):

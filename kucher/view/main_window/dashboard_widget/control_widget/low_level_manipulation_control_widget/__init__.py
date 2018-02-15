@@ -66,14 +66,14 @@ class LowLevelManipulationControlWidget(SpecializedControlWidgetBase):
         self._current_widget.on_general_status_update(timestamp, s)
 
     def _on_current_widget_changed(self, new_widget_index: int):
-        _logger.info(f'The user has changed the active widget. '
-                     f'Stopping the previous widget, which was {self._current_widget!r}')
+        _logger.debug(f'The user has changed the active widget. '
+                      f'Stopping the previous widget, which was {self._current_widget!r}')
         self._current_widget.stop()
 
         self._current_widget = self._tabs.currentWidget()
         assert isinstance(self._current_widget, LowLevelManipulationControlSubWidgetBase)
 
-        _logger.info(f'Starting the new widget (at index {new_widget_index}), which is {self._current_widget!r}')
+        _logger.debug(f'Starting the new widget (at index {new_widget_index}), which is {self._current_widget!r}')
         self._current_widget.start()
 
         # We also make sure to always provide the newly activated widget with the latest known general status,
