@@ -108,6 +108,8 @@ class RunControlWidget(SpecializedControlWidgetBase):
         if self.isEnabled() and (abs(self._setpoint_control.value) > 1e-6):
             # We do not emit zero setpoints periodically - that is not necessary because the device will
             # always automatically stop by timeout if setpoints are not refreshed periodically.
+            # Also, that would make it impossible to control the device from other interfaces while it is
+            # connected to the GUI!
             self._emit_setpoint()
 
     def _emit_setpoint(self):

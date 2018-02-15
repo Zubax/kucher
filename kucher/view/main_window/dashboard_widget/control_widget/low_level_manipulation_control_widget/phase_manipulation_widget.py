@@ -99,7 +99,9 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
     def stop(self):
         self.setEnabled(False)      # Safety first
 
-        stop_required = self._send_button.isChecked()
+        # This is not mandatory, but we do it anyway for extra safety.
+        if self._send_button.isChecked():
+            self._launch_async(self._commander.stop())
 
         with self._with_events_suppressed():
             # Events MUST be suppressed here, otherwise we will be receiving callbacks while the controls are being
@@ -111,9 +113,6 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
             self._sync_checkbox.setChecked(True)
             self._send_button.setChecked(False)
             self._send_button.setStyleSheet('')
-
-        if stop_required:
-            self._launch_async(self._commander.stop())
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
         with self._with_events_suppressed():

@@ -24,12 +24,35 @@ class SpecializedControlWidgetBase(QWidget):
         super(SpecializedControlWidgetBase, self).__init__(parent)
 
     def start(self):
+        """
+        This method is invoked once when the current widget becomes activated.
+        """
         raise NotImplementedError
 
     def stop(self):
+        """
+        This method is invoked when any event of the listed below happens:
+
+            - The user clicks the STOP button, and the current widget is the active one.
+              In this case, the outer container (the piece of logic that calls this method) will invoke the
+              STOP command on the device automatically, so the widget doesn't need to worry about that.
+
+            - The current widget is being replaced with a different one.
+
+            - The device connection becomes lost.
+
+        In all cases, the widget shall bring itself back into its default, SAFE state. That means that whichever
+        control sliders it has must be returned back to the safe state, e.g. setpoint control slider should be
+        set to zero, and so on. This is required to ensure that when the widget gets re-activated again, it will
+        be by default in a safe state and won't cause any unexpected activity on the device.
+        """
         raise NotImplementedError
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
+        """
+        Invoked whenever the model provides a new status structure received from the device.
+        This method is guaranteed to be invoked periodically as long as the device is connected.
+        """
         raise NotImplementedError
 
     @staticmethod
