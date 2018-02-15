@@ -95,21 +95,17 @@ class Communicator:
             # noinspection PyBroadException
             try:
                 ret = self._ch.receive(STATE_CHECK_INTERVAL)
-
                 if isinstance(ret, bytes):
                     ts = time.monotonic()
                     log_str = ret.decode(encoding='utf8', errors='replace')
                     _logger.debug('Received log string at %r: %r', ts, log_str)
                     self._event_loop.call_soon_threadsafe(self._log_queue.put_nowait, (ts, log_str))
-
                 elif ret is not None:
                     _logger.debug('Received item: %r', ret)
                     self._event_loop.call_soon_threadsafe(self._process_received_item, ret)
-
             except popcop.physical.serial_multiprocessing.ChannelClosedException as ex:
                 _logger.info('Stopping the IO worker thread because the channel is closed. Error: %r', ex)
                 break
-
             except Exception as ex:
                 error_counter += 1
                 _logger.exception(f'Unhandled exception in IO worker thread '
@@ -117,7 +113,6 @@ class Communicator:
                 if error_counter > self.IO_WORKER_ERROR_LIMIT:
                     _logger.error('Too many errors, stopping!')
                     break
-
             else:
                 error_counter = 0
 
