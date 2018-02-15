@@ -16,13 +16,15 @@ import typing
 import importlib
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QStackedLayout
-from view.device_model_representation import GeneralStatusView, TaskID, get_icon_name_for_task_id
+from view.device_model_representation import GeneralStatusView, TaskID, get_icon_name_for_task_id, \
+    get_human_friendly_task_name
 from view.widgets.group_box_widget import GroupBoxWidget
 from .placeholder_widget import PlaceholderWidget
 from .base import StatusWidgetBase
 
 
 _DEFAULT_ICON = 'question-mark'
+_DEFAULT_TITLE = 'Task-specific status information'
 
 
 _logger = getLogger(__name__)
@@ -31,7 +33,7 @@ _logger = getLogger(__name__)
 class TaskSpecificStatusWidget(GroupBoxWidget):
     # noinspection PyArgumentList
     def __init__(self, parent: QWidget):
-        super(TaskSpecificStatusWidget, self).__init__(parent, 'Task-specific status information', _DEFAULT_ICON)
+        super(TaskSpecificStatusWidget, self).__init__(parent, _DEFAULT_TITLE, _DEFAULT_ICON)
 
         self._placeholder_widget = PlaceholderWidget(self)
 
@@ -65,9 +67,14 @@ class TaskSpecificStatusWidget(GroupBoxWidget):
 
         self.set_icon(get_icon_name_for_task_id(s.current_task_id))
 
+        title = f'{get_human_friendly_task_name(s.current_task_id)} task status information'
+        if title != self.title():
+            self.setTitle(title)
+
     def reset(self):
         self._ensure_widget_active(self._placeholder_widget)
         self.set_icon(_DEFAULT_ICON)
+        self.setTitle(_DEFAULT_TITLE)
 
     def _ensure_widget_active(self, new_widget: StatusWidgetBase):
         if self._layout.currentWidget() is not new_widget:

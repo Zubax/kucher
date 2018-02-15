@@ -43,6 +43,22 @@ def get_icon_name_for_task_id(tid: TaskID) -> str:
         return 'question-mark'
 
 
+@functools.lru_cache()
+def get_human_friendly_task_name(tid: TaskID,
+                                 multi_line=False,
+                                 short=False) -> str:
+    words = str(tid).split('.')[-1].split('_')
+    out = ' '.join([w.capitalize() for w in words])
+
+    if short and (' ' in out):      # If short name requested, collapse multi-word names into acronyms
+        out = ''.join([w[0].upper() for w in out.split()])
+
+    if multi_line:
+        out = '\n'.join(out.rsplit(' ', 1))
+
+    return out
+
+
 @dataclass
 class SoftwareVersion:
     major: int = 0

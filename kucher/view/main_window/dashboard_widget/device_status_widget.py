@@ -18,7 +18,7 @@ import decimal
 from decimal import Decimal
 from PyQt5.QtWidgets import QWidget
 from view.widgets.value_display_group_widget import ValueDisplayGroupWidget
-from view.device_model_representation import TaskID, get_icon_name_for_task_id
+from view.device_model_representation import TaskID, get_icon_name_for_task_id, get_human_friendly_task_name
 
 
 class DeviceStatusWidget(ValueDisplayGroupWidget):
@@ -34,15 +34,8 @@ class DeviceStatusWidget(ValueDisplayGroupWidget):
     def set(self,
             current_task_id: TaskID,
             monotonic_device_time: Decimal):
-        raw_task_name = str(current_task_id).split('.')[-1]
-        task_name_words = raw_task_name.split('_')
-        if len(task_name_words) > 1:
-            short_task_name = ''.join([w[0].upper() for w in task_name_words])
-        else:
-            short_task_name = task_name_words[0].capitalize()
-
-        self._task_display.set(short_task_name)
-        self._task_display.setToolTip(raw_task_name)
+        self._task_display.set(get_human_friendly_task_name(current_task_id, short=True))
+        self._task_display.setToolTip(str(current_task_id).split('.')[-1])
 
         self._monotonic_time_display.set(_duration_to_string(monotonic_device_time))
 

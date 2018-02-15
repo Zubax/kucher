@@ -22,7 +22,8 @@ from PyQt5.QtCore import QTimer, Qt, QAbstractTableModel, QModelIndex, QVariant
 from PyQt5.QtGui import QFontMetrics, QFont
 from view.widgets import WidgetBase
 from view.utils import gui_test, get_icon
-from view.device_model_representation import TaskStatisticsView, TaskID, get_icon_name_for_task_id
+from view.device_model_representation import TaskStatisticsView, TaskID, get_icon_name_for_task_id, \
+    get_human_friendly_task_name
 
 
 _DEFAULT_UPDATE_PERIOD = 2
@@ -205,8 +206,7 @@ class _TableModel(QAbstractTableModel):
                 return self.COLUMNS[section]
             else:
                 task_enum = list(self._data.entries.keys())[section]
-                task_name = ' '.join(map(str.capitalize, str(task_enum).split('.')[1].split('_')))
-                return '\n'.join(task_name.rsplit(' ', 1))
+                return get_human_friendly_task_name(task_enum, multi_line=True)
 
         if role == Qt.DecorationRole:
             if orientation == Qt.Vertical:
