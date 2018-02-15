@@ -84,8 +84,9 @@ class SpinboxLinkedWithSlider:
         self._sld.valueChanged.connect(lambda v: self._on_sld_changed(v))
 
         # Initializing the parameters
-        self.set_range(minimum, maximum)
-        self.step = step
+        with self._with_events_suppressed():
+            self.set_range(minimum, maximum)
+            self.step = step
 
         # Initializing the API
         self._value_change_event = Event()
@@ -169,6 +170,14 @@ class SpinboxLinkedWithSlider:
 
         with self._with_events_suppressed():
             self._sld.setValue(self._value_to_int(value))
+
+    @property
+    def num_decimals(self) -> int:
+        return self._box.decimals()
+
+    @num_decimals.setter
+    def num_decimals(self, value: int):
+        self._box.setDecimals(value)
 
     @property
     def tool_tip(self) -> str:
