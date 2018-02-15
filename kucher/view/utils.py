@@ -17,8 +17,7 @@ import time
 import typing
 import functools
 from logging import getLogger
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QMessageBox, QLayout, QHBoxLayout, QVBoxLayout, \
-    QBoxLayout
+from PyQt5.QtWidgets import QWidget, QPushButton, QMessageBox, QLayout, QHBoxLayout, QVBoxLayout, QBoxLayout
 from PyQt5.QtGui import QFont, QFontInfo, QIcon
 from PyQt5.QtCore import Qt
 from resources import get_absolute_path
@@ -63,17 +62,6 @@ def get_monospace_font() -> QFont:  # We can't cache the result because it will 
     font.setFamily('monospace')
     _logger.info('Using fallback monospace font: %r', font.toString())
     return font
-
-
-@functools.lru_cache()
-def is_small_screen() -> bool:
-    # See this for reference: http://screensiz.es/monitor
-    # noinspection PyArgumentList
-    rect = QApplication.desktop().screenGeometry()
-    w, h = rect.width(), rect.height()
-    is_small = (w < 1000) or (h < 800)
-    _logger.info(f'Screen width and height: {w, h}, is small: {is_small}')
-    return is_small
 
 
 def make_button(parent: QWidget,

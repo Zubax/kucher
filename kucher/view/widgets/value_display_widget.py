@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PyQt5.QtWidgets import QVBoxLayout, QSizePolicy
 from PyQt5.QtGui import QFont, QFontMetrics, QPixmap
 from PyQt5.QtCore import Qt
-from ..utils import gui_test, get_icon, is_small_screen
+from ..utils import gui_test, get_icon
 from . import WidgetBase
 
 
@@ -112,11 +112,7 @@ class ValueDisplayWidget(WidgetBase):
 @functools.lru_cache()
 def _get_large_font() -> QFont:
     font = QFont()
-    if not is_small_screen():
-        font.setPointSize(round(font.pointSize() * 1.5))
-    else:
-        font.setBold(True)
-
+    font.setPointSize(round(font.pointSize() * 1.5))
     return font
 
 
