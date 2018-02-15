@@ -62,13 +62,15 @@ class Commander:
         except KeyError:
             raise ValueError(f'Unsupported control mode: {mode!r}') from None
         else:
-            await self._send('running', mode=mode, value=value)
+            await self._send('running', mode=mode, value=float(value))
 
     async def stop(self):
         _logger.info('Requesting stop')
         await self._send('idle')
 
     async def beep(self, frequency: float, duration: float):
+        frequency = float(frequency)
+        duration = float(duration)
         _logger.info(f'Requesting beeping at {frequency:.3f} Hz for {duration:.3} seconds')
         await self._send('beeping', frequency=frequency, duration=duration)
 
