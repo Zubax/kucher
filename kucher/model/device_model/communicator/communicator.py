@@ -99,7 +99,7 @@ class Communicator:
                 if isinstance(ret, bytes):
                     ts = time.monotonic()
                     log_str = ret.decode(encoding='utf8', errors='replace')
-                    _logger.debug('Received log string: %r', log_str)
+                    _logger.debug('Received log string at %r: %r', ts, log_str)
                     self._event_loop.call_soon_threadsafe(self._log_queue.put_nowait, (ts, log_str))
 
                 elif ret is not None:
