@@ -40,10 +40,12 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
         self._commander = commander
         self._event_suppression_depth = 0
 
-        self._sync_checkbox = QCheckBox('Sync', self)
+        self._sync_checkbox = QCheckBox(self)
         self._sync_checkbox.setIcon(get_icon('link'))
         self._sync_checkbox.setChecked(True)
         self._sync_checkbox.stateChanged.connect(self._on_sync_checkbox_changed)
+        self._sync_checkbox.setToolTip('Always same value for all phases')
+        self._sync_checkbox.setStatusTip(self._sync_checkbox.toolTip())
 
         self._send_button = \
             make_button(self,
