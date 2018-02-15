@@ -12,7 +12,6 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import typing
 from contextlib import contextmanager
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox
@@ -24,6 +23,8 @@ from .base import LowLevelManipulationControlSubWidgetBase
 
 
 _HUNDRED_PERCENT = 100
+
+_SEND_BUTTON_STYLESHEET_WHEN_ACTIVATED = 'QPushButton { background-color: #ff0; color: #330; font-weight: 600; }'
 
 
 _logger = getLogger(__name__)
@@ -44,7 +45,7 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
         self._sync_checkbox.setChecked(True)
         self._sync_checkbox.stateChanged.connect(self._on_sync_checkbox_changed)
 
-        self._auto_send_checkbox = \
+        self._send_button = \
             make_button(self,
                         text='Execute',
                         icon_name='send-up',
@@ -52,7 +53,7 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
                                  'commands will be send automatically every time the controls are changed by the user.',
                         checkable=True,
                         checked=False,
-                        on_clicked=self._on_auto_send_checkbox_changed)
+                        on_clicked=self._on_send_button_changed)
 
         self._phase_controls = [
             SpinboxLinkedWithSlider(self,
@@ -84,7 +85,7 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
             ))
 
         self.setLayout(
-                lay_out_horizontally(*(top_layout_items + [self._auto_send_checkbox, self._sync_checkbox]))
+                lay_out_horizontally(*(top_layout_items + [self._send_button, self._sync_checkbox]))
         )
 
     def get_widget_name_and_icon_name(self):
@@ -106,7 +107,8 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
 
             # Restore the safest state by default
             self._sync_checkbox.setChecked(True)
-            self._auto_send_checkbox.setChecked(False)
+            self._send_button.setChecked(False)
+            self._send_button.setStyleSheet('')
 
             self._launch_async(self._commander.stop())
 
@@ -132,7 +134,7 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
                 for pc in self._phase_controls:
                     pc.value = new_value
 
-            if self._auto_send_checkbox.isChecked():
+            if self._send_button.isChecked():
                 vector = [(pc.value / _HUNDRED_PERCENT) for pc in self._phase_controls]
                 for v in vector:
                     assert 0.0 <= v < 1.000001
@@ -145,9 +147,12 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
         if self._sync_checkbox.isChecked():
             self._on_any_control_changed(0.0)   # Reset to zero to sync up
 
-    def _on_auto_send_checkbox_changed(self):
-        if self._auto_send_checkbox.isChecked():
+    def _on_send_button_changed(self):
+        if self._send_button.isChecked():
             self._on_any_control_changed(self._phase_controls[0].value)
+            self._send_button.setStyleSheet(_SEND_BUTTON_STYLESHEET_WHEN_ACTIVATED)
+        else:
+            self._send_button.setStyleSheet('')
 
     @contextmanager
     def _with_events_suppressed(self):
