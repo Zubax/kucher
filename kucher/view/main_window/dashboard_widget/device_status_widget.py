@@ -48,7 +48,8 @@ class DeviceStatusWidget(ValueDisplayGroupWidget):
 
 def _duration_to_string(dur: typing.Union[Decimal, float]) -> str:
     if isinstance(dur, Decimal):
-        dur = int(dur.quantize(1, rounding=decimal.ROUND_05UP))
+        # Time must be always rounded towards zero for correct results!
+        dur = int(dur.quantize(1, rounding=decimal.ROUND_FLOOR))
     else:
         dur = int(round(dur, 0))
 
