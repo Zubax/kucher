@@ -24,7 +24,7 @@ from .general_status_view import GeneralStatusView, TaskID, TaskSpecificStatusRe
 from .task_statistics_view import TaskStatisticsView
 from .commander import Commander, ControlMode, MotorIdentificationMode, LowLevelManipulationMode
 
-DEFAULT_GENERAL_STATUS_UPDATE_PERIOD = 0.5
+DEFAULT_GENERAL_STATUS_UPDATE_PERIOD = 0.333
 
 
 _logger = getLogger(__name__)
