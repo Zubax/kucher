@@ -36,8 +36,8 @@ class MainWidget(QTabWidget):
 
         self._dashboard_widget = DashboardWidget(self, commander)
 
-        self.addTab(self._connection_management_widget, get_icon('connector'), 'Connection')
-        self.addTab(self._dashboard_widget, get_icon('dashboard'), 'Dashboard')
+        self.addTab(self._connection_management_widget, get_icon('connector'), 'Device management')
+        self.addTab(self._dashboard_widget, get_icon('wagon'), 'Telega control panel')
 
         self.setCurrentWidget(self._connection_management_widget)
 
