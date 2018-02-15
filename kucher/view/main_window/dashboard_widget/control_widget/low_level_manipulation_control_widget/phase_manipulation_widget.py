@@ -136,7 +136,7 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
                 for v in vector:
                     assert 0.0 <= v < 1.000001
 
-                _logger.info('Sending phase manipulation command %r', vector)
+                _logger.debug('Sending phase manipulation command %r', vector)
                 self._launch_async(self._commander.low_level_manipulate(LowLevelManipulationMode.PHASE_MANIPULATION,
                                                                         *vector))
 

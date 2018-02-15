@@ -90,9 +90,6 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
         self._target_frequency_control.value_change_event.connect(self._on_any_control_changed)
         self._frequency_gradient_control.value_change_event.connect(self._on_any_control_changed)
 
-        def make_group(control: SpinboxLinkedWithSlider) -> QLayout:
-            return lay_out_horizontally(control.spinbox,
-                                        (control.slider, 1))
         self.setLayout(
                 lay_out_horizontally(
                     self._volt_per_hertz_control.spinbox,
@@ -146,7 +143,7 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
                     self._target_frequency_control.value,
                     self._frequency_gradient_control.value,
                 ]
-                _logger.info('Sending scalar control command %r', vector)
+                _logger.debug('Sending scalar control command %r', vector)
                 self._launch_async(self._commander.low_level_manipulate(LowLevelManipulationMode.SCALAR_CONTROL,
                                                                         *vector))
 
