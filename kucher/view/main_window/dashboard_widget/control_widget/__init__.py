@@ -60,7 +60,7 @@ class ControlWidget(GroupBoxWidget):
         self._panel.addTab(self._motor_identification_widget, get_icon('caliper'), 'Motor identification')
         self._panel.addTab(self._hardware_test_widget, get_icon('pass-fail'), 'Self-test')
         self._panel.addTab(self._misc_widget, get_icon('ellipsis'), 'Miscellaneous')
-        self._panel.addTab(self._low_level_manipulation_widget, get_icon('ok-hand'), 'Low-level manipulation')
+        self._panel.addTab(self._low_level_manipulation_widget, get_icon('hand-button'), 'Low-level manipulation')
 
         self._current_widget: SpecializedControlWidgetBase = self._hardware_test_widget
         self._panel.setCurrentWidget(self._hardware_test_widget)

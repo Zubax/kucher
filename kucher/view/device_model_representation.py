@@ -31,7 +31,7 @@ _TASK_ID_TO_ICON_MAPPING: typing.Dict[TaskID, str] = {
     TaskID.RUNNING:                'running',
     TaskID.HARDWARE_TEST:          'pass-fail',
     TaskID.MOTOR_IDENTIFICATION:   'caliper',
-    TaskID.LOW_LEVEL_MANIPULATION: 'ok-hand',
+    TaskID.LOW_LEVEL_MANIPULATION: 'hand-button',
 }
 
 
