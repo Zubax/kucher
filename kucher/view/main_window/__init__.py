@@ -16,7 +16,7 @@ import typing
 from PyQt5.QtWidgets import QMainWindow, QAction
 from PyQt5.QtGui import QDesktopServices, QCloseEvent
 from PyQt5.QtCore import QUrl
-from ..utils import get_application_icon, get_icon
+from ..utils import get_application_icon, get_icon, is_small_screen
 from ..device_model_representation import GeneralStatusView, TaskStatisticsView, BasicDeviceInfo, Commander
 from ..tool_window_manager import ToolWindowManager, ToolWindowLocation, ToolWindowGroupingCondition
 from data_dir import LOG_DIR
@@ -96,12 +96,12 @@ class MainWindow(QMainWindow):
         self._tool_window_manager.register(lambda parent: TaskStatisticsWidget(parent, on_task_statistics_request),
                                            'Task statistics',
                                            'spreadsheet',
-                                           shown_by_default=True)
+                                           shown_by_default=not is_small_screen())
 
         self._tool_window_manager.register(LogWidget,
                                            'Device log',
                                            'log',
-                                           shown_by_default=True)
+                                           shown_by_default=not is_small_screen())
 
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
     def _configure_file_menu(self):
