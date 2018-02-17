@@ -199,10 +199,12 @@ def gui_test(test_case_function: typing.Callable):
     It attempts to detect if there is a desktop environment available where the GUI could be rendered, and if not,
     it skips the decorated test.
     """
-    import pytest
-
     @functools.wraps(test_case_function)
     def decorator(*args, **kwargs):
+        # Observe that PyTest is NOT a runtime dependency; therefore, it must not be imported unless a test
+        # function is invoked!
+        import pytest
+
         if not bool(os.getenv('DISPLAY', False)):
             pytest.skip("GUI test skipped because this environment doesn't seem to be GUI-capable")
 
