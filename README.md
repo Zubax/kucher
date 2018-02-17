@@ -71,9 +71,20 @@ You can check whether you have the right version by running `python3 --version`.
 If a newer Python is needed, and you're running Ubuntu, execute the following commands:
 
 ```bash
-sudo apt-get install -y build-essential libbz2-dev libssl-dev libreadline-dev libsqlite3-dev tk-dev libpng-dev libfreetype6-dev
+sudo apt-get install -y git-core curl build-essential
+sudo apt-get install -y libbz2-dev libssl-dev libreadline-dev libsqlite3-dev tk-dev libpng-dev libfreetype6-dev
 curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
-# Follow the instructions in the output of the above command!
+```
+
+Follow the instructions in the output of the last command above.
+**WARNING:** If the above command tells you to use `~/.bash_profile`,
+disregard that and use `~/.bashrc` instead.
+
+Reload the bash profile configuration
+(e.g. close the current shell session and open a new one).
+Then continue:
+
+```
 pyenv install 3.6.4
 pyenv global 3.6.4
 ```
