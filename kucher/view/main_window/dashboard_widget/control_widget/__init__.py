@@ -73,8 +73,8 @@ class ControlWidget(GroupBoxWidget):
             make_button(self,
                         text='Stop',
                         icon_name='stop',
-                        tool_tip='Sends a regular stop command which instructs the controller to abandon the current'
-                                 'task and activate the Idle task',
+                        tool_tip=f'Sends a regular stop command which instructs the controller to abandon the current'
+                                 f'task and activate the Idle task [{STOP_SHORTCUT}]',
                         on_clicked=self._do_regular_stop)
         self._stop_button.setSizePolicy(QSizePolicy().MinimumExpanding,
                                         QSizePolicy().MinimumExpanding)
@@ -82,10 +82,14 @@ class ControlWidget(GroupBoxWidget):
         self._emergency_button =\
             make_button(self,
                         text='EMERGENCY\nSHUTDOWN',
-                        tool_tip='Unconditionally  disables and locks down the VSI until restarted',
+                        tool_tip=f'Unconditionally  disables and locks down the VSI until restarted '
+                                 f'[{EMERGENCY_SHORTCUT}]',
                         on_clicked=self._do_emergency_stop)
         self._emergency_button.setSizePolicy(QSizePolicy().MinimumExpanding,
                                              QSizePolicy().MinimumExpanding)
+        small_font = QFont()
+        small_font.setPointSize(round(small_font.pointSize() * 0.8))
+        self._emergency_button.setFont(small_font)
 
         # Observe that the shortcuts are children of the window! This is needed to make them global.
         self._stop_shortcut = QShortcut(QKeySequence(STOP_SHORTCUT), self.window())

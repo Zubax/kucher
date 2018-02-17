@@ -52,7 +52,7 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
                         text='Execute',
                         icon_name='send-up',
                         tool_tip='Sends the command to the device; also, while this button is checked (pressed), '
-                                 'commands will be send automatically every time the controls are changed by the user.',
+                                 'commands will be sent automatically every time the controls are changed by the user.',
                         checkable=True,
                         checked=False,
                         on_clicked=self._on_send_button_changed)
