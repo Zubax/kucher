@@ -56,6 +56,7 @@ class ConnectionManagementWidget(WidgetBase):
         self._port_combo.lineEdit().returnPressed.connect(self._on_confirmation)
 
         self._connect_button = make_button(self, 'Connect', 'disconnected', on_clicked=self._on_confirmation)
+        self._connect_button.setEnabled(False)              # Empty by default, therefore disabled
 
         self._port_combo.currentTextChanged.connect(
             lambda: self._connect_button.setEnabled(bool(self._port_combo.currentText().strip())))
