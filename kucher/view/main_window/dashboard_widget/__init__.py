@@ -56,7 +56,7 @@ class DashboardWidget(WidgetBase):
                 ),
                 lay_out_horizontally(
                     (self._device_status_widget, 1),
-                    (self._task_specific_status_widget, 1),
+                    (self._task_specific_status_widget, 5),
                 ),
                 self._control_widget,
             ),

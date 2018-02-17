@@ -60,6 +60,7 @@ class FlagDisplayWidget(WidgetBase):
 
         self.setLayout(lay_out_horizontally(self._icon_label,
                                             (self._text_label, 1)))
+        self.layout().setContentsMargins(0, 0, 0, 0)
 
     def set(self, value: bool):
         self._assign(*(self._params_when_set if value else self._params_when_cleared))

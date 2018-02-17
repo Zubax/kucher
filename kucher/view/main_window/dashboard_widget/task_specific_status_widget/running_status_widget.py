@@ -15,8 +15,8 @@
 import math
 import typing
 from .base import StatusWidgetBase
-from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QFrame
-from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QFrame, QSizePolicy
+from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtCore import Qt
 from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport
 from view.utils import lay_out_vertically, lay_out_horizontally
@@ -42,57 +42,53 @@ class Widget(StatusWidgetBase):
                                'Percent of the maximum rated power output')
 
         self._mechanical_rpm_display = \
-            self._make_display('Mechanical RPM',
+            self._make_display('M. RPM',
                                'Mechanical revolutions per minute')
 
         self._current_frequency_display = \
-            self._make_display('Current frequency',
-                               'Phase current/voltage frequency')
+            self._make_display('Current frq.',
+                               'Frequency of three-phase currents and voltages')
 
         self._dq_display = _DQDisplayWidget(self)
 
-        flags_box = QFrame(self)
-        flags_box.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
-
         self._reverse_flag_display = \
-            FlagDisplayWidget(flags_box,
+            FlagDisplayWidget(self,
                               FlagDisplayWidget.StateDefinition('Forward rotation', 'jog-forward'),
                               FlagDisplayWidget.StateDefinition('Reverse rotation', 'jog-reverse'))
 
         self._spinup_flag_display = \
-            FlagDisplayWidget(flags_box,
+            FlagDisplayWidget(self,
                               FlagDisplayWidget.StateDefinition('Started', 'ok-strong'),
                               FlagDisplayWidget.StateDefinition('Starting...', 'warning'))
 
         self._saturation_flag_display = \
-            FlagDisplayWidget(flags_box,
+            FlagDisplayWidget(self,
                               FlagDisplayWidget.StateDefinition('Not saturated', 'ok-strong'),
                               FlagDisplayWidget.StateDefinition('Control saturation', 'control-saturation'))
 
-        flags_box.setLayout(lay_out_horizontally(
-            (self._reverse_flag_display, 1),
-            (self._spinup_flag_display, 1),
-            (self._saturation_flag_display, 1),
-        ))
-        flags_box.layout().setContentsMargins(0, 0, 0, 0)
-
         self.setLayout(
             lay_out_horizontally(
-                lay_out_vertically(
-                    lay_out_horizontally(
-                        self._mechanical_rpm_display,
-                        self._current_frequency_display,
-                        self._demand_factor_display,
-                        self._estimated_active_power_display,
-                        self._stall_count_display,
-                    ),
-                    flags_box,
-                    (None, 1),
-                ),
-                lay_out_vertically(
+                (lay_out_vertically(
+                    self._mechanical_rpm_display,
+                    self._current_frequency_display,
+                    self._stall_count_display,
+                ), 1),
+                _make_vertical_separator(self),
+                (lay_out_vertically(
+                    self._estimated_active_power_display,
+                    self._demand_factor_display,
+                    QLabel(self),
+                ), 1),
+                _make_vertical_separator(self),
+                (lay_out_vertically(
                     self._dq_display,
-                    (None, 1)
-                ),
+                ), 1),
+                _make_vertical_separator(self),
+                (lay_out_vertically(
+                    self._reverse_flag_display,
+                    self._spinup_flag_display,
+                    self._saturation_flag_display,
+                ), 1),
             )
         )
 
@@ -153,8 +149,6 @@ class _DQDisplayWidget(QWidget):
         self._id.setToolTip('Direct axis current')
         self._iq.setToolTip('Quadrature axis current')
 
-        layout = QGridLayout(self)
-
         def sign(text: str, right=False) -> QLabel:
             w = QLabel(text, self)
             if right:
@@ -167,16 +161,17 @@ class _DQDisplayWidget(QWidget):
         # 0  1  2
         # 1 Ud Id
         # 2 Uq Iq
-        layout.addWidget(sign('   Voltage   '), 0, 1)
-        layout.addWidget(sign('   Current   '), 0, 2)
+        layout = QGridLayout(self)
+        layout.addWidget(sign('Voltage'), 0, 1)
+        layout.addWidget(sign('Current'), 0, 2)
         layout.addWidget(sign('D', True), 1, 0)
         layout.addWidget(sign('Q', True), 2, 0)
-
         layout.addWidget(self._ud, 1, 1)
         layout.addWidget(self._uq, 2, 1)
         layout.addWidget(self._id, 1, 2)
         layout.addWidget(self._iq, 2, 2)
-
+        layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(2, 1)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
@@ -216,3 +211,13 @@ def _make_value_display_label(parent: QWidget) -> QLabel:
     w.setFont(font)
 
     return w
+
+
+# noinspection PyArgumentList
+def _make_vertical_separator(parent: QWidget) -> QWidget:
+    # https://stackoverflow.com/questions/10053839/how-does-designer-create-a-line-widget
+    line = QFrame(parent)
+    line.setFrameShape(QFrame.VLine)
+    line.setStyleSheet('QFrame { color: palette(mid); };')
+    line.setMinimumWidth(QFontMetrics(QFont()).width('__') * 2)
+    return line

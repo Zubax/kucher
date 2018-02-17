@@ -31,6 +31,8 @@ class DeviceStatusWidget(ValueDisplayGroupWidget):
         self._monotonic_time_display = self.create_value_display('Monotonic time', 'N/A',
                                                                  'Time since boot')
 
+        self.create_value_display('')   # Reserved/placeholder, needed for better alignment
+
     def set(self,
             current_task_id: TaskID,
             monotonic_device_time: Decimal):
