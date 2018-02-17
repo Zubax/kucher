@@ -57,6 +57,9 @@ class ConnectionManagementWidget(WidgetBase):
 
         self._connect_button = make_button(self, 'Connect', 'disconnected', on_clicked=self._on_confirmation)
 
+        self._port_combo.currentTextChanged.connect(
+            lambda: self._connect_button.setEnabled(bool(self._port_combo.currentText().strip())))
+
         self._status_text = QLabel(self)
         self._status_text.setText(_STATUS_WHEN_NOT_CONNECTED)
         self._status_text.setWordWrap(True)
