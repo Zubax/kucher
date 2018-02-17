@@ -18,7 +18,7 @@ import warnings
 import functools
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel
-from PyQt5.QtWidgets import QVBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtGui import QFont, QFontMetrics, QPixmap
 from PyQt5.QtCore import Qt
 from ..utils import gui_test, get_icon, is_small_screen

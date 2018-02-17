@@ -12,7 +12,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-from PyQt5.QtWidgets import QWidget, QSizePolicy
+from PyQt5.QtWidgets import QWidget
 from view.widgets import WidgetBase
 from view.monitored_quantity import MonitoredQuantity
 from view.device_model_representation import GeneralStatusView, Commander
@@ -58,11 +58,9 @@ class DashboardWidget(WidgetBase):
                     (self._device_status_widget, 1),
                     (self._task_specific_status_widget, 1),
                 ),
-                (self._control_widget, 1),
+                self._control_widget,
             ),
         )
-
-        self.setSizePolicy(QSizePolicy().Minimum, QSizePolicy().Minimum)
 
     def on_connection_established(self):
         self._control_widget.on_connection_established()
