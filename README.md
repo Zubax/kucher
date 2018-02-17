@@ -50,3 +50,22 @@ TODO: numpy>=1.14
 sudo pip3 install pyqt5 pyserial
 git clone --recursive https://github.com/Zubax/kucher
 ```
+
+### Running the application
+
+Regular launch:
+
+```bash
+cd kucher
+./main.py
+```
+
+The following command line options are available:
+
+
+* `--debug` - activates verbose logging; useful for troubleshooting.
+* `--test` - run unit tests.
+    * `-k` - can be used in conjunction with `--test` to run a specific test.
+    Refer to the PyTest documentation for more information.
+    * Other options can be provided with `--test`; they will be passed directly to
+    the PyTest framework.
