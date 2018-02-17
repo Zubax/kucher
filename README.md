@@ -72,8 +72,8 @@ If a newer Python is needed, and you're running Ubuntu, execute the following co
 
 ```bash
 sudo apt-get install -y build-essential libbz2-dev libssl-dev libreadline-dev libsqlite3-dev tk-dev libpng-dev libfreetype6-dev
-# Follow the instructions in the output of the above command!
 curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
+# Follow the instructions in the output of the above command!
 pyenv install 3.6.4
 pyenv global 3.6.4
 ```
