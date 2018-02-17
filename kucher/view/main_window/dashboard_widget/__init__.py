@@ -48,17 +48,17 @@ class DashboardWidget(WidgetBase):
         self.setLayout(
             lay_out_vertically(
                 lay_out_horizontally(
-                    self._dc_quantities_widget,
-                    self._temperature_widget,
-                    self._hardware_flag_counters_widget,
+                    (self._dc_quantities_widget, 1),
+                    (self._temperature_widget, 1),
+                    (self._hardware_flag_counters_widget, 1),
+                    (self._vsi_status_widget, 1),
+                    (self._active_alerts_widget, 2),
                 ),
                 lay_out_horizontally(
                     (self._device_status_widget, 1),
-                    (self._vsi_status_widget, 1),
-                    (self._active_alerts_widget, 1),
+                    (self._task_specific_status_widget, 1),
                 ),
-                (self._task_specific_status_widget, 1),
-                (self._control_widget, 1)
+                (self._control_widget, 1),
             ),
         )
 

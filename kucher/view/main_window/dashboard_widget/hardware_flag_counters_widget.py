@@ -26,12 +26,14 @@ class HardwareFlagCountersWidget(ValueDisplayGroupWidget):
     # noinspection PyArgumentList,PyCallingNonCallable
     def __init__(self, parent: QWidget):
         super(HardwareFlagCountersWidget, self).__init__(parent,
-                                                         'Hardware flag counters',
+                                                         'HW flag cnt.',
                                                          'integrated-circuit',
                                                          with_comments=True)
+        self.setToolTip('Hardware flag counters - how many times each flag was seen')
+        self.setStatusTip(self.toolTip())
         placeholder = '0'
 
-        self._lvps_malfunction = self.create_value_display('LVPS malfunction',
+        self._lvps_malfunction = self.create_value_display('LVPS mlf.',
                                                            placeholder,
                                                            tooltip='Low-voltage power supply malfunction')
 
@@ -55,11 +57,11 @@ class HardwareFlagCountersWidget(ValueDisplayGroupWidget):
     def _display(state, display_target: ValueDisplayWidget):
         if state.active:
             style = ValueDisplayWidget.Style.ALERT_ERROR
-            comment = 'Flag set'
+            comment = 'Flag is set!'
             icon_name = 'flag-red'
         else:
             style = ValueDisplayWidget.Style.NORMAL
-            comment = 'Not set'
+            comment = 'Flag is not set, OK'
             icon_name = 'ok'
 
         display_target.set(str(state.event_count),

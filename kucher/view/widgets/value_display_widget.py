@@ -28,13 +28,6 @@ from . import WidgetBase
 _logger = getLogger(__name__)
 
 
-def make_value_display_label(parent: QWidget) -> QLabel:
-    w = QLabel(parent)
-    w.setAlignment(Qt.AlignCenter)
-    w.setFont(_get_large_font())
-    return w
-
-
 class ValueDisplayWidget(WidgetBase):
     class Style(enum.Enum):
         NORMAL      = enum.auto()
@@ -53,43 +46,40 @@ class ValueDisplayWidget(WidgetBase):
 
         self._placeholder_text = str(placeholder_text or '')
 
-        self._value_display = make_value_display_label(self)
+        self._value_display = QLabel(self)
+        self._value_display.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        bold_font = QFont()
+        bold_font.setBold(True)
+        self._value_display.setFont(bold_font)
 
         if with_comment:
-            self._comment = _Subscript(self)
+            self._comment = _Comment(self)
         else:
             self._comment = None
 
         self._default_tooltip = str(tooltip or '')
         self.setToolTip(self._default_tooltip)
+        self.setStatusTip(self.toolTip())
 
         title_label = QLabel(title)
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
 
-        layout = QVBoxLayout()
-        layout.addWidget(title_label)
-        layout.addWidget(self._value_display)
-
+        layout = QHBoxLayout()
+        layout.addWidget(title_label, 1)
+        layout.addWidget(self._value_display, 1)
         if self._comment is not None:
             layout.addWidget(self._comment)
 
-        layout.addStretch(1)        # Keeping the widget tight and top-aligned
-
-        # We add another layer of layout on top in order to keep the widget tightly laid out
-        outer_layout = QHBoxLayout()
-        outer_layout.addStretch(1)
-        outer_layout.addLayout(layout)
-        outer_layout.addStretch(1)
-        outer_layout.setContentsMargins(1, 0, 1, 0)  # Left, top, right, bottom
-        self.setLayout(outer_layout)
-
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
         self.reset()
 
     def reset(self):
         # TODO: handle style
         self._value_display.setText(self._placeholder_text)
         self.setToolTip(self._default_tooltip)
-        if isinstance(self._comment, _Subscript):
+        self.setStatusTip(self.toolTip())
+        if isinstance(self._comment, _Comment):
             self._comment.reset()
 
     def set(self,
@@ -102,22 +92,11 @@ class ValueDisplayWidget(WidgetBase):
 
         self._value_display.setText(text)
 
-        if isinstance(self._comment, _Subscript):
+        if isinstance(self._comment, _Comment):
             self._comment.set_text(comment)
             self._comment.set_icon(icon_name)
         elif comment or icon_name:
             warnings.warn('Attempting to set comment, but the instance is configured to not use one')
-
-
-@functools.lru_cache()
-def _get_large_font() -> QFont:
-    font = QFont()
-    if not is_small_screen():
-        font.setPointSize(round(font.pointSize() * 1.5))
-    else:
-        font.setBold(True)
-
-    return font
 
 
 # noinspection PyArgumentList
@@ -129,7 +108,7 @@ def _unittest_value_display_widget_main():
 
     win = QMainWindow()
     container = QGroupBox(win)
-    layout = QHBoxLayout()
+    layout = QVBoxLayout()
 
     a = ValueDisplayWidget(container, 'Vladimir', 'N/A', tooltip='This is Vladimir')
     layout.addWidget(a)
@@ -158,58 +137,45 @@ def _unittest_value_display_widget_main():
     win.close()
 
 
-class _Subscript(WidgetBase):
+class _Comment(QLabel):
     # noinspection PyArgumentList
     def __init__(self, parent: QWidget):
-        super(_Subscript, self).__init__(parent)
-
-        self._text_label = QLabel(self)
-
-        self._icon_label = QLabel()
-        self._icon_label.setAlignment(Qt.AlignCenter)
-        self._icon_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
+        super(_Comment, self).__init__(parent)
+        self.setAlignment(Qt.AlignCenter)
         self._icon_size = QFontMetrics(QFont()).height()        # As large as font
         self._pixmap_cache: typing.Dict[str, QPixmap] = {}
         self._current_icon_name: typing.Optional[str] = None
-
-        layout = QHBoxLayout()
-        layout.addStretch(1)
-        layout.addWidget(self._icon_label, stretch=0)
-        layout.addWidget(self._text_label, stretch=0)
-        layout.addStretch(1)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(layout)
+        # Initializing defaults
+        self.reset()
 
     def reset(self):
         self.set_text(None)
         self.set_icon(None)
 
     def set_icon(self, icon_name: typing.Optional[str]):
+        icon_name = str(icon_name or '_empty')
         if icon_name == self._current_icon_name:
             return
 
-        if icon_name:
-            try:
-                pixmap = self._pixmap_cache[icon_name]
-            except KeyError:
-                icon = get_icon(icon_name)
-                pixmap = icon.pixmap(self._icon_size, self._icon_size)
-                self._pixmap_cache[icon_name] = pixmap
+        try:
+            pixmap = self._pixmap_cache[icon_name]
+        except KeyError:
+            icon = get_icon(icon_name)
+            pixmap = icon.pixmap(self._icon_size, self._icon_size)
+            self._pixmap_cache[icon_name] = pixmap
 
-            self._icon_label.setPixmap(pixmap)
-        else:
-            self._icon_label.setPixmap(QPixmap())
-
+        self.setPixmap(pixmap)
         self._current_icon_name = icon_name
 
     def set_text(self, text: typing.Optional[str]):
-        self._text_label.setText(text or '')
+        text = str(text or '')
+        self.setToolTip(text)
+        self.setStatusTip(text)
 
 
 # noinspection PyArgumentList
 @gui_test
-def _unittest_value_display_widget_subscript():
+def _unittest_value_display_widget_comment():
     import time
     from PyQt5.QtWidgets import QApplication, QMainWindow, QGroupBox
     app = QApplication([])
@@ -221,7 +187,7 @@ def _unittest_value_display_widget_subscript():
 
     # noinspection PyArgumentList
     def let_there_be_icon(text, icon_name):
-        s = _Subscript(container)
+        s = _Comment(container)
         s.set_text(text)
         s.set_icon(icon_name)
         layout.addWidget(s)

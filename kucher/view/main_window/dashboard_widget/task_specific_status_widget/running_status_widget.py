@@ -16,10 +16,11 @@ import math
 import typing
 from .base import StatusWidgetBase
 from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QFrame
+from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport
 from view.utils import lay_out_vertically, lay_out_horizontally
-from view.widgets.value_display_widget import ValueDisplayWidget, make_value_display_label
+from view.widgets.value_display_widget import ValueDisplayWidget
 from view.widgets.flag_display_widget import FlagDisplayWidget
 
 
@@ -142,10 +143,10 @@ class _DQDisplayWidget(QWidget):
     def __init__(self, parent: QWidget):
         super(_DQDisplayWidget, self).__init__(parent)
 
-        self._ud = make_value_display_label(self)
-        self._uq = make_value_display_label(self)
-        self._id = make_value_display_label(self)
-        self._iq = make_value_display_label(self)
+        self._ud = _make_value_display_label(self)
+        self._uq = _make_value_display_label(self)
+        self._id = _make_value_display_label(self)
+        self._iq = _make_value_display_label(self)
 
         self._ud.setToolTip('Direct axis voltage')
         self._uq.setToolTip('Quadrature axis voltage')
@@ -204,3 +205,14 @@ def _angular_velocity_to_rpm(radian_per_sec) -> float:
 
 def _angular_velocity_to_frequency(radian_per_sec) -> float:
     return radian_per_sec / _2PI
+
+
+def _make_value_display_label(parent: QWidget) -> QLabel:
+    w = QLabel(parent)
+    w.setAlignment(Qt.AlignCenter)
+
+    font = QFont()
+    font.setBold(True)
+    w.setFont(font)
+
+    return w

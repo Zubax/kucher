@@ -24,10 +24,17 @@ class VSIStatusWidget(ValueDisplayGroupWidget):
 
         placeholder = 'N/A'
 
-        self._vsi_driver_state = self.create_value_display('VSI driver state', placeholder)
-        self._pwm_frequency = self.create_value_display('PWM frequency', placeholder, 'PWM carrier frequency')
-        self._current_agc_level = self.create_value_display('Current AGC level', placeholder,
-                                                            'Automatic Gain Control of current transducers')
+        self._vsi_driver_state = self.create_value_display('VSI state',
+                                                           placeholder,
+                                                           'VSI driver state')
+
+        self._pwm_frequency = self.create_value_display('PWM frq.',
+                                                        placeholder,
+                                                        'PWM carrier frequency')
+
+        self._current_agc_level = self.create_value_display('IAGC lvl.',
+                                                            placeholder,
+                                                            'Automatic Gain Control state of current transducers')
 
     def set(self,
             pwm_frequency:              float,
