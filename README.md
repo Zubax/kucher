@@ -15,6 +15,15 @@ Get support and ask questions at [forum.zubax.com](https://forum.zubax.com).
 
 ## Development
 
+### Conventions
+
+Follow PEP8 with one exception: the maximum line length shall be 120 characters.
+
+We are using PyCharm with PEP8 compliance checks enabled.
+Non-conforming contributions should not be accepted.
+
+### Configuring the environment
+
 This section describes how to configure the local system for development.
 An AMD64 GNU/Linux system is required.
 
