@@ -114,6 +114,7 @@ class DeviceModel:
                                    on_progress_report=on_progress_report,
                                    general_status_update_period=DEFAULT_GENERAL_STATUS_UPDATE_PERIOD)
 
+        # noinspection PyTypeChecker
         self._evt_connection_status_change(self._conn.device_info)
         self._evt_device_status_update(*self._conn.last_general_status_with_timestamp)
 
@@ -122,6 +123,7 @@ class DeviceModel:
     async def disconnect(self, reason: str=None):
         _logger.info('Explicit disconnect request; reason: %r', reason)
         if self._conn:
+            # noinspection PyTypeChecker
             self._evt_connection_status_change(reason or 'Explicit disconnection')
             try:
                 await self._conn.disconnect()
@@ -154,6 +156,7 @@ class DeviceModel:
         _logger.info('Connection instance reported connection loss; reason: %r', reason)
         # The Connection instance will terminate itself, so we don't have to do anything, just clear the reference
         self._conn = None
+        # noinspection PyTypeChecker
         self._evt_connection_status_change(reason)
 
     def _ensure_connected(self):
