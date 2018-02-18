@@ -28,8 +28,8 @@ class DeviceStatusWidget(ValueDisplayGroupWidget):
 
         self._task_display = self.create_value_display('Current task', 'N/A')
 
-        self._monotonic_time_display = self.create_value_display('Monotonic time', 'N/A',
-                                                                 'Time since boot')
+        self._monotonic_time_display = self.create_value_display('Mono clock', 'N/A',
+                                                                 'Steady monotonic clock measuring time since boot')
 
         self.create_value_display('')   # Reserved/placeholder, needed for better alignment
 

@@ -37,19 +37,18 @@ class Widget(StatusWidgetBase):
         self._error_code_bin = self._make_display('Same exit code in binary, for extra convenience')
 
         self._error_description_display = self._make_display()
-        self._error_description_display.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
         self.setLayout(
             lay_out_vertically(
-                lay_out_horizontally(QLabel('Task', self),
+                lay_out_horizontally(QLabel('The task', self),
                                      self._task_icon_display,
-                                     (self._task_name_display, 3),
-                                     QLabel('has failed with exit code', self),
+                                     (self._task_name_display, 3)),
+                lay_out_horizontally(QLabel('has failed with exit code', self),
                                      (self._error_code_dec, 1),
                                      (self._error_code_hex, 1),
-                                     (self._error_code_bin, 2)),
-                lay_out_horizontally(QLabel('which means', self),
-                                     (self._error_description_display, 1)),
+                                     (self._error_code_bin, 2),
+                                     QLabel('which means:', self)),
+                lay_out_horizontally((self._error_description_display, 1)),
                 (None, 1),
             )
         )
@@ -76,7 +75,7 @@ class Widget(StatusWidgetBase):
         self._task_name_display.setText(str(tssr.failed_task_id).split('.')[-1])
 
         self._error_code_dec.setText(f'{tssr.failed_task_exit_code}')
-        self._error_code_hex.setText(f'0x{tssr.failed_task_exit_code:02x}')
+        self._error_code_hex.setText(f'0x{tssr.failed_task_exit_code:02X}')
         self._error_code_bin.setText(f'0b{tssr.failed_task_exit_code:08b}')
 
         self._error_description_display.setText('(elaboration not available)')
