@@ -168,7 +168,7 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
         'u_dq'                          / con.Array(2, F32),
         'i_dq'                          / con.Array(2, F32),
         # Control mode
-        'control_mode'                  / ControlModeFormat,
+        'mode'                          / ControlModeFormat,
         # State flags
         'spinup_in_progress'            / con.Flag,
         'rotation_reversed'             / con.Flag,
@@ -181,7 +181,7 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
         'progress'                      / F32,
     ),
     'low_level_manipulation': con.Struct(
-        'sub_task_id'                   / U8,
+        'mode'                          / LowLevelManipulationModeFormat,
     ),
 }, default=con.Padding(1))
 

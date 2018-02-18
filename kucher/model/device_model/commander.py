@@ -15,7 +15,8 @@
 import typing
 from logging import getLogger
 from .communicator import MessageType, Message
-from .general_status_view import ControlMode, MotorIdentificationMode, LowLevelManipulationMode
+from .general_status_view import ControlMode, MotorIdentificationMode, LowLevelManipulationMode,\
+    CONTROL_MODE_MAPPING, LOW_LEVEL_MANIPULATION_MODE_MAPPING, MOTOR_IDENTIFICATION_MODE_MAPPING
 
 
 SendCommandFunction = typing.Callable[[Message], typing.Awaitable[None]]
@@ -28,16 +29,16 @@ class Commander:
     def __init__(self, on_command_send: SendCommandFunction):
         self._sender: SendCommandFunction = on_command_send
 
+        def reverse(d: dict) -> dict:
+            return {v: k for k, v in d.items()}
+
+        self._reverse_control_mode_mapping = reverse(CONTROL_MODE_MAPPING)
+        self._reverse_llm_mode_mapping = reverse(LOW_LEVEL_MANIPULATION_MODE_MAPPING)
+        self._reverse_motor_id_mode_mapping = reverse(MOTOR_IDENTIFICATION_MODE_MAPPING)
+
     async def run(self, mode: ControlMode, value: float):
         try:
-            mode = {
-                ControlMode.RATIOMETRIC_CURRENT:          'ratiometric_current',
-                ControlMode.RATIOMETRIC_ANGULAR_VELOCITY: 'ratiometric_angular_velocity',
-                ControlMode.RATIOMETRIC_VOLTAGE:          'ratiometric_voltage',
-                ControlMode.CURRENT:                      'current',
-                ControlMode.MECHANICAL_RPM:               'mechanical_rpm',
-                ControlMode.VOLTAGE:                      'voltage',
-            }[mode]
+            mode = self._reverse_control_mode_mapping[mode]
         except KeyError:
             raise ValueError(f'Unsupported control mode: {mode!r}') from None
         else:
@@ -60,11 +61,7 @@ class Commander:
     async def begin_motor_identification(self, mode: MotorIdentificationMode):
         _logger.info(f'Requesting motor ID with mode {mode!r}')
         try:
-            mode = {
-                MotorIdentificationMode.R_L:        'r_l',
-                MotorIdentificationMode.PHI:        'phi',
-                MotorIdentificationMode.R_L_PHI:    'r_l_phi',
-            }[mode]
+            mode = self._reverse_motor_id_mode_mapping[mode]
         except KeyError:
             raise ValueError(f'Unsupported motor identification mode: {mode!r}') from None
         else:
@@ -81,11 +78,7 @@ class Commander:
         assert len(parameters) == 4, 'Logic error'
 
         try:
-            mode = {
-                LowLevelManipulationMode.CALIBRATION:           'calibration',
-                LowLevelManipulationMode.PHASE_MANIPULATION:    'phase_manipulation',
-                LowLevelManipulationMode.SCALAR_CONTROL:        'scalar_control',
-            }[mode]
+            mode = self._reverse_llm_mode_mapping[mode]
         except KeyError:
             raise ValueError(f'Unsupported low-level manipulation mode: {mode!r}') from None
         else:

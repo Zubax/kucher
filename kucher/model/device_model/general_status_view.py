@@ -24,6 +24,10 @@ __all__ = [
     'ControlMode',
     'MotorIdentificationMode',
     'LowLevelManipulationMode',
+    'CONTROL_MODE_MAPPING',
+    'LOW_LEVEL_MANIPULATION_MODE_MAPPING',
+    'MOTOR_IDENTIFICATION_MODE_MAPPING',
+    'TASK_ID_MAPPING',
 ]
 
 _struct_view = dataclasses.dataclass(frozen=True)
@@ -48,7 +52,7 @@ class ControlMode(enum.Enum):
     VOLTAGE                      = enum.auto()
 
 
-_CONTROL_MODE_MAPPING: typing.Dict[str, ControlMode] = {
+CONTROL_MODE_MAPPING: typing.Dict[str, ControlMode] = {
     'ratiometric_current':          ControlMode.RATIOMETRIC_CURRENT,
     'ratiometric_angular_velocity': ControlMode.RATIOMETRIC_ANGULAR_VELOCITY,
     'ratiometric_voltage':          ControlMode.RATIOMETRIC_VOLTAGE,
@@ -64,10 +68,24 @@ class MotorIdentificationMode(enum.Enum):
     R_L_PHI = enum.auto()
 
 
+MOTOR_IDENTIFICATION_MODE_MAPPING = {
+    'r_l':      MotorIdentificationMode.R_L,
+    'phi':      MotorIdentificationMode.PHI,
+    'r_l_phi':  MotorIdentificationMode.R_L_PHI,
+}
+
+
 class LowLevelManipulationMode(enum.Enum):
     CALIBRATION         = enum.auto()
     PHASE_MANIPULATION  = enum.auto()
     SCALAR_CONTROL      = enum.auto()
+
+
+LOW_LEVEL_MANIPULATION_MODE_MAPPING: typing.Dict[str, LowLevelManipulationMode] = {
+    'calibration':          LowLevelManipulationMode.CALIBRATION,
+    'phase_manipulation':   LowLevelManipulationMode.PHASE_MANIPULATION,
+    'scalar_control':       LowLevelManipulationMode.SCALAR_CONTROL,
+}
 
 
 @_struct_view
@@ -161,7 +179,7 @@ class TaskSpecificStatusReport:
         u_dq:                           typing.Tuple[float, float]
         i_dq:                           typing.Tuple[float, float]
         # Control mode
-        control_mode:                   ControlMode
+        mode:                           ControlMode
         # Flags
         spinup_in_progress:             bool
         rotation_reversed:              bool
@@ -172,7 +190,7 @@ class TaskSpecificStatusReport:
             def tuplize(what):
                 return tuple(x for x in what)
 
-            control_mode = _CONTROL_MODE_MAPPING[fields['control_mode']]
+            mode = CONTROL_MODE_MAPPING[fields['mode']]
 
             return TaskSpecificStatusReport.Running(
                 stall_count=fields['stall_count'],
@@ -181,7 +199,7 @@ class TaskSpecificStatusReport:
                 mechanical_angular_velocity=fields['mechanical_angular_velocity'],
                 u_dq=tuplize(fields['u_dq']),
                 i_dq=tuplize(fields['i_dq']),
-                control_mode=control_mode,
+                mode=mode,
                 spinup_in_progress=fields['spinup_in_progress'],
                 rotation_reversed=fields['rotation_reversed'],
                 controller_saturated=fields['controller_saturated'],
@@ -208,16 +226,17 @@ class TaskSpecificStatusReport:
             )
 
     @_struct_view
-    class ManualControl:
-        sub_task_id: int
+    class LowLevelManipulation:
+        mode: LowLevelManipulationMode
 
         @staticmethod
         def populate(fields: typing.Mapping):
-            return TaskSpecificStatusReport.ManualControl(
-                sub_task_id=fields['sub_task_id'],
+            mode = LOW_LEVEL_MANIPULATION_MODE_MAPPING[fields['mode']]
+            return TaskSpecificStatusReport.LowLevelManipulation(
+                mode=mode,
             )
 
-    Union = typing.Union[Fault, Running, HardwareTest, MotorIdentification, ManualControl]
+    Union = typing.Union[Fault, Running, HardwareTest, MotorIdentification, LowLevelManipulation]
 
 
 TASK_ID_MAPPING = {
@@ -227,7 +246,7 @@ TASK_ID_MAPPING = {
     'running':                (TaskID.RUNNING,                TaskSpecificStatusReport.Running),
     'hardware_test':          (TaskID.HARDWARE_TEST,          TaskSpecificStatusReport.HardwareTest),
     'motor_identification':   (TaskID.MOTOR_IDENTIFICATION,   TaskSpecificStatusReport.MotorIdentification),
-    'low_level_manipulation': (TaskID.LOW_LEVEL_MANIPULATION, TaskSpecificStatusReport.ManualControl),
+    'low_level_manipulation': (TaskID.LOW_LEVEL_MANIPULATION, TaskSpecificStatusReport.LowLevelManipulation),
 }
 
 
