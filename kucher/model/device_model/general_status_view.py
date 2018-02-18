@@ -72,45 +72,45 @@ class LowLevelManipulationMode(enum.Enum):
 
 @_struct_view
 class AlertFlags:
-    dc_undervoltage:                        bool = False
-    dc_overvoltage:                         bool = False
-    dc_undercurrent:                        bool = False
-    dc_overcurrent:                         bool = False
+    dc_undervoltage:                        bool
+    dc_overvoltage:                         bool
+    dc_undercurrent:                        bool
+    dc_overcurrent:                         bool
 
-    cpu_cold:                               bool = False
-    cpu_overheating:                        bool = False
-    vsi_cold:                               bool = False
-    vsi_overheating:                        bool = False
-    motor_cold:                             bool = False
-    motor_overheating:                      bool = False
+    cpu_cold:                               bool
+    cpu_overheating:                        bool
+    vsi_cold:                               bool
+    vsi_overheating:                        bool
+    motor_cold:                             bool
+    motor_overheating:                      bool
 
-    hardware_lvps_malfunction:              bool = False
-    hardware_fault:                         bool = False
-    hardware_overload:                      bool = False
+    hardware_lvps_malfunction:              bool
+    hardware_fault:                         bool
+    hardware_overload:                      bool
 
-    phase_current_measurement_malfunction:  bool = False
+    phase_current_measurement_malfunction:  bool
 
 
 @_struct_view
 class StatusFlags:
-    uavcan_node_up:                         bool = False
-    can_data_link_up:                       bool = False
+    uavcan_node_up:                         bool
+    can_data_link_up:                       bool
 
-    usb_connected:                          bool = False
-    usb_power_supplied:                     bool = False
+    usb_connected:                          bool
+    usb_power_supplied:                     bool
 
-    rcpwm_signal_detected:                  bool = False
+    rcpwm_signal_detected:                  bool
 
-    phase_current_agc_high_gain_selected:   bool = False
-    vsi_modulating:                         bool = False
-    vsi_enabled:                            bool = False
+    phase_current_agc_high_gain_selected:   bool
+    vsi_modulating:                         bool
+    vsi_enabled:                            bool
 
 
 @_struct_view
 class Temperature:          # In Kelvin
-    cpu:                float = 0
-    vsi:                float = 0
-    motor:              float = 0
+    cpu:                float
+    vsi:                float
+    motor:              float
 
     @staticmethod
     def convert_kelvin_to_celsius(x: float) -> float:
@@ -119,22 +119,22 @@ class Temperature:          # In Kelvin
 
 @_struct_view
 class DCQuantities:
-    voltage:            float = 0
-    current:            float = 0
+    voltage:            float
+    current:            float
 
 
 @_struct_view
 class PWMState:
-    period:             float = 0
-    dead_time:          float = 0
-    upper_limit:        float = 0
+    period:             float
+    dead_time:          float
+    upper_limit:        float
 
 
 @_struct_view
 class HardwareFlagEdgeCounters:
-    lvps_malfunction:   int = 0
-    overload:           int = 0
-    fault:              int = 0
+    lvps_malfunction:   int
+    overload:           int
+    fault:              int
 
 
 class TaskSpecificStatusReport:
@@ -233,15 +233,15 @@ TASK_ID_MAPPING = {
 
 @_struct_view
 class GeneralStatusView:
-    current_task_id:                TaskID = TaskID.IDLE
-    timestamp:                      Decimal = Decimal(0)
-    alert_flags:                    AlertFlags = AlertFlags()
-    status_flags:                   StatusFlags = StatusFlags()
-    temperature:                    Temperature = Temperature()
-    dc:                             DCQuantities = DCQuantities()
-    pwm:                            PWMState = PWMState()
-    hardware_flag_edge_counters:    HardwareFlagEdgeCounters = HardwareFlagEdgeCounters()
-    task_specific_status_report:    typing.Optional[TaskSpecificStatusReport.Union] = None
+    current_task_id:                TaskID
+    timestamp:                      Decimal
+    alert_flags:                    AlertFlags
+    status_flags:                   StatusFlags
+    temperature:                    Temperature
+    dc:                             DCQuantities
+    pwm:                            PWMState
+    hardware_flag_edge_counters:    HardwareFlagEdgeCounters
+    task_specific_status_report:    typing.Optional[TaskSpecificStatusReport.Union]
 
     @staticmethod
     def populate(msg: typing.Mapping) -> 'GeneralStatusView':

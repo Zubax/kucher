@@ -22,16 +22,16 @@ _struct_view = dataclasses.dataclass(frozen=True)
 
 @_struct_view
 class SoftwareVersion:
-    major: int = 0
-    minor: int = 0
+    major: int
+    minor: int
 
-    build_timestamp_utc: datetime.datetime = datetime.datetime.fromtimestamp(0)
+    build_timestamp_utc: datetime.datetime
 
-    vcs_commit_id: int = 0
-    image_crc: int = 0
+    vcs_commit_id: int
+    image_crc: int
 
-    release_build: bool = False
-    dirty_build: bool = False
+    release_build: bool
+    dirty_build: bool
 
     @staticmethod
     def populate(prototype: NodeInfoMessage):
@@ -49,8 +49,8 @@ class SoftwareVersion:
 
 @_struct_view
 class HardwareVersion:
-    major: int = 0
-    minor: int = 0
+    major: int
+    minor: int
 
     @staticmethod
     def populate(prototype: NodeInfoMessage):
@@ -62,50 +62,50 @@ class HardwareVersion:
 
 @_struct_view
 class MathRange:
-    min: float = 0
-    max: float = 0
+    min: float
+    max: float
 
 
 @_struct_view
 class Characteristics:
     @_struct_view
     class Capabilities:
-        number_of_can_interfaces:             int = 0
-        battery_eliminator_circuit_available: bool = False
+        number_of_can_interfaces:             int
+        battery_eliminator_circuit_available: bool
 
     @_struct_view
     class VSIModel:
         @_struct_view
         class HBR:
-            high: float = 0
-            low:  float = 0
+            high: float
+            low:  float
 
-        resistance_per_phase:                     typing.Tuple[HBR, HBR, HBR] = (HBR(), HBR(), HBR())
-        gate_ton_toff_imbalance:                  float = 0
-        phase_current_measurement_error_variance: float = 0
+        resistance_per_phase:                     typing.Tuple[HBR, HBR, HBR]
+        gate_ton_toff_imbalance:                  float
+        phase_current_measurement_error_variance: float
 
     @_struct_view
     class Limits:
         @_struct_view
         class MeasurementRange:
-            vsi_dc_voltage:    MathRange = MathRange()
+            vsi_dc_voltage:    MathRange
 
         @_struct_view
         class SafeOperatingArea:
-            vsi_dc_voltage:    MathRange = MathRange()
-            vsi_dc_current:    MathRange = MathRange()
-            vsi_phase_current: MathRange = MathRange()
-            cpu_temperature:   MathRange = MathRange()
-            vsi_temperature:   MathRange = MathRange()
+            vsi_dc_voltage:    MathRange
+            vsi_dc_current:    MathRange
+            vsi_phase_current: MathRange
+            cpu_temperature:   MathRange
+            vsi_temperature:   MathRange
 
         @_struct_view
         class PhaseCurrentZeroBiasLimit:
-            low_gain:  float = 0
-            high_gain: float = 0
+            low_gain:  float
+            high_gain: float
 
-        measurement_range:             MeasurementRange = MeasurementRange()
-        safe_operating_area:           SafeOperatingArea = SafeOperatingArea()
-        phase_current_zero_bias_limit: PhaseCurrentZeroBiasLimit = PhaseCurrentZeroBiasLimit()
+        measurement_range:             MeasurementRange
+        safe_operating_area:           SafeOperatingArea
+        phase_current_zero_bias_limit: PhaseCurrentZeroBiasLimit
 
         @staticmethod
         def populate(msg: typing.Mapping):
@@ -128,9 +128,9 @@ class Characteristics:
                 ),
             )
 
-    capabilities: Capabilities = Capabilities()
-    vsi_model:    VSIModel = VSIModel()
-    limits:       Limits = Limits()
+    capabilities: Capabilities
+    vsi_model:    VSIModel
+    limits:       Limits
 
     @staticmethod
     def populate(msg: typing.Mapping) -> 'Characteristics':
@@ -198,14 +198,14 @@ def _unittest_characteristics_populating():
 
 @_struct_view
 class DeviceInfoView:
-    name:                        str = ''
-    description:                 str = ''
-    software_version:            SoftwareVersion = SoftwareVersion
-    hardware_version:            HardwareVersion = HardwareVersion
-    globally_unique_id:          bytes = b'\0' * 16
-    certificate_of_authenticity: bytes = b''
+    name:                        str
+    description:                 str
+    software_version:            SoftwareVersion
+    hardware_version:            HardwareVersion
+    globally_unique_id:          bytes
+    certificate_of_authenticity: bytes
 
-    characteristics: Characteristics = Characteristics()
+    characteristics: Characteristics
 
     @staticmethod
     def populate(node_info_message: NodeInfoMessage,

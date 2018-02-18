@@ -24,12 +24,12 @@ _struct_view = dataclasses.dataclass(frozen=True)
 
 @_struct_view
 class SingleTaskStatistics:
-    last_started_at:            Decimal = Decimal()
-    last_stopped_at:            Decimal = Decimal()
-    total_run_time:             Decimal = Decimal()
-    number_of_times_started:    int = 0
-    number_of_times_failed:     int = 0
-    last_exit_code:             int = 0
+    last_started_at:            Decimal
+    last_stopped_at:            Decimal
+    total_run_time:             Decimal
+    number_of_times_started:    int
+    number_of_times_failed:     int
+    last_exit_code:             int
 
     @staticmethod
     def populate(msg: typing.Mapping) -> 'SingleTaskStatistics':
