@@ -21,7 +21,6 @@ from PyQt5.QtCore import Qt
 from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport
 from view.utils import lay_out_vertically, lay_out_horizontally
 from view.widgets.value_display_widget import ValueDisplayWidget
-from view.widgets.flag_display_widget import FlagDisplayWidget
 
 
 class Widget(StatusWidgetBase):
@@ -51,20 +50,25 @@ class Widget(StatusWidgetBase):
 
         self._dq_display = _DQDisplayWidget(self)
 
+        self._control_mode_display = \
+            self._make_display('Ctrl. mode',
+                               'Control mode used by the controller',
+                               True)
+
         self._reverse_flag_display = \
-            FlagDisplayWidget(self,
-                              FlagDisplayWidget.StateDefinition('Forward rotation', 'jog-forward'),
-                              FlagDisplayWidget.StateDefinition('Reverse rotation', 'jog-reverse'))
+            self._make_display('Direction',
+                               'Direction of rotation',
+                               True)
 
         self._spinup_flag_display = \
-            FlagDisplayWidget(self,
-                              FlagDisplayWidget.StateDefinition('Started', 'ok-strong'),
-                              FlagDisplayWidget.StateDefinition('Starting...', 'warning'))
+            self._make_display('Started?',
+                               'Whether the motor has started or still starting',
+                               True)
 
         self._saturation_flag_display = \
-            FlagDisplayWidget(self,
-                              FlagDisplayWidget.StateDefinition('Not saturated', 'ok-strong'),
-                              FlagDisplayWidget.StateDefinition('Control saturation', 'control-saturation'))
+            self._make_display('CSSW',
+                               'Control System Saturation Warning',
+                               True)
 
         self.setLayout(
             lay_out_horizontally(
@@ -72,19 +76,17 @@ class Widget(StatusWidgetBase):
                     self._mechanical_rpm_display,
                     self._current_frequency_display,
                     self._stall_count_display,
-                ), 1),
-                _make_vertical_separator(self),
-                (lay_out_vertically(
-                    self._estimated_active_power_display,
                     self._demand_factor_display,
-                    QLabel(self),
                 ), 1),
                 _make_vertical_separator(self),
                 (lay_out_vertically(
                     self._dq_display,
+                    self._estimated_active_power_display,
+                    (None, 1),
                 ), 1),
                 _make_vertical_separator(self),
                 (lay_out_vertically(
+                    self._control_mode_display,
                     self._reverse_flag_display,
                     self._spinup_flag_display,
                     self._saturation_flag_display,
@@ -95,10 +97,6 @@ class Widget(StatusWidgetBase):
     def reset(self):
         num_reset = 0
         for ch in self.findChildren(ValueDisplayWidget):
-            num_reset += 1
-            ch.reset()
-
-        for ch in self.findChildren(FlagDisplayWidget):
             num_reset += 1
             ch.reset()
 
@@ -124,13 +122,24 @@ class Widget(StatusWidgetBase):
         self._dq_display.set(tssr.u_dq,
                              tssr.i_dq)
 
-        self._reverse_flag_display.set(tssr.rotation_reversed)
-        self._spinup_flag_display.set(tssr.spinup_in_progress)
-        self._saturation_flag_display.set(tssr.controller_saturated)
+        # TODO: replace the stub with real values
+        self._control_mode_display.set('%\u03C9',
+                                       comment='Ratiometric angular velocity',
+                                       icon_name='rotation-percent')
 
-    def _make_display(self, title: str, tooltip: str) -> ValueDisplayWidget:
+        self._reverse_flag_display.set('Reverse' if tssr.rotation_reversed else 'Forward',
+                                       icon_name='jog-reverse' if tssr.rotation_reversed else 'jog-forward')
+
+        self._spinup_flag_display.set('Starting' if tssr.spinup_in_progress else 'Started',
+                                      icon_name='warning' if tssr.spinup_in_progress else 'ok-strong')
+
+        self._saturation_flag_display.set('Saturated' if tssr.controller_saturated else 'Not saturated',
+                                          icon_name='control-saturation' if tssr.controller_saturated else 'ok-strong')
+
+    def _make_display(self, title: str, tooltip: str, with_comment: bool=False) -> ValueDisplayWidget:
         return ValueDisplayWidget(self,
                                   title=title,
+                                  with_comment=with_comment,
                                   tooltip=tooltip)
 
 
@@ -139,39 +148,40 @@ class _DQDisplayWidget(QWidget):
     def __init__(self, parent: QWidget):
         super(_DQDisplayWidget, self).__init__(parent)
 
-        self._ud = _make_value_display_label(self)
-        self._uq = _make_value_display_label(self)
-        self._id = _make_value_display_label(self)
-        self._iq = _make_value_display_label(self)
+        def make_label(text: str='') -> QLabel:
+            w = QLabel(text, self)
+            w.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+            font = QFont()
+            font.setBold(True)
+            w.setFont(font)
+            return w
+
+        self._ud = make_label()
+        self._uq = make_label()
+        self._id = make_label()
+        self._iq = make_label()
 
         self._ud.setToolTip('Direct axis voltage')
         self._uq.setToolTip('Quadrature axis voltage')
         self._id.setToolTip('Direct axis current')
         self._iq.setToolTip('Quadrature axis current')
 
-        def sign(text: str, right=False) -> QLabel:
-            w = QLabel(text, self)
-            if right:
-                w.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
-            else:
-                w.setAlignment(Qt.AlignCenter)
-
-            return w
-
         # 0  1  2
-        # 1 Ud Id
-        # 2 Uq Iq
+        # 1 Ud Uq
+        # 2 Id Iq
         layout = QGridLayout(self)
-        layout.addWidget(sign('Voltage'), 0, 1)
-        layout.addWidget(sign('Current'), 0, 2)
-        layout.addWidget(sign('D', True), 1, 0)
-        layout.addWidget(sign('Q', True), 2, 0)
-        layout.addWidget(self._ud, 1, 1)
-        layout.addWidget(self._uq, 2, 1)
-        layout.addWidget(self._id, 1, 2)
-        layout.addWidget(self._iq, 2, 2)
-        layout.setColumnStretch(1, 1)
-        layout.setColumnStretch(2, 1)
+        layout.addWidget(QLabel('Udq', self), 0, 0)
+        layout.addWidget(QLabel('Idq', self), 1, 0)
+        layout.addWidget(self._ud, 0, 1)
+        layout.addWidget(self._uq, 0, 2)
+        layout.addWidget(self._id, 1, 1)
+        layout.addWidget(self._iq, 1, 2)
+        layout.addWidget(make_label('V'), 0, 3)
+        layout.addWidget(make_label('A'), 1, 3)
+        layout.setColumnStretch(0, 4)
+        layout.setColumnStretch(1, 2)
+        layout.setColumnStretch(2, 2)
+        layout.setColumnStretch(3, 1)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
@@ -200,17 +210,6 @@ def _angular_velocity_to_rpm(radian_per_sec) -> float:
 
 def _angular_velocity_to_frequency(radian_per_sec) -> float:
     return radian_per_sec / _2PI
-
-
-def _make_value_display_label(parent: QWidget) -> QLabel:
-    w = QLabel(parent)
-    w.setAlignment(Qt.AlignCenter)
-
-    font = QFont()
-    font.setBold(True)
-    w.setFont(font)
-
-    return w
 
 
 # noinspection PyArgumentList

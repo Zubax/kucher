@@ -32,12 +32,14 @@ class DeviceStatusWidget(ValueDisplayGroupWidget):
                                                                  'Steady monotonic clock measuring time since boot')
 
         self.create_value_display('')   # Reserved/placeholder, needed for better alignment
+        self.create_value_display('')   # Reserved/placeholder, needed for better alignment
 
     def set(self,
             current_task_id: TaskID,
             monotonic_device_time: Decimal):
         self._task_display.set(get_human_friendly_task_name(current_task_id, short=True))
         self._task_display.setToolTip(str(current_task_id).split('.')[-1])
+        self._task_display.setStatusTip(self._task_display.toolTip())
 
         self._monotonic_time_display.set(_duration_to_string(monotonic_device_time))
 
