@@ -17,7 +17,14 @@ import typing
 import dataclasses
 from decimal import Decimal
 
-__all__ = ['GeneralStatusView', 'TaskID', 'TaskSpecificStatusReport']
+__all__ = [
+    'GeneralStatusView',
+    'TaskID',
+    'TaskSpecificStatusReport',
+    'ControlMode',
+    'MotorIdentificationMode',
+    'LowLevelManipulationMode',
+]
 
 _struct_view = dataclasses.dataclass(frozen=True)
 
@@ -32,10 +39,35 @@ class TaskID(enum.Enum):
     LOW_LEVEL_MANIPULATION  = enum.auto()
 
 
-@_struct_view
-class TimestampedTaskResult:
-    completed_at:   float = 0
-    exit_code:      int = 0
+class ControlMode(enum.Enum):
+    RATIOMETRIC_CURRENT          = enum.auto()
+    RATIOMETRIC_ANGULAR_VELOCITY = enum.auto()
+    RATIOMETRIC_VOLTAGE          = enum.auto()
+    CURRENT                      = enum.auto()
+    MECHANICAL_RPM               = enum.auto()
+    VOLTAGE                      = enum.auto()
+
+
+_CONTROL_MODE_MAPPING: typing.Dict[str, ControlMode] = {
+    'ratiometric_current':          ControlMode.RATIOMETRIC_CURRENT,
+    'ratiometric_angular_velocity': ControlMode.RATIOMETRIC_ANGULAR_VELOCITY,
+    'ratiometric_voltage':          ControlMode.RATIOMETRIC_VOLTAGE,
+    'current':                      ControlMode.CURRENT,
+    'mechanical_rpm':               ControlMode.MECHANICAL_RPM,
+    'voltage':                      ControlMode.VOLTAGE,
+}
+
+
+class MotorIdentificationMode(enum.Enum):
+    R_L     = enum.auto()
+    PHI     = enum.auto()
+    R_L_PHI = enum.auto()
+
+
+class LowLevelManipulationMode(enum.Enum):
+    CALIBRATION         = enum.auto()
+    PHASE_MANIPULATION  = enum.auto()
+    SCALAR_CONTROL      = enum.auto()
 
 
 @_struct_view
@@ -108,8 +140,8 @@ class HardwareFlagEdgeCounters:
 class TaskSpecificStatusReport:
     @_struct_view
     class Fault:
-        failed_task_id:                 TaskID = TaskID.IDLE
-        failed_task_exit_code:          int = 0
+        failed_task_id:                 TaskID
+        failed_task_exit_code:          int
 
         @staticmethod
         def populate(fields: typing.Mapping):
@@ -120,23 +152,27 @@ class TaskSpecificStatusReport:
 
     @_struct_view
     class Running:
-        stall_count:                    int = 0
-        demand_factor:                  float = 0
+        stall_count:                    int
+        demand_factor:                  float
         # Velocity
-        electrical_angular_velocity:    float = 0
-        mechanical_angular_velocity:    float = 0
+        electrical_angular_velocity:    float
+        mechanical_angular_velocity:    float
         # Rotating system parameters
-        u_dq:                           typing.Tuple[float, float] = (0.0, 0.0)
-        i_dq:                           typing.Tuple[float, float] = (0.0, 0.0)
+        u_dq:                           typing.Tuple[float, float]
+        i_dq:                           typing.Tuple[float, float]
+        # Control mode
+        control_mode:                   ControlMode
         # Flags
-        spinup_in_progress:             bool = False
-        rotation_reversed:              bool = False
-        controller_saturated:           bool = False
+        spinup_in_progress:             bool
+        rotation_reversed:              bool
+        controller_saturated:           bool
 
         @staticmethod
         def populate(fields: typing.Mapping):
             def tuplize(what):
                 return tuple(x for x in what)
+
+            control_mode = _CONTROL_MODE_MAPPING[fields['control_mode']]
 
             return TaskSpecificStatusReport.Running(
                 stall_count=fields['stall_count'],
@@ -145,6 +181,7 @@ class TaskSpecificStatusReport:
                 mechanical_angular_velocity=fields['mechanical_angular_velocity'],
                 u_dq=tuplize(fields['u_dq']),
                 i_dq=tuplize(fields['i_dq']),
+                control_mode=control_mode,
                 spinup_in_progress=fields['spinup_in_progress'],
                 rotation_reversed=fields['rotation_reversed'],
                 controller_saturated=fields['controller_saturated'],
@@ -152,7 +189,7 @@ class TaskSpecificStatusReport:
 
     @_struct_view
     class HardwareTest:
-        progress:                       float = 0
+        progress: float
 
         @staticmethod
         def populate(fields: typing.Mapping):
@@ -162,7 +199,7 @@ class TaskSpecificStatusReport:
 
     @_struct_view
     class MotorIdentification:
-        progress:                       float = 0
+        progress: float
 
         @staticmethod
         def populate(fields: typing.Mapping):
@@ -172,7 +209,7 @@ class TaskSpecificStatusReport:
 
     @_struct_view
     class ManualControl:
-        sub_task_id:                    int = 0
+        sub_task_id: int
 
         @staticmethod
         def populate(fields: typing.Mapping):

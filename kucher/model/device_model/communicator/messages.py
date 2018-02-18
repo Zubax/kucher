@@ -167,12 +167,12 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
         # Rotating system parameters
         'u_dq'                          / con.Array(2, F32),
         'i_dq'                          / con.Array(2, F32),
+        # Control mode
+        'control_mode'                  / ControlModeFormat,
         # State flags
         'spinup_in_progress'            / con.Flag,
         'rotation_reversed'             / con.Flag,
         'controller_saturated'          / con.Flag,
-        # Final padding to 4 bytes
-        con.Padding(1),
     ),
     'hardware_test': con.Struct(
         'progress'                      / F32,

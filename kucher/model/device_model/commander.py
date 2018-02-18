@@ -12,37 +12,16 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import enum
 import typing
 from logging import getLogger
 from .communicator import MessageType, Message
+from .general_status_view import ControlMode, MotorIdentificationMode, LowLevelManipulationMode
 
 
 SendCommandFunction = typing.Callable[[Message], typing.Awaitable[None]]
 
 
 _logger = getLogger(__name__)
-
-
-class ControlMode(enum.Enum):
-    RATIOMETRIC_CURRENT          = enum.auto()
-    RATIOMETRIC_ANGULAR_VELOCITY = enum.auto()
-    RATIOMETRIC_VOLTAGE          = enum.auto()
-    CURRENT                      = enum.auto()
-    MECHANICAL_RPM               = enum.auto()
-    VOLTAGE                      = enum.auto()
-
-
-class MotorIdentificationMode(enum.Enum):
-    R_L     = enum.auto()
-    PHI     = enum.auto()
-    R_L_PHI = enum.auto()
-
-
-class LowLevelManipulationMode(enum.Enum):
-    CALIBRATION         = enum.auto()
-    PHASE_MANIPULATION  = enum.auto()
-    SCALAR_CONTROL      = enum.auto()
 
 
 class Commander:

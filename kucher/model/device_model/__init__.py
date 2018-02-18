@@ -12,7 +12,6 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import enum
 import typing
 import asyncio
 from utils import Event
@@ -20,9 +19,10 @@ from logging import getLogger
 from .communicator import MessageType, Message
 from .connection import connect, Connection, ConnectionNotEstablishedException
 from .device_info_view import DeviceInfoView
-from .general_status_view import GeneralStatusView, TaskID, TaskSpecificStatusReport
+from .general_status_view import GeneralStatusView, TaskID, TaskSpecificStatusReport,\
+    ControlMode, MotorIdentificationMode, LowLevelManipulationMode
 from .task_statistics_view import TaskStatisticsView
-from .commander import Commander, ControlMode, MotorIdentificationMode, LowLevelManipulationMode
+from .commander import Commander
 
 DEFAULT_GENERAL_STATUS_UPDATE_PERIOD = 0.333
 
