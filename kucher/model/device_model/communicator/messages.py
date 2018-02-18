@@ -160,7 +160,6 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
     ),
     'running': con.Struct(
         'stall_count'                   / U32,
-        'estimated_active_power'        / F32,
         'demand_factor'                 / F32,
         # Velocity
         'electrical_angular_velocity'   / F32,

@@ -32,7 +32,7 @@ class StatusWidgetBase(QWidget):
         raise NotImplementedError
 
     @staticmethod
-    def _get_task_specific_status_report(expected_type: _TSSRType, s: GeneralStatusView) -> _TSSRType:
+    def _get_task_specific_status_report(expected_type: typing.Type[_TSSRType], s: GeneralStatusView) -> _TSSRType:
         if isinstance(s.task_specific_status_report, expected_type):
             return s.task_specific_status_report
         else:

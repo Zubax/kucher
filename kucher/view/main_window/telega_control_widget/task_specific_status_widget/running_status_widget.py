@@ -109,8 +109,6 @@ class Widget(StatusWidgetBase):
 
         self._stall_count_display.set(f'{tssr.stall_count}')
 
-        self._estimated_active_power_display.set(f'{tssr.estimated_active_power:.0f} W')
-
         self._demand_factor_display.set(f'{tssr.demand_factor * 100.0:.0f}%')
 
         self._mechanical_rpm_display.set(
@@ -118,6 +116,8 @@ class Widget(StatusWidgetBase):
 
         self._current_frequency_display.set(
             f'{_angular_velocity_to_frequency(tssr.electrical_angular_velocity):.1f} Hz')
+
+        self._display_estimated_active_power(tssr)
 
         self._dq_display.set(tssr.u_dq,
                              tssr.i_dq)
@@ -135,6 +135,14 @@ class Widget(StatusWidgetBase):
 
         self._saturation_flag_display.set('Saturated' if tssr.controller_saturated else 'Not saturated',
                                           icon_name='control-saturation' if tssr.controller_saturated else 'ok-strong')
+
+    def _display_estimated_active_power(self, tssr: TaskSpecificStatusReport.Running):
+        # We consider this logic part of the view rather than model because it essentially
+        # converts representation of existing data using well-known principles
+        (u_d, u_q), (i_d, i_q) = tssr.u_dq, tssr.i_dq
+        active_power = (u_d * i_d + u_q * i_q) * 3 / 2
+
+        self._estimated_active_power_display.set(f'{active_power:.0f} W')
 
     def _make_display(self, title: str, tooltip: str, with_comment: bool=False) -> ValueDisplayWidget:
         return ValueDisplayWidget(self,

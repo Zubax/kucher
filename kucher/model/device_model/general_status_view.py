@@ -121,7 +121,6 @@ class TaskSpecificStatusReport:
     @_struct_view
     class Running:
         stall_count:                    int = 0
-        estimated_active_power:         float = 0
         demand_factor:                  float = 0
         # Velocity
         electrical_angular_velocity:    float = 0
@@ -141,7 +140,6 @@ class TaskSpecificStatusReport:
 
             return TaskSpecificStatusReport.Running(
                 stall_count=fields['stall_count'],
-                estimated_active_power=fields['estimated_active_power'],
                 demand_factor=fields['demand_factor'],
                 electrical_angular_velocity=fields['electrical_angular_velocity'],
                 mechanical_angular_velocity=fields['mechanical_angular_velocity'],
