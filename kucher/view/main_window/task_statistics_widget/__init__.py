@@ -106,7 +106,7 @@ class TaskStatisticsWidget(WidgetBase):
         layout.addWidget(self._table_view, 1)
         self.setLayout(layout)
 
-        self.setMinimumSize(400, 200)
+        self.setMinimumSize(400, 150)
 
     def __del__(self):
         _logger.debug('Widget deleted')
@@ -180,13 +180,13 @@ class _TableView(QTableView):
 # noinspection PyMethodOverriding
 class _TableModel(QAbstractTableModel):
     COLUMNS = [
-        'Started',
-        'Stopped',
-        'Last\nrun time',
-        'Total\nrun time',
-        'Invocations',
-        'Failures',
-        'Last\nexit code',
+        ('Started',     'When the task was last started'),
+        ('Stopped',     'When the task was last stopped'),
+        ('Last RT',     'Last run time'),
+        ('Total RT',    'Total run time'),
+        ('Invocations', 'How many times times the task was started'),
+        ('Failures',    'How many times the task has failed'),
+        ('Exit code',   'Last exit code'),
     ]
 
     def __init__(self, parent: QWidget):
@@ -203,10 +203,17 @@ class _TableModel(QAbstractTableModel):
     def headerData(self, section: int, orientation: int, role=None):
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
-                return self.COLUMNS[section]
+                return self.COLUMNS[section][0]
             else:
                 task_enum = list(self._data.entries.keys())[section]
-                return get_human_friendly_task_name(task_enum, multi_line=True)
+                return get_human_friendly_task_name(task_enum, short=True)
+
+        if role in (Qt.ToolTipRole, Qt.StatusTipRole):
+            if orientation == Qt.Horizontal:
+                return self.COLUMNS[section][1]
+            else:
+                task_enum = list(self._data.entries.keys())[section]
+                return get_human_friendly_task_name(task_enum)
 
         if role == Qt.DecorationRole:
             if orientation == Qt.Vertical:
