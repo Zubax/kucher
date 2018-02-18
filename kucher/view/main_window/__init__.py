@@ -21,7 +21,7 @@ from ..device_model_representation import GeneralStatusView, TaskStatisticsView,
 from ..tool_window_manager import ToolWindowManager, ToolWindowLocation, ToolWindowGroupingCondition
 from data_dir import LOG_DIR
 
-from .connection_management_widget import ConnectionRequestCallback, DisconnectionRequestCallback
+from .device_management_widget import ConnectionRequestCallback, DisconnectionRequestCallback
 from .main_widget import MainWidget
 from .task_statistics_widget import TaskStatisticsWidget
 from .log_widget import LogWidget

@@ -28,11 +28,11 @@ from .task_specific_status_widget import TaskSpecificStatusWidget
 from .control_widget import ControlWidget
 
 
-class DashboardWidget(WidgetBase):
+class TelegaControlWidget(WidgetBase):
     def __init__(self,
                  parent:    QWidget,
                  commander: Commander):
-        super(DashboardWidget, self).__init__(parent)
+        super(TelegaControlWidget, self).__init__(parent)
 
         self._dc_quantities_widget = DCQuantitiesWidget(self)
         self._temperature_widget = TemperatureWidget(self)

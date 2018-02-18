@@ -36,13 +36,13 @@ ConnectionRequestCallback = typing.Callable[[str], typing.Awaitable[BasicDeviceI
 DisconnectionRequestCallback = typing.Callable[[], typing.Awaitable[None]]
 
 
-class ConnectionManagementWidget(WidgetBase):
+class DeviceManagementWidget(WidgetBase):
     # noinspection PyArgumentList,PyUnresolvedReferences
     def __init__(self,
                  parent: typing.Optional[QWidget],
                  on_connection_request: ConnectionRequestCallback,
                  on_disconnection_request: DisconnectionRequestCallback):
-        super(ConnectionManagementWidget, self).__init__(parent)
+        super(DeviceManagementWidget, self).__init__(parent)
         self.setAttribute(Qt.WA_DeleteOnClose)                  # This is required to stop background timers!
 
         self._port_discoverer = PortDiscoverer()
@@ -383,9 +383,9 @@ def _unittest_connection_management_widget():
 
     app = QApplication([])
 
-    widget = ConnectionManagementWidget(None,
-                                        on_connection_request=on_connection_request,
-                                        on_disconnection_request=on_disconnection_request)
+    widget = DeviceManagementWidget(None,
+                                    on_connection_request=on_connection_request,
+                                    on_disconnection_request=on_disconnection_request)
     widget.show()
 
     asyncio.get_event_loop().run_until_complete(asyncio.gather(
