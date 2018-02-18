@@ -17,7 +17,8 @@ import typing
 from dataclasses import dataclass
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QCheckBox, QComboBox, QLabel
-from view.device_model_representation import Commander, GeneralStatusView, ControlMode, TaskID, TaskSpecificStatusReport
+from view.device_model_representation import Commander, GeneralStatusView, ControlMode, TaskID, \
+    TaskSpecificStatusReport, get_human_friendly_control_mode_name_and_its_icon_name
 from view.utils import get_icon, lay_out_vertically, lay_out_horizontally
 from view.widgets.spinbox_linked_with_slider import SpinboxLinkedWithSlider
 from .base import SpecializedControlWidgetBase
@@ -179,10 +180,20 @@ class _ControlPolicy:
     unit:                   str
     setpoint_range:         typing.Tuple[float, float]
     setpoint_step:          float
-    icon_name:              str
-    is_ratiometric:         bool
     only_for_guru:          bool
     get_value_from_status:  typing.Callable[[TaskSpecificStatusReport.Running], float] = lambda _: 0.0
+
+    @property
+    def icon_name(self) -> str:
+        return get_human_friendly_control_mode_name_and_its_icon_name(self.mode)[1]
+
+    @property
+    def name(self) -> str:
+        return get_human_friendly_control_mode_name_and_its_icon_name(self.mode)[0]
+
+    @property
+    def is_ratiometric(self) -> bool:
+        return 'ratiometric' in str(self.mode).lower()
 
 
 def _make_named_control_policies():
@@ -197,58 +208,46 @@ def _make_named_control_policies():
     def get_u_q(s: TaskSpecificStatusReport.Running) -> float:
         return s.u_dq[1]
 
-    return {
-        'Ratiometric angular velocity': _ControlPolicy(mode=ControlMode.RATIOMETRIC_ANGULAR_VELOCITY,
-                                                       unit='%rad/s',
-                                                       setpoint_range=percent_range,
-                                                       setpoint_step=0.1,
-                                                       icon_name='rotation-percent',
-                                                       is_ratiometric=True,
-                                                       only_for_guru=False),
+    return {cp.name: cp for cp in [
+        _ControlPolicy(mode=ControlMode.RATIOMETRIC_ANGULAR_VELOCITY,
+                       unit='%rad/s',
+                       setpoint_range=percent_range,
+                       setpoint_step=0.1,
+                       only_for_guru=False),
 
-        'Mechanical RPM':               _ControlPolicy(mode=ControlMode.MECHANICAL_RPM,
-                                                       unit='RPM',
-                                                       setpoint_range=(-999999, +999999),  # 1e6 takes too much space
-                                                       setpoint_step=10.0,
-                                                       icon_name='rotation',
-                                                       is_ratiometric=False,
-                                                       only_for_guru=False,
-                                                       get_value_from_status=get_rpm),
+        _ControlPolicy(mode=ControlMode.MECHANICAL_RPM,
+                       unit='RPM',
+                       setpoint_range=(-999999, +999999),  # 1e6 takes too much space
+                       setpoint_step=10.0,
+                       only_for_guru=False,
+                       get_value_from_status=get_rpm),
 
-        'Ratiometric current':          _ControlPolicy(mode=ControlMode.RATIOMETRIC_CURRENT,
-                                                       unit='%A',
-                                                       setpoint_range=percent_range,
-                                                       setpoint_step=0.1,
-                                                       icon_name='muscle-percent',
-                                                       is_ratiometric=True,
-                                                       only_for_guru=False),
+        _ControlPolicy(mode=ControlMode.RATIOMETRIC_CURRENT,
+                       unit='%A',
+                       setpoint_range=percent_range,
+                       setpoint_step=0.1,
+                       only_for_guru=False),
 
-        'Current':                      _ControlPolicy(mode=ControlMode.CURRENT,
-                                                       unit='A',
-                                                       setpoint_range=(-1e3, +1e3),
-                                                       setpoint_step=0.1,
-                                                       icon_name='muscle',
-                                                       is_ratiometric=False,
-                                                       only_for_guru=False,
-                                                       get_value_from_status=get_i_q),
+        _ControlPolicy(mode=ControlMode.CURRENT,
+                       unit='A',
+                       setpoint_range=(-1e3, +1e3),
+                       setpoint_step=0.1,
+                       only_for_guru=False,
+                       get_value_from_status=get_i_q),
 
-        'Ratiometric voltage':          _ControlPolicy(mode=ControlMode.RATIOMETRIC_VOLTAGE,
-                                                       unit='%V',
-                                                       setpoint_range=percent_range,
-                                                       setpoint_step=0.1,
-                                                       icon_name='voltage-percent',
-                                                       is_ratiometric=True,
-                                                       only_for_guru=True),
+        _ControlPolicy(mode=ControlMode.RATIOMETRIC_VOLTAGE,
+                       unit='%V',
+                       setpoint_range=percent_range,
+                       setpoint_step=0.1,
+                       only_for_guru=True),
 
-        'Voltage':                      _ControlPolicy(mode=ControlMode.VOLTAGE,
-                                                       unit='V',
-                                                       setpoint_range=(-1e3, +1e3),
-                                                       setpoint_step=0.1,
-                                                       icon_name='voltage',
-                                                       is_ratiometric=False,
-                                                       only_for_guru=True,
-                                                       get_value_from_status=get_u_q),
-    }
+        _ControlPolicy(mode=ControlMode.VOLTAGE,
+                       unit='V',
+                       setpoint_range=(-1e3, +1e3),
+                       setpoint_step=0.1,
+                       only_for_guru=True,
+                       get_value_from_status=get_u_q),
+    ]}
 
 
 def _angular_velocity_to_rpm(radian_per_sec: float) -> float:

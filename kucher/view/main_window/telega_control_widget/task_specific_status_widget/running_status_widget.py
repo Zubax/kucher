@@ -15,10 +15,11 @@
 import math
 import typing
 from .base import StatusWidgetBase
-from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QFrame, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QFrame
 from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtCore import Qt
-from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport
+from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport,\
+    get_human_friendly_control_mode_name_and_its_icon_name
 from view.utils import lay_out_vertically, lay_out_horizontally
 from view.widgets.value_display_widget import ValueDisplayWidget
 
@@ -122,10 +123,10 @@ class Widget(StatusWidgetBase):
         self._dq_display.set(tssr.u_dq,
                              tssr.i_dq)
 
-        # TODO: replace the stub with real values
-        self._control_mode_display.set('%\u03C9',
-                                       comment='Ratiometric angular velocity',
-                                       icon_name='rotation-percent')
+        cm_name, cm_icon_name = get_human_friendly_control_mode_name_and_its_icon_name(tssr.mode, short=True)
+        self._control_mode_display.set(cm_name,
+                                       comment=str(tssr.mode).split('.')[-1],
+                                       icon_name=cm_icon_name)
 
         self._reverse_flag_display.set('Reverse' if tssr.rotation_reversed else 'Forward',
                                        icon_name='jog-reverse' if tssr.rotation_reversed else 'jog-forward')

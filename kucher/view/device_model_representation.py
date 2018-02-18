@@ -20,7 +20,9 @@ from dataclasses import dataclass
 # This is an undesirable coupling, but it allows us to avoid excessive code duplication.
 # We keep it this way while the codebase is new and fluid. In the future we may want to come up with an
 # independent state representation in View, and add a converter into Fuhrer.
+# noinspection PyUnresolvedReferences
 from model.device_model import GeneralStatusView, TaskStatisticsView, TaskID, TaskSpecificStatusReport, Commander
+# noinspection PyUnresolvedReferences
 from model.device_model import ControlMode, MotorIdentificationMode, LowLevelManipulationMode
 
 
@@ -57,6 +59,24 @@ def get_human_friendly_task_name(tid: TaskID,
         out = '\n'.join(out.rsplit(' ', 1))
 
     return out
+
+
+@functools.lru_cache()
+def get_human_friendly_control_mode_name_and_its_icon_name(control_mode: ControlMode,
+                                                           short=False) -> typing.Tuple[str, str]:
+    try:
+        full_name, short_name, icon_name = {
+            ControlMode.RATIOMETRIC_CURRENT:            ('Ratiometric current',     '%A',       'muscle-percent'),
+            ControlMode.RATIOMETRIC_ANGULAR_VELOCITY:   ('Ratiometric RPM',         '%\u03C9',  'rotation-percent'),
+            ControlMode.RATIOMETRIC_VOLTAGE:            ('Ratiometric voltage',     '%V',       'voltage-percent'),
+            ControlMode.CURRENT:                        ('Current',                 'A',        'muscle'),
+            ControlMode.MECHANICAL_RPM:                 ('Mechanical RPM',          'RPM',      'rotation'),
+            ControlMode.VOLTAGE:                        ('Voltage',                 'V',        'voltage'),
+        }[control_mode]
+    except KeyError:
+        return str(control_mode).split('.')[-1].replace('_', ' '), 'question-mark'
+    else:
+        return (short_name if short else full_name), icon_name
 
 
 @dataclass
