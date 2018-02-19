@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QWidget, QMainWindow, QAction, QMenu, QTabWidget, QT
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from .widgets.tool_window import ToolWindow
-from .utils import get_icon
+from .utils import get_icon, is_small_screen
 
 
 _WidgetTypeVar = typing.TypeVar('W')
@@ -69,9 +69,11 @@ class ToolWindowManager:
         self._parent_window.setCorner(Qt.BottomRightCorner, Qt.RightDockWidgetArea)
 
         # http://doc.qt.io/qt-5/qmainwindow.html#DockOption-enum
-        self._parent_window.setDockOptions(self._parent_window.AnimatedDocks |
-                                           self._parent_window.AllowNestedDocks |
-                                           self._parent_window.AllowTabbedDocks)
+        dock_options = self._parent_window.AnimatedDocks | self._parent_window.AllowTabbedDocks
+        if not is_small_screen():
+            dock_options |= self._parent_window.AllowNestedDocks    # This won't work well on small screens
+
+        self._parent_window.setDockOptions(dock_options)
 
     # noinspection PyUnresolvedReferences
     def register(self,
