@@ -63,6 +63,8 @@ class LittleBobbyTablesWidget(WidgetBase):
             ('Software build time', sw_ver.build_timestamp_utc.isoformat()),
             ('Hardware version',    f'{hw_ver.major}.{hw_ver.minor}'),
             ('Unique ID',           device_info.globally_unique_id.hex()),
+            ('Runtime environment', device_info.runtime_environment_description),
+            ('Build environment',   device_info.build_environment_description),
         ])
 
     def clear(self):

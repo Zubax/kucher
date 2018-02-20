@@ -101,8 +101,10 @@ class HardwareVersion:
 
 @dataclass
 class BasicDeviceInfo:
-    name:                        str = ''
-    description:                 str = ''
-    software_version:            SoftwareVersion = SoftwareVersion
-    hardware_version:            HardwareVersion = HardwareVersion
-    globally_unique_id:          bytes = b'\0' * 16
+    name:                               str
+    description:                        str
+    build_environment_description:      str
+    runtime_environment_description:    str
+    software_version:                   SoftwareVersion
+    hardware_version:                   HardwareVersion
+    globally_unique_id:                 bytes

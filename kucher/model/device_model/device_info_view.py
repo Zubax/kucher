@@ -198,12 +198,14 @@ def _unittest_characteristics_populating():
 
 @_struct_view
 class DeviceInfoView:
-    name:                        str
-    description:                 str
-    software_version:            SoftwareVersion
-    hardware_version:            HardwareVersion
-    globally_unique_id:          bytes
-    certificate_of_authenticity: bytes
+    name:                               str
+    description:                        str
+    build_environment_description:      str
+    runtime_environment_description:    str
+    software_version:                   SoftwareVersion
+    hardware_version:                   HardwareVersion
+    globally_unique_id:                 bytes
+    certificate_of_authenticity:        bytes
 
     characteristics: Characteristics
 
@@ -213,6 +215,8 @@ class DeviceInfoView:
         return DeviceInfoView(
             name=node_info_message.node_name,
             description=node_info_message.node_description,
+            build_environment_description=node_info_message.build_environment_description,
+            runtime_environment_description=node_info_message.runtime_environment_description,
             software_version=SoftwareVersion.populate(node_info_message),
             hardware_version=HardwareVersion.populate(node_info_message),
             globally_unique_id=node_info_message.globally_unique_id,

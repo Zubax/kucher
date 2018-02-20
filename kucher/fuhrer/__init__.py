@@ -96,20 +96,23 @@ def _make_view_basic_device_info(di: model.device_model.DeviceInfoView) ->\
     """
     Decouples the model-specific device info representation from the view-specific device info representation.
     """
-    out = view.device_model_representation.BasicDeviceInfo()
-    out.name               = di.name
-    out.description        = di.description
-    out.globally_unique_id = di.globally_unique_id
-
-    out.software_version.major               = di.software_version.major
-    out.software_version.minor               = di.software_version.minor
-    out.software_version.image_crc           = di.software_version.image_crc
-    out.software_version.vcs_commit_id       = di.software_version.vcs_commit_id
-    out.software_version.dirty_build         = di.software_version.dirty_build
-    out.software_version.release_build       = di.software_version.release_build
-    out.software_version.build_timestamp_utc = di.software_version.build_timestamp_utc
-
-    out.hardware_version.major = di.hardware_version.major
-    out.hardware_version.minor = di.hardware_version.minor
-
-    return out
+    return view.device_model_representation.BasicDeviceInfo(
+        name=di.name,
+        description=di.description,
+        build_environment_description=di.build_environment_description,
+        runtime_environment_description=di.runtime_environment_description,
+        globally_unique_id=di.globally_unique_id,
+        software_version=view.device_model_representation.SoftwareVersion(
+            major=di.software_version.major,
+            minor=di.software_version.minor,
+            image_crc=di.software_version.image_crc,
+            vcs_commit_id=di.software_version.vcs_commit_id,
+            dirty_build=di.software_version.dirty_build,
+            release_build=di.software_version.release_build,
+            build_timestamp_utc=di.software_version.build_timestamp_utc,
+        ),
+        hardware_version=view.device_model_representation.HardwareVersion(
+            major=di.hardware_version.major,
+            minor=di.hardware_version.minor,
+        ),
+    )
