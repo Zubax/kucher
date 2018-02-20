@@ -22,6 +22,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from .widgets.tool_window import ToolWindow
 from .utils import get_icon, is_small_screen
+from utils import Event
 
 
 _WidgetTypeVar = typing.TypeVar('W')
@@ -53,6 +54,10 @@ class ToolWindowManager:
         self._arrangement_rules: typing.List[_ArrangementRule] = []
         self._title_to_icon_mapping: typing.Dict[str, QIcon] = {}
 
+        self._tool_window_resize_event = Event()
+        self._new_tool_window_event = Event()
+        self._tool_window_removed_event = Event()
+
         self._parent_window.tabifiedDockWidgetActivated.connect(self._reiconize)
 
         # Set up the appearance
@@ -75,6 +80,21 @@ class ToolWindowManager:
 
         self._parent_window.setDockOptions(dock_options)
 
+    @property
+    def tool_window_resize_event(self) -> Event:
+        """Passed arguments: the widget whose tool window got resized"""
+        return self._tool_window_resize_event
+
+    @property
+    def new_tool_window_event(self) -> Event:
+        """Passed arguments: the affected tool window"""
+        return self._new_tool_window_event
+
+    @property
+    def tool_window_removed_event(self) -> Event:
+        """Passed arguments: the affected tool window"""
+        return self._tool_window_removed_event
+
     # noinspection PyUnresolvedReferences
     def register(self,
                  factory:                   typing.Union[typing.Type[QWidget],
@@ -95,6 +115,7 @@ class ToolWindowManager:
             def terminate():
                 self._children.remove(tw)
                 action.setEnabled(True)
+                self._tool_window_removed_event.emit(tw)
 
             # noinspection PyBroadException
             try:
@@ -107,6 +128,7 @@ class ToolWindowManager:
                 # Set up the tool window
                 self._children.append(tw)
                 tw.close_event.connect(terminate)
+                tw.resize_event.connect(lambda: self._on_tool_window_resize(tw))
                 self._allocate(tw)
 
                 # Below we're making sure that the newly added tool window ends up on top
@@ -116,6 +138,8 @@ class ToolWindowManager:
 
                 if not allow_multiple_instances:
                     action.setEnabled(False)
+
+                self._new_tool_window_event.emit(tw)
             except Exception:
                 _logger.exception(f'Could not spawn tool window {title!r} with icon {icon_name!r}')
             else:
@@ -149,14 +173,26 @@ class ToolWindowManager:
                                                         group_when=group_when,
                                                         location=location))
 
-    def select_widgets(self, widget_type: typing.Type[_WidgetTypeVar]) -> typing.List[_WidgetTypeVar]:
+    def select_widgets(self,
+                       widget_type:         typing.Type[_WidgetTypeVar]=QWidget,
+                       current_location:    typing.Optional[ToolWindowLocation]=None) -> typing.List[_WidgetTypeVar]:
         """
         Returns a list of references to the root widgets of all existing tool windows which are instances of the
         specified type. This can be used to broadcast events and such.
-        Specify the type as QWidget to iterate through all widgets.
+        Specify the type as QWidget to accept all widgets.
         """
-        # noinspection PyTypeChecker
-        return [win.widget for win in self._children if isinstance(win.widget, widget_type)]
+        out: typing.List[_WidgetTypeVar] = []
+        for win in self._children:
+            if not isinstance(win.widget, widget_type):
+                continue
+
+            if current_location is not None:
+                if self._parent_window.dockWidgetArea(win) != int(current_location):
+                    continue
+
+            out.append(win.widget)
+
+        return out
 
     def _select_tool_windows(self, widget_type: typing.Type[QWidget]) -> typing.List[ToolWindow]:
         return [win for win in self._children if isinstance(win.widget, widget_type)]
@@ -224,6 +260,9 @@ class ToolWindowManager:
                     continue
 
                 tab_walks.setTabIcon(index, icon)
+
+    def _on_tool_window_resize(self, instance: ToolWindow):
+        self._tool_window_resize_event.emit(instance.widget)
 
 
 @dataclass

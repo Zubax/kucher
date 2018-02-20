@@ -39,6 +39,7 @@ class ToolWindow(QDockWidget):
             self.set_icon(icon_name)
 
         self._close_event = Event()
+        self._resize_event = Event()
 
     def __del__(self):
         _logger.debug('Deleting %r', self)
@@ -48,15 +49,15 @@ class ToolWindow(QDockWidget):
 
     __repr__ = __str__
 
-    # noinspection PyCallingNonCallable,PyArgumentList
-    def closeEvent(self, *_):
-        _logger.debug('Close event at %r', self)
-        self._close_event()
-
     @property
-    def close_event(self):
+    def close_event(self) -> Event:
         """No arguments are passed, nothing is expected back."""
         return self._close_event
+
+    @property
+    def resize_event(self) -> Event:
+        """No arguments are passed, nothing is expected back."""
+        return self._resize_event
 
     def set_icon(self, icon_name: str):
         pass        # TODO: Icons?
@@ -72,3 +73,14 @@ class ToolWindow(QDockWidget):
             raise TypeError(f'Expected QWidget, got {type(widget)}')
 
         self.setWidget(widget)
+
+    # noinspection PyCallingNonCallable,PyArgumentList
+    def closeEvent(self, *args):
+        super(ToolWindow, self).closeEvent(*args)
+        _logger.debug('Close event at %r', self)
+        self._close_event()
+
+    # noinspection PyCallingNonCallable,PyArgumentList
+    def resizeEvent(self, *args):
+        super(ToolWindow, self).resizeEvent(*args)
+        self._resize_event()

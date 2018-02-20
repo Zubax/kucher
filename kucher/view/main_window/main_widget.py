@@ -13,12 +13,14 @@
 #
 
 from PyQt5.QtWidgets import QTabWidget, QWidget
+from PyQt5.QtGui import QResizeEvent
 from ..utils import get_icon
 from ..device_model_representation import GeneralStatusView, BasicDeviceInfo, Commander
 
 from .device_management_widget import DeviceManagementWidget,\
     ConnectionRequestCallback, DisconnectionRequestCallback
 from .telega_control_widget import TelegaControlWidget
+from utils import Event
 
 
 class MainWidget(QTabWidget):
@@ -28,6 +30,8 @@ class MainWidget(QTabWidget):
                  on_disconnection_request:  DisconnectionRequestCallback,
                  commander:                 Commander):
         super(MainWidget, self).__init__(parent)
+
+        self._resize_event = Event()
 
         self._device_management_widget =\
             DeviceManagementWidget(self,
@@ -40,6 +44,10 @@ class MainWidget(QTabWidget):
         self.addTab(self._telega_control_widget, get_icon('wagon'), 'Telega control panel')
 
         self.setCurrentWidget(self._device_management_widget)
+
+    @property
+    def resize_event(self) -> Event:
+        return self._resize_event
 
     def on_connection_established(self, device_info: BasicDeviceInfo):
         self._telega_control_widget.on_connection_established()
@@ -58,3 +66,7 @@ class MainWidget(QTabWidget):
 
     def on_general_status_update(self, timestamp: float, status: GeneralStatusView):
         self._telega_control_widget.on_general_status_update(timestamp, status)
+
+    def resizeEvent(self, event: QResizeEvent):
+        super(MainWidget, self).resizeEvent(event)
+        self._resize_event.emit()

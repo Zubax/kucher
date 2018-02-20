@@ -13,9 +13,9 @@
 #
 
 import typing
-from PyQt5.QtWidgets import QMainWindow, QAction
-from PyQt5.QtGui import QDesktopServices, QCloseEvent
-from PyQt5.QtCore import QUrl
+from PyQt5.QtWidgets import QMainWindow, QAction, QSizePolicy, QWIDGETSIZE_MAX
+from PyQt5.QtGui import QDesktopServices, QCloseEvent, QResizeEvent
+from PyQt5.QtCore import QUrl, QSize
 from ..utils import get_application_icon, get_icon, is_small_screen
 from ..device_model_representation import GeneralStatusView, TaskStatisticsView, BasicDeviceInfo, Commander
 from ..tool_window_manager import ToolWindowManager, ToolWindowLocation, ToolWindowGroupingCondition
@@ -58,6 +58,14 @@ class MainWindow(QMainWindow):
         self._configure_file_menu()
         self._configure_tool_windows(on_task_statistics_request)
         self._configure_help_menu()
+
+        self._tool_window_manager.tool_window_resize_event.connect(lambda *_: self._readjust_size_policies())
+        self._tool_window_manager.new_tool_window_event.connect(lambda *_: self._readjust_size_policies())
+        self._tool_window_manager.tool_window_removed_event.connect(lambda *_: self._readjust_size_policies())
+
+        self._main_widget.resize_event.connect(self._readjust_size_policies)
+        self._main_widget.setSizePolicy(QSizePolicy.Minimum,
+                                        QSizePolicy.Minimum)
 
         self.setCentralWidget(self._main_widget)
 
@@ -130,6 +138,28 @@ class MainWindow(QMainWindow):
         help_menu.addAction(show_log_directory_action)
         # help_menu.addAction(about_action)                 # TODO: Implement this
 
+    def _readjust_size_policies(self):
+        size_hint: QSize = self.centralWidget().sizeHint()
+        width_hint, height_hint = size_hint.width(), size_hint.height()
+
+        # TODO: remember the largest width hint, use it in order to prevent back and forth resizing when
+        # TODO: the content changes?
+
+        docked_tb = \
+            self._tool_window_manager.select_widgets(current_location=ToolWindowLocation.TOP) + \
+            self._tool_window_manager.select_widgets(current_location=ToolWindowLocation.BOTTOM)
+
+        docked_lr = \
+            self._tool_window_manager.select_widgets(current_location=ToolWindowLocation.LEFT) + \
+            self._tool_window_manager.select_widgets(current_location=ToolWindowLocation.RIGHT)
+
+        self.centralWidget().setMaximumHeight(height_hint if len(docked_tb) else QWIDGETSIZE_MAX)
+        self.centralWidget().setMaximumWidth(width_hint if len(docked_lr) else QWIDGETSIZE_MAX)
+
     def closeEvent(self, event: QCloseEvent):
         self._on_close()
         event.ignore()
+
+    def resizeEvent(self, event: QResizeEvent):
+        super(MainWindow, self).resizeEvent(event)
+        self._readjust_size_policies()
