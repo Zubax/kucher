@@ -44,9 +44,9 @@ class OptionalFloatAdapter(con.Adapter):
 # noinspection PyClassHasNoInit
 class TimeAdapter(con.Adapter):
     """
-    Converts time representation between integral number of microseconds and a Decimal number of seconds.
+    Converts time representation between integral number of nanoseconds and a Decimal number of seconds.
     """
-    MULTIPLIER = decimal.Decimal('1e6')
+    MULTIPLIER = decimal.Decimal('1e9')
 
     def _encode(self, obj, context):
         return int(obj * self.MULTIPLIER)
