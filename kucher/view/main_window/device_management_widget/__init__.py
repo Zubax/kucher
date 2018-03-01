@@ -366,9 +366,14 @@ def _unittest_connection_management_widget():
         await asyncio.sleep(0.5)
         widget.on_connection_initialization_progress_report('Success!', 1.0)
 
+        from view.device_model_representation import SoftwareVersion, HardwareVersion
         out = BasicDeviceInfo(name='com.zubax.whatever',
                               description='Joo Janta 200 Super-Chromatic Peril Sensitive Sunglasses',
-                              globally_unique_id=b'0123456789abcdef')
+                              globally_unique_id=b'0123456789abcdef',
+                              build_environment_description='',
+                              runtime_environment_description='',
+                              software_version=SoftwareVersion(),
+                              hardware_version=HardwareVersion())
         out.software_version.major = 1
         out.software_version.minor = 2
         out.software_version.dirty_build = True

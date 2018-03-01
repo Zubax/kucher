@@ -295,7 +295,7 @@ def _unittest_log_widget():
 
     for it in range(5):
         go_go_go()
-        lw.append_lines([f'This is line number {it + 1}', 'Piggyback'])
+        lw.append_lines([f'This is line number {it + 1}\n', 'Piggyback\n'])
 
     go_go_go()
 
