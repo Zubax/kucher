@@ -82,6 +82,9 @@ def main():
     logging.root.addHandler(file_handler)
 
     if '--test' in sys.argv:
+        if not os.environ.get('PYTHONASYNCIODEBUG'):
+            raise RuntimeError('PYTHONASYNCIODEBUG should be set while unit testing')
+
         import pytest
         args = sys.argv[:]
         args.remove('--test')
