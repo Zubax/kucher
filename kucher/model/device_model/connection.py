@@ -15,9 +15,10 @@
 import popcop
 import typing
 import asyncio
-from .communicator import Communicator, MessageType, Message, CommunicationChannelClosedException
+from .communicator import Communicator, MessageType, Message, CommunicationChannelClosedException, AnyMessage
 from .device_info_view import DeviceInfoView
 from .general_status_view import GeneralStatusView
+from .register import Register
 from logging import getLogger
 
 
@@ -50,13 +51,14 @@ class IncompatibleDeviceException(ConnectionAttemptFailedException):
 class Connection:
     """
     The connection object is assumed to be always connected as long as it exists.
-    If it is detected that the connection is loss, a callback will be invoked.
+    If it is detected that the connection is lost, a callback will be invoked.
     """
 
     def __init__(self,
                  event_loop:                    asyncio.AbstractEventLoop,
                  communicator:                  Communicator,
                  device_info:                   DeviceInfoView,
+                 registers:                     typing.List[Register],
                  general_status_with_ts:        typing.Tuple[float, GeneralStatusView],
                  on_connection_loss:            typing.Callable[[typing.Union[str, Exception]], None],
                  on_general_status_update:      typing.Callable[[float, GeneralStatusView], None],
@@ -65,6 +67,7 @@ class Connection:
         self._event_loop = event_loop
         self._com: Communicator = communicator
         self._device_info = device_info
+        self._registers: typing.Dict[str, Register] = {r.name: r for r in registers}
         self._last_general_status_with_timestamp = general_status_with_ts
         self._general_status_update_period = general_status_update_period
 
@@ -83,6 +86,13 @@ class Connection:
     @property
     def last_general_status_with_timestamp(self) -> typing.Tuple[float, GeneralStatusView]:
         return self._last_general_status_with_timestamp
+
+    @property
+    def registers(self) -> typing.Dict[str, Register]:
+        """
+        Dict of all registers; keys are names, values are instances of Register.
+        """
+        return self._registers
 
     async def disconnect(self):
         self._on_connection_loss = lambda *_: None     # Suppress further reporting
@@ -188,18 +198,21 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
                   on_log_line:                  typing.Callable[[float, str], None],
                   on_progress_report:           typing.Optional[typing.Callable[[str, float], None]],
                   general_status_update_period: float) -> Connection:
-    def report(stage: str, progress: float):
+    progress = 0.0
+
+    def report(stage: str, progress_increment: float=0.01):
+        nonlocal progress
+        assert progress_increment > 0
+        progress = min(1.0, progress + progress_increment)
         _logger.info('Connection process on port %r reached the new stage %r', port_name, stage)
-        # noinspection PyTypeChecker
-        assert 0.0 <= progress <= 1.0
         if on_progress_report:
             on_progress_report(stage, progress)
 
-    report('I/O initialization', 0.1)
+    report('I/O initialization')
     com = await Communicator.new(port_name, event_loop)
 
     try:
-        report('Device detection', 0.2)
+        report('Device detection')
         node_info = await com.request(popcop.standard.NodeInfoMessage)
 
         _logger.info('Node info of the connected device: %r', node_info)
@@ -224,13 +237,13 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
         sw_major_minor = node_info.software_version_major, node_info.software_version_minor
         com.set_protocol_version(sw_major_minor)
 
-        report('Device identification', 0.4)
+        report('Device identification')
         characteristics = await com.request(MessageType.DEVICE_CHARACTERISTICS)
         _logger.info('Device characteristics: %r', characteristics)
         if not characteristics:
             raise ConnectionAttemptFailedException('Device capabilities request has timed out')
 
-        report('Device status request', 0.6)
+        report('Device status request')
         general_status = await com.request(MessageType.GENERAL_STATUS)
         _logger.info('General status: %r', general_status)
         if not general_status:
@@ -240,6 +253,60 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
                                               characteristics_message=characteristics.fields)
         _logger.info('Populated device info view: %r', device_info)
 
+        # Requesting the list of all register names - this may take a while
+        register_names = []
+        index = 0
+        while True:
+            def predicate(item: AnyMessage) -> bool:
+                if isinstance(item, popcop.standard.register.DiscoveryResponseMessage):
+                    return item.index == index
+
+            discovered_future = com.request(popcop.standard.register.DiscoveryRequestMessage(index=index),
+                                            predicate=predicate)
+            report(f'Register discovery at index {index}', 1e-3)
+            discovered = await discovered_future
+            if not discovered:
+                raise ConnectionAttemptFailedException(f'Register discovery request at index {index} has timed out')
+
+            assert isinstance(discovered, popcop.standard.register.DiscoveryResponseMessage)
+            assert discovered.index == index
+            index += 1
+            if discovered.name:
+                register_names.append(discovered.name)
+            else:
+                break
+
+        del index
+        del discovered
+        del discovered_future
+        _logger.info('Discovered %r registers: %r', len(register_names), register_names)
+
+        # Requesting all registers now
+        final_progress_increment = (1.0 - progress) / len(register_names)
+        registers: typing.List[Register] = []
+        for name in register_names:
+            def predicate(item: AnyMessage) -> bool:
+                if isinstance(item, popcop.standard.register.DataResponseMessage):
+                    return item.name == name
+
+            data_future = com.request(popcop.standard.register.DataRequestMessage(name=name),
+                                      predicate=predicate)
+            report(f'Reading register {name!r}', final_progress_increment)
+            data = await data_future
+            if not data:
+                raise ConnectionAttemptFailedException(f'Register read request with name {name!r} has timed out')
+
+            assert isinstance(data, popcop.standard.register.DataResponseMessage)
+            assert data.name == name
+            if data.value is not None:
+                registers.append(Register(name=data.name,
+                                          value=data.value,
+                                          type_id=data.type_id,
+                                          update_timestamp_device_time=data.timestamp,
+                                          flags=data.flags))
+            else:
+                _logger.warning(f'Empty or unknown register ignored: {data}')
+
         report('Completed successfully', 1.0)
     except Exception:
         await com.close()
@@ -248,6 +315,7 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
     return Connection(event_loop=event_loop,
                       communicator=com,
                       device_info=device_info,
+                      registers=registers,
                       general_status_with_ts=(general_status.timestamp,
                                               GeneralStatusView.populate(general_status.fields)),
                       on_connection_loss=on_connection_loss,

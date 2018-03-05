@@ -224,15 +224,15 @@ class Communicator:
 
         await self._do_send(message_or_type)
 
-        predicate = predicate if predicate is not None else (lambda *_: True)
-
         def super_predicate(item: AnyMessage) -> bool:
-            if self._match_message(message_or_type, item):
+            if predicate is not None:
                 try:
                     return predicate(item)
                 except Exception as ex:
                     _logger.exception('Unhandled exception in response predicate for message %r: %r',
                                       message_or_type, ex)
+            else:
+                return self._match_message(message_or_type, item)
 
         future = self._event_loop.create_future()
         entry = super_predicate, future

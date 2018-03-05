@@ -14,7 +14,7 @@
 
 from .exceptions import CommunicatorException
 
-from .communicator import Communicator, CommunicationChannelClosedException, LOOPBACK_PORT_NAME
+from .communicator import Communicator, CommunicationChannelClosedException, LOOPBACK_PORT_NAME, AnyMessage
 
 from .messages import Message, MessageType, MessagingException
 from .messages import UnsupportedVersionException, UnknownMessageException, InvalidFieldsException
