@@ -98,9 +98,11 @@ class _TableView(QTableView):
         self.horizontalHeader().setSectionResizeMode(self.horizontalHeader().ResizeToContents)
         self.horizontalHeader().setStretchLastSection(True)
 
+        # ResizeToContents may be inefficient, but it is necessary for proper word wrapping
         self.verticalHeader().setDefaultSectionSize(model.font_height)
-        self.verticalHeader().setSectionResizeMode(self.verticalHeader().Fixed)
+        self.verticalHeader().setSectionResizeMode(self.verticalHeader().ResizeToContents)
 
+        self.setWordWrap(True)
         self.setSortingEnabled(False)
         self.setSelectionMode(self.ExtendedSelection)
         self.setSelectionBehavior(self.SelectItems)
@@ -295,7 +297,7 @@ def _unittest_log_widget():
 
     for it in range(5):
         go_go_go()
-        lw.append_lines([f'This is line number {it + 1}\n', 'Piggyback\n'])
+        lw.append_lines([f'This is a very long line, its number is {it + 1}\n', 'Piggyback\n'])
 
     go_go_go()
 
