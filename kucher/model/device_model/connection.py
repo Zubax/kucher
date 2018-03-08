@@ -296,6 +296,7 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
             if not data:
                 raise ConnectionAttemptFailedException(f'Register read request with name {name!r} has timed out')
 
+            _logger.info('Register: %r', data)
             assert isinstance(data, popcop.standard.register.DataResponseMessage)
             assert data.name == name
             if data.value is not None:

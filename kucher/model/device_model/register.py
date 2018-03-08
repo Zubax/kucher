@@ -52,7 +52,7 @@ class Register:
                  update_timestamp_device_time:  Decimal,
                  update_timestamp_monotonic:    float=None):
         self._name = str(name)
-        self._value = value
+        self._cached_value = value
         self._type_id = ValueType(type_id)
         self._update_ts_device_time = Decimal(update_timestamp_device_time)
         self._update_ts_monotonic = float(update_timestamp_monotonic or time.monotonic())
@@ -65,8 +65,8 @@ class Register:
         return self._name
 
     @property
-    def value(self) -> StrictValueTypeAnnotation:
-        return self._value
+    def cached_value(self) -> StrictValueTypeAnnotation:
+        return self._cached_value
 
     @property
     def type_id(self) -> ValueType:
