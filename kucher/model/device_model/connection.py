@@ -245,13 +245,14 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
                   on_log_line:                  typing.Callable[[float, str], None],
                   on_progress_report:           typing.Optional[typing.Callable[[str, float], None]],
                   general_status_update_period: float) -> Connection:
+    begun_at = time.monotonic()
     progress = 0.0
 
     def report(stage: str, progress_increment: float=0.01):
         nonlocal progress
         assert progress_increment > 0
         progress = min(1.0, progress + progress_increment)
-        _logger.info('Connection process on port %r reached the new stage %r', port_name, stage)
+        _logger.debug('Connection process on port %r reached a new stage %r', port_name, stage)
         if on_progress_report:
             on_progress_report(stage, progress)
 
@@ -326,7 +327,7 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
         del index
         del discovered
         del discovered_future
-        _logger.info('Discovered %r registers: %r', len(register_names), register_names)
+        _logger.info('Discovered %d registers:\n%s\n', len(register_names), '\n'.join(map(str, register_names)))
 
         # Requesting all registers now
         final_progress_increment = (1.0 - progress) / len(register_names)
@@ -343,7 +344,6 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
             if not data:
                 raise ConnectionAttemptFailedException(f'Register read request with name {name!r} has timed out')
 
-            _logger.info('Register: %r', data)
             assert isinstance(data, popcop.standard.register.DataResponseMessage)
             assert data.name == name
             if data.value is not None:
@@ -351,10 +351,13 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
             else:
                 _logger.warning(f'Empty or unknown register ignored: {data}')
 
+        _logger.info('Read %d registers:\n%s\n', len(registers), '\n'.join(map(str, registers)))
         report('Completed successfully', 1.0)
     except Exception:
         await com.close()
         raise
+
+    _logger.info('Connection on port %r established in %.1f seconds', port_name, time.monotonic() - begun_at)
 
     return Connection(event_loop=event_loop,
                       communicator=com,
