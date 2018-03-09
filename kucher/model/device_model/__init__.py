@@ -23,6 +23,7 @@ from .general_status_view import GeneralStatusView, TaskID, TaskSpecificStatusRe
     ControlMode, MotorIdentificationMode, LowLevelManipulationMode
 from .task_statistics_view import TaskStatisticsView
 from .commander import Commander
+from .register import Register
 
 DEFAULT_GENERAL_STATUS_UPDATE_PERIOD = 0.333
 
@@ -53,13 +54,14 @@ class DeviceModel:
         self._evt_device_status_update = Event()
         self._evt_log_line = Event()
         self._evt_connection_status_change = Event()
+        self._evt_consolidated_register_update = Event()
 
     @property
     def commander(self) -> Commander:
         return self._commander
 
     @property
-    def device_status_update_event(self):
+    def device_status_update_event(self) -> Event:
         """
         This event is invoked when a new general status message is obtained from the device.
         The arguments are local monotonic timestamp in seconds and an instance of GeneralStatusView.
@@ -67,7 +69,7 @@ class DeviceModel:
         return self._evt_device_status_update
 
     @property
-    def log_line_reception_event(self):
+    def log_line_reception_event(self) -> Event:
         """
         This event is invoked when a new log line is received from the device.
         The arguments are local monotonic timestamp in seconds and an str.
@@ -91,7 +93,7 @@ class DeviceModel:
         return self._evt_log_line
 
     @property
-    def connection_status_change_event(self):
+    def connection_status_change_event(self) -> Event:
         """
         The only argument passed to the event handler is a union of either:
             - DeviceInfoView - when connection established;
@@ -99,6 +101,23 @@ class DeviceModel:
             - str - like above, but the relevant information will be contained in a human-readable string.
         """
         return self._evt_connection_status_change
+
+    @property
+    def consolidated_register_update_event(self) -> Event:
+        """
+        The event argument is a reference to the register instance that has been updated.
+        """
+        return self._evt_consolidated_register_update
+
+    @property
+    def registers(self) -> typing.Dict[str, Register]:
+        """
+        All known registers with cached values reported by the currently connected device.
+        The value cache is fully managed by the device model class.
+        If we're not connected, the dict will be empty.
+        The contents of the dict is guaranteed to never change as long as the current connection is active.
+        """
+        return self._conn.registers if self.is_connected else {}
 
     async def connect(self,
                       port_name: str,
@@ -113,6 +132,10 @@ class DeviceModel:
                                    on_log_line=self._evt_log_line,
                                    on_progress_report=on_progress_report,
                                    general_status_update_period=DEFAULT_GENERAL_STATUS_UPDATE_PERIOD)
+
+        # Connect all registers to the consolidated event handler
+        for r in self._conn.registers.values():
+            r.update_event.connect(self._evt_consolidated_register_update)
 
         # noinspection PyTypeChecker
         self._evt_connection_status_change(self._conn.device_info)

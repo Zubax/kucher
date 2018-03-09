@@ -36,6 +36,12 @@ RelaxedValueTypeAnnotation = typing.Union[
 ]
 
 
+SetGetCallback = typing.Callable[[typing.Optional[StrictValueTypeAnnotation]],
+                                 typing.Awaitable[typing.Tuple[StrictValueTypeAnnotation,   # Value
+                                                               Decimal,                     # Device timestamp
+                                                               float]]]                     # Monotonic timestamp
+
+
 class Register:
     """
     Representation of a device register.
@@ -50,6 +56,7 @@ class Register:
                  type_id:                       ValueType,
                  flags:                         Flags,
                  update_timestamp_device_time:  Decimal,
+                 set_get_callback:              SetGetCallback,
                  update_timestamp_monotonic:    float=None):
         self._name = str(name)
         self._cached_value = value
@@ -57,6 +64,7 @@ class Register:
         self._update_ts_device_time = Decimal(update_timestamp_device_time)
         self._update_ts_monotonic = float(update_timestamp_monotonic or time.monotonic())
         self._flags = flags
+        self._set_get_callback = set_get_callback
 
         self._update_event = Event()
 
@@ -96,11 +104,50 @@ class Register:
         """
         return self._update_event
 
-    async def set(self, value: RelaxedValueTypeAnnotation) -> StrictValueTypeAnnotation:
-        pass
+    async def write_through(self, value: RelaxedValueTypeAnnotation) -> StrictValueTypeAnnotation:
+        """
+        Sets the provided value to the device, then requests the new value from the device,
+        at the same time updating the cache with the latest state once the response is received.
+        The new value is returned, AND an update event is generated.
+        Beware that the cache may remain inconsistent until the response is received.
+        """
+        value = self._stricten(value)
+        # Should we update the cache before the new value has been confirmed? Probably not.
+        v, dt, mt = await self._set_get_callback(value)
+        self._sync(v, dt, mt)
+        return v
 
-    async def get(self) -> StrictValueTypeAnnotation:
-        pass
+    async def read_through(self) -> StrictValueTypeAnnotation:
+        """
+        Requests the value from the device, at the same time updating the cache with the latest state.
+        The new value is returned, AND an update event is generated.
+        """
+        v, dt, mt = await self._set_get_callback(None)
+        self._sync(v, dt, mt)
+        return v
 
-    def _sync(self, value: RelaxedValueTypeAnnotation):
-        pass
+    def _sync(self,
+              value:            RelaxedValueTypeAnnotation,
+              device_time:      Decimal,
+              monotonic_time:   float):
+        """This method is invoked from the Connection instance."""
+        self._cached_value = value
+        self._update_ts_device_time = Decimal(device_time)
+        self._update_ts_monotonic = float(monotonic_time)
+        self._emit_update_event()
+
+    def _emit_update_event(self):
+        self._update_event.emit(self)
+
+    @staticmethod
+    def _stricten(value: RelaxedValueTypeAnnotation) -> StrictValueTypeAnnotation:
+        scalars = int, float, bool
+        if isinstance(value, scalars):
+            return [value]
+        elif isinstance(value, (str, bytes)):
+            return value
+        else:
+            try:
+                return [x for x in value]   # Coerce to list
+            except TypeError:
+                raise TypeError(f'Invalid type of register value: {type(value)!r}')

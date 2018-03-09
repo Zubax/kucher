@@ -12,12 +12,14 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import time
 import popcop
 import typing
 import asyncio
 from .communicator import Communicator, MessageType, Message, CommunicationChannelClosedException, AnyMessage
 from .device_info_view import DeviceInfoView
 from .general_status_view import GeneralStatusView
+from . import register
 from .register import Register
 from logging import getLogger
 
@@ -58,7 +60,7 @@ class Connection:
                  event_loop:                    asyncio.AbstractEventLoop,
                  communicator:                  Communicator,
                  device_info:                   DeviceInfoView,
-                 registers:                     typing.List[Register],
+                 initial_register_data_msgs:    typing.List[popcop.standard.register.DataResponseMessage],
                  general_status_with_ts:        typing.Tuple[float, GeneralStatusView],
                  on_connection_loss:            typing.Callable[[typing.Union[str, Exception]], None],
                  on_general_status_update:      typing.Callable[[float, GeneralStatusView], None],
@@ -67,9 +69,18 @@ class Connection:
         self._event_loop = event_loop
         self._com: Communicator = communicator
         self._device_info = device_info
-        self._registers: typing.Dict[str, Register] = {r.name: r for r in registers}
         self._last_general_status_with_timestamp = general_status_with_ts
         self._general_status_update_period = general_status_update_period
+
+        self._registers: typing.Dict[str, Register] = {}
+        for m in initial_register_data_msgs:
+            self._registers[m.name] = \
+                Register(name=m.name,
+                         value=m.value,
+                         type_id=m.type_id,
+                         update_timestamp_device_time=m.timestamp,
+                         flags=m.flags,
+                         set_get_callback=self._curry_register_set_get_executor(m.name, m.type_id))
 
         self._on_connection_loss = on_connection_loss
         self._on_general_status_update = on_general_status_update
@@ -162,7 +173,16 @@ class Connection:
     async def _receiver_task_entry_point(self):
         while True:
             item = await self._com.receive()
-            _logger.info('Unattended message: %r', item)
+            ts_mono = time.monotonic()
+
+            if isinstance(item, popcop.standard.register.DataResponseMessage):
+                try:
+                    # noinspection PyProtectedMember
+                    self._registers[item.name]._sync(item.value, item.timestamp, ts_mono)
+                except KeyError:
+                    _logger.exception('Unknown register name: %r', item.name)
+            else:
+                _logger.warning('Unattended message: %r', item)
 
     async def _log_reader_task_entry_point(self):
         while True:
@@ -189,6 +209,33 @@ class Connection:
                 _logger.info('Task %r has stopped', target)
 
         self._event_loop.create_task(proxy())
+
+    def _curry_register_set_get_executor(self,
+                                         name: str,
+                                         type_id: popcop.standard.register.ValueType) -> register.SetGetCallback:
+        """
+        Returns an awaitable async function that modifies register state on the device itself.
+        The function is bound to a particular register, whose name and type are specified in the arguments.
+        """
+        def predicate(item: AnyMessage) -> bool:
+            if isinstance(item, popcop.standard.register.DataResponseMessage):
+                return item.name == name
+
+        async def executor(value: typing.Optional[register.StrictValueTypeAnnotation]):
+            from popcop.standard.register import DataRequestMessage, DataResponseMessage
+            if value is None:
+                msg = DataRequestMessage(name=name)     # None means that we're not setting the value, only reading
+            else:
+                msg = DataRequestMessage(name=name,
+                                         type_id=type_id,
+                                         value=value)
+            resp = await self.request(msg, predicate=predicate)
+            _logger.info('Register set/get result: %r -> %r', msg, resp)
+            assert isinstance(resp, DataResponseMessage)
+            assert msg.name == resp.name == name
+            return resp.value, resp.timestamp, time.monotonic()
+
+        return executor
 
 
 async def connect(event_loop:                   asyncio.AbstractEventLoop,
@@ -283,7 +330,7 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
 
         # Requesting all registers now
         final_progress_increment = (1.0 - progress) / len(register_names)
-        registers: typing.List[Register] = []
+        registers: typing.List[popcop.standard.register.DataResponseMessage] = []
         for name in register_names:
             def predicate(item: AnyMessage) -> bool:
                 if isinstance(item, popcop.standard.register.DataResponseMessage):
@@ -300,11 +347,7 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
             assert isinstance(data, popcop.standard.register.DataResponseMessage)
             assert data.name == name
             if data.value is not None:
-                registers.append(Register(name=data.name,
-                                          value=data.value,
-                                          type_id=data.type_id,
-                                          update_timestamp_device_time=data.timestamp,
-                                          flags=data.flags))
+                registers.append(data)
             else:
                 _logger.warning(f'Empty or unknown register ignored: {data}')
 
@@ -316,7 +359,7 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
     return Connection(event_loop=event_loop,
                       communicator=com,
                       device_info=device_info,
-                      registers=registers,
+                      initial_register_data_msgs=registers,
                       general_status_with_ts=(general_status.timestamp,
                                               GeneralStatusView.populate(general_status.fields)),
                       on_connection_loss=on_connection_loss,
