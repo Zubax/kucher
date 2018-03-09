@@ -24,6 +24,8 @@ from dataclasses import dataclass
 from model.device_model import GeneralStatusView, TaskStatisticsView, TaskID, TaskSpecificStatusReport, Commander
 # noinspection PyUnresolvedReferences
 from model.device_model import ControlMode, MotorIdentificationMode, LowLevelManipulationMode
+# noinspection PyUnresolvedReferences
+from model.device_model import Register
 
 
 _TASK_ID_TO_ICON_MAPPING: typing.Dict[TaskID, str] = {

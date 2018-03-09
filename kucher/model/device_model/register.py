@@ -49,6 +49,7 @@ class Register:
     attempt to coerce the new value into the required type. If a coercion cannot be performed or
     is ambiguous, an exception will be thrown.
     """
+    ValueType = ValueType
 
     def __init__(self,
                  name:                          str,
