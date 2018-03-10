@@ -17,7 +17,7 @@ import time
 import typing
 import itertools
 from decimal import Decimal
-from popcop.standard.register import ValueType, Flags
+from popcop.standard.register import ValueType, Flags, ValueKind, VALUE_TYPE_TO_KIND
 from utils import Event
 
 
@@ -50,6 +50,8 @@ class Register:
     is ambiguous, an exception will be thrown.
     """
     ValueType = ValueType
+    ValueKind = ValueKind
+    VALUE_TYPE_TO_KIND = VALUE_TYPE_TO_KIND
 
     def __init__(self,
                  name:                          str,

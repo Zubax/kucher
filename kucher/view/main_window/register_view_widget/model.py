@@ -81,6 +81,11 @@ class Model(QAbstractItemModel):
     def reload(self, register: Register):
         pass    # TODO: locate the register in the tree and invalidate it
 
+    @staticmethod
+    def get_register_from_index(index: QModelIndex) -> Register:
+        """Returns None if no register is bound to the index."""
+        return Model._unwrap(index).value
+
     def index(self, row: int, column: int, parent: QModelIndex=None) -> QModelIndex:
         if column >= self.columnCount(parent):
             return QModelIndex()
@@ -138,16 +143,16 @@ class Model(QAbstractItemModel):
                 return out
 
             if column == column_indices.VALUE:
-                return _display_value(node.value.cached_value, node.value.type_id)
+                return display_value(node.value.cached_value, node.value.type_id)
 
             if column == column_indices.DEFAULT:
-                return _display_value(node.value.default_value, node.value.type_id)
+                return display_value(node.value.default_value, node.value.type_id)
 
             if column == column_indices.MIN:
-                return _display_value(node.value.min_value, node.value.type_id)
+                return display_value(node.value.min_value, node.value.type_id)
 
             if column == column_indices.MAX:
-                return _display_value(node.value.max_value, node.value.type_id)
+                return display_value(node.value.max_value, node.value.type_id)
 
             if column == column_indices.DEVICE_TIMESTAMP:
                 return str(datetime.timedelta(seconds=float(node.value.update_timestamp_device_time)))
@@ -206,12 +211,15 @@ class Model(QAbstractItemModel):
         return QVariant()
 
     def setData(self, index: QModelIndex, value, role=None) -> bool:
-        return False        # TODO: Editable fields
+        # TODO: Execute request to the device! Right now we're just changing the data locally, for testing
+        # noinspection PyProtectedMember
+        self._unwrap(index).value._cached_value = Register._stricten(value)
+        return True
 
     def flags(self, index: QModelIndex) -> int:
         node = self._unwrap(index)
         out = Qt.ItemIsEnabled
-        if node and node.value:
+        if node and node.value and node.value.type_id != Register.ValueType.EMPTY:
             out |= Qt.ItemIsSelectable
             if node.value.mutable and index.column() == self._ColumnIndices.VALUE:
                 out |= Qt.ItemIsEditable
@@ -236,7 +244,10 @@ class Model(QAbstractItemModel):
         return index.internalPointer()
 
 
-def _display_value(value, type_id: Register.ValueType) -> str:
+def display_value(value, type_id: Register.ValueType) -> str:
+    """
+    Converts a register value to human-readable text.
+    """
     def format_scalar(x) -> str:
         if type_id == Register.ValueType.F32:
             return '{:7g}'.format(x).strip()
@@ -251,6 +262,13 @@ def _display_value(value, type_id: Register.ValueType) -> str:
         return str(value)
     else:
         return ', '.join(map(format_scalar, value))
+
+
+def parse_value(text: str, type_id: Register.ValueType):
+    """
+    Inverse to @ref display_value().
+    """
+    raise NotImplementedError('Parser is not yet implemented')
 
 
 @dataclasses.dataclass
@@ -361,11 +379,13 @@ def _unittest_register_tree_model():
     import time
     from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView, QHeaderView
     from ._mock_registers import get_mock_registers
+    from .editor_delegate import EditorDelegate
 
     app = QApplication([])
     win = QMainWindow()
 
     tw = QTreeView(win)
+    tw.setItemDelegate(EditorDelegate(tw))
     tw.setStyleSheet('''
     QTreeView::item { padding: 0 5px; }
     ''')
