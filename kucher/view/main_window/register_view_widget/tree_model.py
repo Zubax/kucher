@@ -19,7 +19,8 @@ import dataclasses
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QVariant
-from view.utils import gui_test
+from PyQt5.QtGui import QPalette
+from view.utils import gui_test, get_monospace_font
 from view.device_model_representation import Register
 
 
@@ -37,13 +38,14 @@ class Model(QAbstractItemModel):
     """
 
     _COLUMNS = [
-        'Name',             # E.g. "register"
-        'Type',             # E.g. "F32[2]" or "U8"; icon representing mutability and persistence
-        'Value',            # Value as is; scalars should be simplified (unwrapped, i.e. "123" not "[123]")
+        'Tree',
+        'Type',
+        'Value',
         'Default',
         'Min',
         'Max',
         'DTS',              # Update timestamp, device time; show age on hover (tooltip)?
+        'Full name',
     ]
 
     class _ColumnIndices(enum.IntEnum):
@@ -54,11 +56,16 @@ class Model(QAbstractItemModel):
         MIN              = 4
         MAX              = 5
         DEVICE_TIMESTAMP = 6
+        FULL_NAME        = 7
 
     def __init__(self,
                  parent: QWidget,
                  registers: typing.Iterable[Register]):
         super(Model, self).__init__(parent)
+
+        self._regular_font = get_monospace_font()
+        self._underlined_font = get_monospace_font()
+        self._underlined_font.setUnderline(True)
 
         self._default_tree = _plant_tree(registers)
         # TODO: Trees grouped by mutability and persistence
@@ -101,14 +108,16 @@ class Model(QAbstractItemModel):
         node = self._unwrap(index)
         assert node.index_in_parent == row  # These two represent the same concept at different levels of abstraction
 
+        column_indices = self._ColumnIndices
+
         if role == Qt.DisplayRole:
-            if column == self._ColumnIndices.NAME:
+            if column == column_indices.NAME:
                 return node.name
 
             if node.value is None:
                 return str()
 
-            if column == self._ColumnIndices.TYPE:
+            if column == column_indices.TYPE:
                 out = str(node.value.type_id).split('.')[-1].lower().replace('boolean', 'bool')
                 if node.value.cached_value and not isinstance(node.value.cached_value, (str, bytes)):
                     size = len(node.value.cached_value)
@@ -117,20 +126,46 @@ class Model(QAbstractItemModel):
 
                 return out
 
-            if column == self._ColumnIndices.VALUE:
+            if column == column_indices.VALUE:
                 return self._display_value(node.value.cached_value, node.value.type_id)
 
-            if column == self._ColumnIndices.DEFAULT:
+            if column == column_indices.DEFAULT:
                 return self._display_value(node.value.default_value, node.value.type_id)
 
-            if column == self._ColumnIndices.MIN:
+            if column == column_indices.MIN:
                 return self._display_value(node.value.min_value, node.value.type_id)
 
-            if column == self._ColumnIndices.MAX:
+            if column == column_indices.MAX:
                 return self._display_value(node.value.max_value, node.value.type_id)
 
-            if column == self._ColumnIndices.DEVICE_TIMESTAMP:
+            if column == column_indices.DEVICE_TIMESTAMP:
                 return str(datetime.timedelta(seconds=float(node.value.update_timestamp_device_time)))
+
+            if column == column_indices.FULL_NAME:
+                return node.value.name
+
+        if role == Qt.ForegroundRole:
+            palette = QPalette()
+            if node.value and (self.flags(index) & Qt.ItemIsEditable):
+                if node.value.cached_value_is_default_value or not node.value.has_default_value:
+                    return palette.color(QPalette.Link)
+                else:
+                    return palette.color(QPalette.LinkVisited)
+            else:
+                return palette.color(QPalette.WindowText)
+
+        if role == Qt.BackgroundRole:
+            palette = QPalette()
+            if column in (0, column_indices.VALUE, len(self._COLUMNS) - 1):
+                return palette.color(QPalette.Base)
+            else:
+                return palette.color(QPalette.AlternateBase)
+
+        if role == Qt.FontRole:
+            if self.flags(index) & Qt.ItemIsEditable:
+                return self._underlined_font
+            else:
+                return self._regular_font
 
         return QVariant()
 
@@ -139,9 +174,10 @@ class Model(QAbstractItemModel):
 
     def flags(self, index: QModelIndex) -> int:
         node = self._unwrap(index)
-        out = Qt.ItemIsSelectable | Qt.ItemIsEnabled
-        if node and node.value and index.column() == self._ColumnIndices.VALUE:
-            if node.value.mutable:
+        out = Qt.ItemIsEnabled
+        if node and node.value:
+            out |= Qt.ItemIsSelectable
+            if node.value.mutable and index.column() == self._ColumnIndices.VALUE:
                 out |= Qt.ItemIsEditable
 
         return out
@@ -257,14 +293,19 @@ def _unittest_register_tree():
 @gui_test
 def _unittest_register_tree_model():
     import time
-    from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView
-    from view.utils import get_monospace_font
+    from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView, QHeaderView
 
     app = QApplication([])
     win = QMainWindow()
 
     tw = QTreeView(win)
-    tw.setFont(get_monospace_font())
+    tw.setStyleSheet('''
+    QTreeView::item { padding: 0 5px; }
+    ''')
+
+    header: QHeaderView = tw.header()
+    header.setSectionResizeMode(QHeaderView.ResizeToContents)
+    header.setStretchLastSection(False)     # Horizontal scroll bar doesn't work if this is enabled
 
     model = Model(win, _get_mock_registers())
     tw.setModel(model)

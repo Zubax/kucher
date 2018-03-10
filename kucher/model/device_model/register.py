@@ -12,9 +12,10 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import enum
+import math
 import time
 import typing
+import itertools
 from decimal import Decimal
 from popcop.standard.register import ValueType, Flags
 from utils import Event
@@ -89,6 +90,30 @@ class Register:
     @property
     def has_default_value(self) -> bool:
         return self._default_value is not None
+
+    @property
+    def cached_value_is_default_value(self) -> bool:
+        if not self.has_default_value:
+            return False
+
+        if self.type_id in (ValueType.F32,
+                            ValueType.F64):
+            # Absolute tolerance equals the epsilon as per IEEE754
+            absolute_tolerance = {
+                ValueType.F32: 1e-6,
+                ValueType.F64: 1e-15,
+            }[self.type_id]
+
+            # Relative tolerance is roughly the epsilon multiplied by 10...100
+            relative_tolerance = {
+                ValueType.F32: 1e-5,
+                ValueType.F64: 1e-13,
+            }[self.type_id]
+
+            return all(map(lambda args: math.isclose(*args, rel_tol=relative_tolerance, abs_tol=absolute_tolerance),
+                           itertools.zip_longest(self.cached_value, self.default_value)))
+        else:
+            return self.cached_value == self.default_value
 
     @property
     def min_value(self) -> typing.Optional[StrictValueTypeAnnotation]:
