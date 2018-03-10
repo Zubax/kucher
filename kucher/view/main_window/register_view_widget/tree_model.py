@@ -15,12 +15,13 @@
 import enum
 import typing
 import datetime
+import functools
 import dataclasses
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget
-from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QVariant
-from PyQt5.QtGui import QPalette
-from view.utils import gui_test, get_monospace_font
+from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QVariant, QRect
+from PyQt5.QtGui import QPalette, QFontMetrics, QFont, QPixmap, QPainter, QBitmap
+from view.utils import gui_test, get_monospace_font, get_icon
 from view.device_model_representation import Register
 
 
@@ -44,7 +45,8 @@ class Model(QAbstractItemModel):
         'Default',
         'Min',
         'Max',
-        'DTS',              # Update timestamp, device time; show age on hover (tooltip)?
+        'Flags',
+        'Device timestamp',
         'Full name',
     ]
 
@@ -55,8 +57,9 @@ class Model(QAbstractItemModel):
         DEFAULT          = 3
         MIN              = 4
         MAX              = 5
-        DEVICE_TIMESTAMP = 6
-        FULL_NAME        = 7
+        FLAGS            = 6
+        DEVICE_TIMESTAMP = 7
+        FULL_NAME        = 8
 
     def __init__(self,
                  parent: QWidget,
@@ -67,8 +70,15 @@ class Model(QAbstractItemModel):
         self._underlined_font = get_monospace_font()
         self._underlined_font.setUnderline(True)
 
+        self._icon_size = QFontMetrics(QFont()).height()
+
+        registers = list(sorted(registers, key=lambda r: r.name))
+
         self._default_tree = _plant_tree(registers)
         # TODO: Trees grouped by mutability and persistence
+
+    def reload(self, register: Register):
+        pass    # TODO: locate the register in the tree and invalidate it
 
     def index(self, row: int, column: int, parent: QModelIndex=None) -> QModelIndex:
         if column >= self.columnCount(parent):
@@ -144,6 +154,24 @@ class Model(QAbstractItemModel):
             if column == column_indices.FULL_NAME:
                 return node.value.name
 
+        if role in (Qt.ToolTipRole, Qt.StatusTipRole):
+            if column == column_indices.VALUE:
+                if node.value is not None:
+                    out = f'This register is {"mutable" if node.value.mutable else "immutable"}. '
+                    if node.value.mutable and node.value.has_default_value:
+                        if node.value.cached_value_is_default_value:
+                            out += 'Current value is default value.'
+                        else:
+                            out += 'Current value differs from the default value.'
+                    return out
+
+            if column == column_indices.FLAGS:
+                if node.value is not None:
+                    return ', '.join([
+                        'mutable' if node.value.mutable else 'immutable',
+                        'persistent' if node.value.persistent else 'not persistent',
+                    ]).capitalize()
+
         if role == Qt.ForegroundRole:
             palette = QPalette()
             if node.value and (self.flags(index) & Qt.ItemIsEditable):
@@ -166,6 +194,13 @@ class Model(QAbstractItemModel):
                 return self._underlined_font
             else:
                 return self._regular_font
+
+        if role == Qt.DecorationRole:
+            if node.value is not None:
+                if column == column_indices.FLAGS:
+                    return _draw_flags_icon(mutable=node.value.mutable,
+                                            persistent=node.value.persistent,
+                                            icon_size=self._icon_size)
 
         return QVariant()
 
@@ -271,6 +306,34 @@ def _plant_tree(registers: typing.Iterable[Register]) -> _Node:
         node.value = reg
 
     return root
+
+
+@functools.lru_cache()
+def _draw_flags_icon(mutable: bool, persistent: bool, icon_size: int) -> QPixmap:
+    """
+    Combines icons into a single large icon and renders it into a pixmap of specified size.
+    This operation is quite resource-consuming (we're drawing pictures after all, ask Picasso),
+    so we cache the results in a LRU cache.
+    """
+    icon_name = 'edit' if mutable else 'lock'
+    mutability: QPixmap = get_icon(icon_name).pixmap(icon_size, icon_size)
+
+    # https://youtu.be/AX2uz2XYkbo?t=21s
+    icon_name = 'sd' if persistent else 'random-access-memory'
+    persistence: QPixmap = get_icon(icon_name).pixmap(icon_size, icon_size)
+
+    icon_size_rect = QRect(0, 0, icon_size, icon_size)
+
+    pixmap = QPixmap(icon_size * 2, icon_size)
+    mask = QBitmap(pixmap.width(), pixmap.height())
+    mask.clear()
+    pixmap.setMask(mask)
+
+    painter = QPainter(pixmap)
+    painter.drawPixmap(icon_size_rect, mutability, icon_size_rect)
+    painter.drawPixmap(QRect(icon_size, 0, icon_size, icon_size),
+                       persistence, icon_size_rect)
+    return pixmap
 
 
 def _unittest_register_tree():

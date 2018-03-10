@@ -55,6 +55,7 @@ def get_monospace_font() -> QFont:  # We can't cache the result because it will 
     for name in preferred:
         font = QFont(name)
         if QFontInfo(font).fixedPitch():
+            font.setPointSize(QFont().pointSize())
             _logger.info('Selected monospace font: %r', font.toString())
             return font
 
