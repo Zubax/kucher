@@ -12,6 +12,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import enum
 import typing
 import datetime
 import dataclasses
@@ -35,12 +36,18 @@ class Model(QAbstractItemModel):
     This tutorial is somewhat useful: http://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html
     """
 
-    COLUMNS = [
+    _COLUMNS = [
         'Name',             # E.g. "register"
         'Type',             # E.g. "F32[2]" or "U8"; icon representing mutability and persistence
         'Value',            # Value as is; scalars should be simplified (unwrapped, i.e. "123" not "[123]")
         'DTS',              # Update timestamp, device time; show age on hover (tooltip)?
     ]
+
+    class _ColumnIndices(enum.IntEnum):
+        NAME = 0
+        TYPE = 1
+        VALUE = 2
+        DEVICE_TIMESTAMP = 3
 
     def __init__(self,
                  parent: QWidget,
@@ -81,7 +88,7 @@ class Model(QAbstractItemModel):
         return len(self._resolve_parent_node(parent).children)
 
     def columnCount(self, parent: QModelIndex=None) -> int:
-        return len(self.COLUMNS)
+        return len(self._COLUMNS)
 
     def data(self, index: QModelIndex, role: int=None):
         row, column = index.row(), index.column()
@@ -89,33 +96,58 @@ class Model(QAbstractItemModel):
         assert node.index_in_parent == row  # These two represent the same concept at different levels of abstraction
 
         if role == Qt.DisplayRole:
-            if column == 0:
+            if column == self._ColumnIndices.NAME:
                 return node.name
 
             if node.value is None:
                 return str()
 
-            if column == 1:
-                return str(node.value.type_id)
+            if column == self._ColumnIndices.TYPE:
+                out = str(node.value.type_id).split('.')[-1].lower().replace('boolean', 'bool')
+                if node.value.cached_value and not isinstance(node.value.cached_value, (str, bytes)):
+                    size = len(node.value.cached_value)
+                    if size > 1:
+                        out += f'[{size}]'
 
-            if column == 2:
-                return str(node.value.cached_value)
+                return out
 
-            if column == 3:
+            if column == self._ColumnIndices.VALUE:
+                def format_scalar(x) -> str:
+                    if node.value.type_id == Register.ValueType.F32:
+                        return '{:7g}'.format(x).strip()
+                    elif node.value.type_id == Register.ValueType.F64:
+                        return '{:16g}'.format(x).strip()
+                    else:
+                        return str(x)
+
+                if node.value.cached_value is None:
+                    return ''
+                elif isinstance(node.value.cached_value, (str, bytes)):
+                    return str(node.value.cached_value)
+                else:
+                    return ', '.join(map(format_scalar, node.value.cached_value))
+
+            if column == self._ColumnIndices.DEVICE_TIMESTAMP:
                 return str(datetime.timedelta(seconds=float(node.value.update_timestamp_device_time)))
 
         return QVariant()
 
-    def setData(self, index: QModelIndex, value, role=None):
-        pass        # TODO: Editable fields
+    def setData(self, index: QModelIndex, value, role=None) -> bool:
+        return False        # TODO: Editable fields
 
     def flags(self, index: QModelIndex) -> int:
-        return Qt.NoItemFlags        # TODO: Editable fields
+        node = self._unwrap(index)
+        out = Qt.ItemIsSelectable | Qt.ItemIsEnabled
+        if node and node.value and index.column() == self._ColumnIndices.VALUE:
+            if node.value.mutable:
+                out |= Qt.ItemIsEditable
+
+        return out
 
     def headerData(self, section: int, orientation: int, role: int=None):
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
-                return self.COLUMNS[section]
+                return self._COLUMNS[section]
 
         return QVariant()
 
@@ -207,11 +239,13 @@ def _unittest_register_tree():
 def _unittest_register_tree_model():
     import time
     from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView
+    from view.utils import get_monospace_font
 
     app = QApplication([])
     win = QMainWindow()
 
     tw = QTreeView(win)
+    tw.setFont(get_monospace_font())
 
     model = Model(win, _get_mock_registers())
     tw.setModel(model)
@@ -224,10 +258,8 @@ def _unittest_register_tree_model():
             time.sleep(0.001)
             app.processEvents()
 
-    go_go_go()
-    go_go_go()
-    go_go_go()
-    go_go_go()
+    while True:
+        go_go_go()
 
     win.close()
 
