@@ -179,7 +179,8 @@ class Register:
                 raise TypeError(f'Invalid type of register value: {type(value)!r}')
 
     def __str__(self):
-        out = f'name={self.name}, type_id={self.type_id}, ' \
+        # We use "!s" with the enum, otherwise it prints as int (quite surprising)
+        out = f'name={self.name!r}, type_id={self.type_id!s}, ' \
               f'cached={self.cached_value!r}, default={self.default_value!r}, ' \
               f'min={self.min_value!r}, max={self.max_value!r}, ' \
               f'mutable={self.mutable}, persistent={self.persistent}, ' \
