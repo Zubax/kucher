@@ -75,6 +75,7 @@ class Model(QAbstractItemModel):
         registers = list(sorted(registers, key=lambda r: r.name))
 
         self._default_tree = _plant_tree(registers)
+        _logger.debug('Default tree:\n%s\n', self._default_tree.to_pretty_string())
         # TODO: Trees grouped by mutability and persistence
 
     def reload(self, register: Register):
@@ -288,6 +289,12 @@ class _Node:
 
         raise ValueError(f'Invalid tree: item {self!r} is not owned by its parent {self.parent!r}')
 
+    def to_pretty_string(self, _depth=0) -> str:
+        """Traverses the tree in depth starting from the current node and returns a neat multi-line formatted string"""
+        return ''.join(map(lambda x: '\n'.join([(' ' * _depth * 4 + x[0]).ljust(40) + ' ' + str(x[1].value or ''),
+                                                x[1].to_pretty_string(_depth + 1)]),
+                           self.children.items())).rstrip('\n' if not _depth else '')
+
 
 def _plant_tree(registers: typing.Iterable[Register]) -> _Node:
     """
@@ -339,15 +346,9 @@ def _draw_flags_icon(mutable: bool, persistent: bool, icon_size: int) -> QPixmap
 def _unittest_register_tree():
     from ._mock_registers import get_mock_registers
 
-    def print_tree(node: _Node, indent=0):
-        for segment, ch in node.children.items():
-            print((' ' * indent * 4 + segment).ljust(40), ch.value.name if ch.value else '')
-            print_tree(ch, indent + 1)
-
     # noinspection PyTypeChecker
     tree = _plant_tree(get_mock_registers())
-    print('Register tree view:')
-    print_tree(tree)
+    print('Register tree view:', tree.to_pretty_string(), sep='\n')
 
     uavcan_transfer_cnt_tx = tree['uavcan']['transfer_cnt']['tx']
     assert uavcan_transfer_cnt_tx.value.name == 'uavcan.transfer_cnt.tx'

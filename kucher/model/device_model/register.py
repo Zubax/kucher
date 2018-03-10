@@ -204,12 +204,14 @@ class Register:
                 raise TypeError(f'Invalid type of register value: {type(value)!r}')
 
     def __str__(self):
-        # We use "!s" with the enum, otherwise it prints as int (quite surprising)
+        # Monotonic timestamps are imprecise, so we print them with a low number of decimal places.
+        # Device-provided timestamps are extremely accurate (sub-microsecond resolution and precision).
+        # We use "!s" with the enum, otherwise it prints as int (quite surprising).
         out = f'name={self.name!r}, type_id={self.type_id!s}, ' \
               f'cached={self.cached_value!r}, default={self.default_value!r}, ' \
               f'min={self.min_value!r}, max={self.max_value!r}, ' \
               f'mutable={self.mutable}, persistent={self.persistent}, ' \
-              f'ts_device={self.update_timestamp_device_time}, ts_mono={self.update_timestamp_monotonic}'
+              f'ts_device={self.update_timestamp_device_time:.9f}, ts_mono={self.update_timestamp_monotonic:.3f}'
 
         return f'Register({out})'
 
