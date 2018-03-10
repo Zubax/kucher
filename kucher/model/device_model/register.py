@@ -12,6 +12,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import enum
 import time
 import typing
 from decimal import Decimal
@@ -27,14 +28,12 @@ StrictValueTypeAnnotation = typing.Union[
     typing.List[float],
 ]
 
-
 RelaxedValueTypeAnnotation = typing.Union[
     StrictValueTypeAnnotation,
     bool,
     int,
     float,
 ]
-
 
 SetGetCallback = typing.Callable[[typing.Optional[StrictValueTypeAnnotation]],
                                  typing.Awaitable[typing.Tuple[StrictValueTypeAnnotation,   # Value
@@ -54,6 +53,9 @@ class Register:
     def __init__(self,
                  name:                          str,
                  value:                         StrictValueTypeAnnotation,
+                 default_value:                 typing.Optional[StrictValueTypeAnnotation],
+                 min_value:                     typing.Optional[StrictValueTypeAnnotation],
+                 max_value:                     typing.Optional[StrictValueTypeAnnotation],
                  type_id:                       ValueType,
                  flags:                         Flags,
                  update_timestamp_device_time:  Decimal,
@@ -61,6 +63,9 @@ class Register:
                  update_timestamp_monotonic:    float=None):
         self._name = str(name)
         self._cached_value = value
+        self._default_value = default_value
+        self._min_value = min_value
+        self._max_value = max_value
         self._type_id = ValueType(type_id)
         self._update_ts_device_time = Decimal(update_timestamp_device_time)
         self._update_ts_monotonic = float(update_timestamp_monotonic or time.monotonic())
@@ -76,6 +81,26 @@ class Register:
     @property
     def cached_value(self) -> StrictValueTypeAnnotation:
         return self._cached_value
+
+    @property
+    def default_value(self) -> typing.Optional[StrictValueTypeAnnotation]:
+        return self._default_value
+
+    @property
+    def has_default_value(self) -> bool:
+        return self._default_value is not None
+
+    @property
+    def min_value(self) -> typing.Optional[StrictValueTypeAnnotation]:
+        return self._min_value
+
+    @property
+    def max_value(self) -> typing.Optional[StrictValueTypeAnnotation]:
+        return self._max_value
+
+    @property
+    def has_min_and_max_values(self) -> bool:
+        return self._min_value is not None and self._max_value is not None
 
     @property
     def type_id(self) -> ValueType:
@@ -152,3 +177,14 @@ class Register:
                 return [x for x in value]   # Coerce to list
             except TypeError:
                 raise TypeError(f'Invalid type of register value: {type(value)!r}')
+
+    def __str__(self):
+        out = f'name={self.name}, type_id={self.type_id}, ' \
+              f'cached={self.cached_value!r}, default={self.default_value!r}, ' \
+              f'min={self.min_value!r}, max={self.max_value!r}, ' \
+              f'mutable={self.mutable}, persistent={self.persistent}, ' \
+              f'ts_device={self.update_timestamp_device_time}, ts_mono={self.update_timestamp_monotonic}'
+
+        return f'Register({out})'
+
+    __repr__ = __str__

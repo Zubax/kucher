@@ -72,15 +72,9 @@ class Connection:
         self._last_general_status_with_timestamp = general_status_with_ts
         self._general_status_update_period = general_status_update_period
 
-        self._registers: typing.Dict[str, Register] = {}
-        for m in initial_register_data_msgs:
-            self._registers[m.name] = \
-                Register(name=m.name,
-                         value=m.value,
-                         type_id=m.type_id,
-                         update_timestamp_device_time=m.timestamp,
-                         flags=m.flags,
-                         set_get_callback=self._curry_register_set_get_executor(m.name, m.type_id))
+        self._registers: typing.Dict[str, Register] = self._build_register_model(initial_register_data_msgs)
+        _logger.info('Constructed %d register model objects:\n%s\n',
+                     len(self._registers), '\n'.join(map(str, self._registers.values())))
 
         self._on_connection_loss = on_connection_loss
         self._on_general_status_update = on_general_status_update
@@ -236,6 +230,40 @@ class Connection:
             return resp.value, resp.timestamp, time.monotonic()
 
         return executor
+
+    def _build_register_model(self,
+                              initial_register_data_msgs: typing.List[popcop.standard.register.DataResponseMessage]) \
+            -> typing.Dict[str, Register]:
+        index: typing.Dict[str, popcop.standard.register.DataResponseMessage] = {
+            m.name: m for m in initial_register_data_msgs
+        }
+
+        def find_meta_value(name: str, type_id: Register.ValueType, suffix: str):
+            msg = index.get(name + suffix)
+            if msg is not None:
+                if msg.type_id == type_id:
+                    return msg.value
+                else:
+                    _logger.error('Meta register type mismatch: expected %r, found %r', type_id, msg)
+
+        suffix_default = '='
+        suffix_min = '<'
+        suffix_max = '>'
+
+        out = {}
+        for m in initial_register_data_msgs:
+            if m.name[-1] not in (suffix_default, suffix_min, suffix_max):
+                out[m.name] = \
+                    Register(name=m.name,
+                             value=m.value,
+                             default_value=find_meta_value(m.name, m.type_id, suffix_default),
+                             min_value=find_meta_value(m.name, m.type_id, suffix_min),
+                             max_value=find_meta_value(m.name, m.type_id, suffix_max),
+                             type_id=m.type_id,
+                             update_timestamp_device_time=m.timestamp,
+                             flags=m.flags,
+                             set_get_callback=self._curry_register_set_get_executor(m.name, m.type_id))
+        return out
 
 
 async def connect(event_loop:                   asyncio.AbstractEventLoop,
