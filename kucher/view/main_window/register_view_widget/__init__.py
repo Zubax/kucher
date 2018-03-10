@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import QWidget, QTreeView, QLabel, QApplication
 from view.widgets import WidgetBase
 from view.utils import gui_test, make_button, get_monospace_font, lay_out_vertically, lay_out_horizontally
 from view.device_model_representation import Register
-from .tree_model import Model
+from .model import Model
 
 
 _logger = getLogger(__name__)
