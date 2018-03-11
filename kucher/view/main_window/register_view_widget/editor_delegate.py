@@ -16,7 +16,7 @@ import math
 from logging import getLogger
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, QLineEdit, \
     QComboBox
-from PyQt5.QtCore import Qt, QModelIndex, QObject, QAbstractItemModel
+from PyQt5.QtCore import Qt, QModelIndex, QObject, QAbstractItemModel, QRect, QSize
 from view.utils import get_monospace_font, show_error, get_icon
 from view.device_model_representation import Register
 from .model import Model, display_value, parse_value
@@ -129,8 +129,40 @@ class EditorDelegate(QStyledItemDelegate):
         """
         http://doc.qt.io/qt-5/model-view-programming.html#delegate-classes
         """
+        # The field "rect" got rect. I'll show myself out.
+        # Seriously though, it is missing in the PyQt5 bindings docs for some reason, so PyCharm generates a false
+        # warning here, which we have to suppress.
         # noinspection PyUnresolvedReferences
-        editor.setGeometry(option.rect)
+        rect: QRect = option.rect
+
+        # Now, this is tricky. The official Qt documentation tells us that we have to do simply this:
+        # >>> editor.setGeometry(rect)
+        # Some background: http://doc.qt.io/qt-5/model-view-programming.html#delegate-classes
+        # But we don't want that, because our cells are extremely small (we need to conserve screen space),
+        # and our editing controls don't fit well into small cells. I mean they do fit, but it looks terribly ugly,
+        # and using them is a disappointing experience at its best.
+        # So, we do NOT enforce size constraints on them. Check this out: if we were to ignore the geometry hint
+        # from the framework, our widget would appear at the coordinates (0, 0), which happen to be at the
+        # upper-left corner of the parent element. This looks even worse, but at least the widget's available
+        # space is constrained by its small parent cell. So the solution is to use the location data provided
+        # by the framework, and disregard the size data, allowing the widget to resize itself in whichever way it
+        # pleases. It would overlay the neighboring cells, but that is perfectly acceptable!
+        editor.setMinimumSize(rect.width(), rect.height())      # Make it at least as big as the cell, gaps look bad
+
+        # Determine the preferred size
+        editor_size: QSize = editor.sizeHint()
+        if not editor_size.isValid():
+            editor_size = editor.size()
+
+        assert editor_size.isValid()
+
+        # Relocate the widget so that it is centered exactly on top of its containing cell,
+        # possibly overflowing in all directions uniformly. Never offset the origin to the right or downwards,
+        # because that may expose the overlaid value we're editing, which looks bad (hence the limiting).
+        x_offset = max(0, editor_size.width() - rect.width()) // 2
+        y_offset = max(0, editor_size.height() - rect.height()) // 2
+        editor.move(rect.x() - x_offset,
+                    rect.y() - y_offset)
 
     @staticmethod
     def _get_register_from_index(index: QModelIndex) -> Register:
@@ -153,5 +185,6 @@ class EditorDelegate(QStyledItemDelegate):
     @staticmethod
     def _can_use_bool_switch(register: Register) -> bool:
         # No need to check for min and max, they are evident for booleans
-        return register.type_id == Register.ValueType.BOOLEAN and \
+        return \
+            register.type_id == Register.ValueType.BOOLEAN and \
             len(register.cached_value) == 1
