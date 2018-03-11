@@ -51,7 +51,6 @@ class Register:
     """
     ValueType = ValueType
     ValueKind = ValueKind
-    VALUE_TYPE_TO_KIND = VALUE_TYPE_TO_KIND
 
     def __init__(self,
                  name:                          str,
@@ -132,6 +131,10 @@ class Register:
     @property
     def type_id(self) -> ValueType:
         return self._type_id
+
+    @property
+    def kind(self) -> ValueKind:
+        return VALUE_TYPE_TO_KIND[self.type_id]
 
     @property
     def update_timestamp_device_time(self) -> Decimal:

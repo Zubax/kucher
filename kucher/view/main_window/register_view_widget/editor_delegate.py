@@ -13,12 +13,10 @@
 #
 
 import math
-import typing
 from logging import getLogger
-from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, QLineEdit, \
-    QAbstractSpinBox
-from PyQt5.QtCore import Qt, QModelIndex, QVariant, QObject, QAbstractItemModel
-from view.utils import gui_test, get_monospace_font, show_error
+from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, QLineEdit
+from PyQt5.QtCore import Qt, QModelIndex, QObject, QAbstractItemModel
+from view.utils import get_monospace_font, show_error
 from view.device_model_representation import Register
 from .model import Model, display_value, parse_value
 
@@ -125,8 +123,7 @@ class EditorDelegate(QStyledItemDelegate):
 
     @staticmethod
     def _can_use_spinbox(register: Register) -> bool:
-        kind = Register.VALUE_TYPE_TO_KIND[register.type_id]
         return \
-            kind == Register.ValueKind.ARRAY_OF_SCALARS and \
+            register.kind == Register.ValueKind.ARRAY_OF_SCALARS and \
             len(register.cached_value) == 1 and \
             register.has_min_and_max_values
