@@ -24,8 +24,8 @@ from .model import Model, display_value, parse_value
 
 _logger = getLogger(__name__)
 
-# Number of steps between minimum and maximum values for real valued registers (unless entering the value directly)
-_NUMBER_OF_STEPS_IN_FULL_RANGE = 1000
+# Preferred minimal number of steps between minimum and maximum values for real valued registers when using arrows
+_MIN_PREFERRED_NUMBER_OF_STEPS_IN_FULL_RANGE = 1000
 
 # Displayed precision depends on the type of the floating point number
 _FLOATING_POINT_DECIMALS = {
@@ -55,11 +55,12 @@ class EditorDelegate(QStyledItemDelegate):
             minimum, maximum = register.min_value[0], register.max_value[0]
 
             if register.type_id in _FLOATING_POINT_DECIMALS:
-                raw_step = (maximum - minimum) / _NUMBER_OF_STEPS_IN_FULL_RANGE
-                refined_step = 10 ** round(math.log10(raw_step))
-                _logger.info('Constructing QDoubleSpinBox with single step set to %r', refined_step)
+                step = (maximum - minimum) / _MIN_PREFERRED_NUMBER_OF_STEPS_IN_FULL_RANGE
+                step = 10 ** round(math.log10(step))
+                step = min(1.0, step)                       # Step can't be greater than one for UX reasons
+                _logger.info('Constructing QDoubleSpinBox with single step set to %r', step)
                 editor = QDoubleSpinBox(parent)
-                editor.setSingleStep(refined_step)
+                editor.setSingleStep(step)
                 editor.setDecimals(_FLOATING_POINT_DECIMALS[register.type_id])
             else:
                 editor = QSpinBox(parent)
