@@ -231,4 +231,6 @@ def get_mock_registers():
              max=None, mutable=False, persistent=False, ts_device=168.829588827, ts_mono=11474.097374602),
         mock(name='motor.u_dq_setpoint', type_id=ValueType.F32, cached=[0.0, 0.0], default=None, min=None, max=None,
              mutable=False, persistent=False, ts_device=168.839961416, ts_mono=11474.097399175),
+        mock(name='z.synthesized', type_id=ValueType.F32, cached=[0.0, 0.0], default=None, min=[-1.0, -2.0],
+             max=[32.112, 450000.25], mutable=True, persistent=False, ts_device=168.839961416, ts_mono=11474.097399175),
     ]

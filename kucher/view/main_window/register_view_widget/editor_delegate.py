@@ -17,6 +17,7 @@ from logging import getLogger
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, QLineEdit, \
     QComboBox
 from PyQt5.QtCore import Qt, QModelIndex, QObject, QAbstractItemModel, QRect, QSize
+from PyQt5.QtGui import QFontMetrics
 from view.utils import get_monospace_font, show_error, get_icon
 from view.device_model_representation import Register
 from .model import Model, display_value, parse_value
@@ -70,6 +71,7 @@ class EditorDelegate(QStyledItemDelegate):
         else:
             editor = QLineEdit(parent)
             editor.setFont(get_monospace_font())
+            editor.setMinimumWidth(QFontMetrics(editor.font()).width('9' * 50))
 
         return editor
 
@@ -147,7 +149,11 @@ class EditorDelegate(QStyledItemDelegate):
         # space is constrained by its small parent cell. So the solution is to use the location data provided
         # by the framework, and disregard the size data, allowing the widget to resize itself in whichever way it
         # pleases. It would overlay the neighboring cells, but that is perfectly acceptable!
-        editor.setMinimumSize(rect.width(), rect.height())      # Make it at least as big as the cell, gaps look bad
+        if editor.minimumWidth() < rect.width():
+            editor.setMinimumWidth(rect.width())
+
+        if editor.minimumHeight() < rect.height():
+            editor.setMinimumHeight(rect.height())
 
         # Determine the preferred size
         editor_size: QSize = editor.sizeHint()
