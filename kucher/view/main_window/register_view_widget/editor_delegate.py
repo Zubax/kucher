@@ -14,9 +14,10 @@
 
 import math
 from logging import getLogger
-from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, QLineEdit
+from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, QLineEdit, \
+    QComboBox
 from PyQt5.QtCore import Qt, QModelIndex, QObject, QAbstractItemModel
-from view.utils import get_monospace_font, show_error
+from view.utils import get_monospace_font, show_error, get_icon
 from view.device_model_representation import Register
 from .model import Model, display_value, parse_value
 
@@ -45,7 +46,12 @@ class EditorDelegate(QStyledItemDelegate):
         register = self._get_register_from_index(index)
         _logger.info('Constructing editor for %r', register)
 
-        if self._can_use_spinbox(register):
+        if self._can_use_bool_switch(register):
+            editor = QComboBox(parent)
+            editor.setEditable(False)
+            editor.addItem(get_icon('cancel'), 'False')
+            editor.addItem(get_icon('ok'), 'True')
+        elif self._can_use_spinbox(register):
             minimum, maximum = register.min_value[0], register.max_value[0]
 
             if register.type_id in _FLOATING_POINT_DECIMALS:
@@ -70,7 +76,11 @@ class EditorDelegate(QStyledItemDelegate):
         """Invoked in the beginning of the editing session; data transferred from the model to the editor"""
         register = self._get_register_from_index(index)
 
-        if isinstance(editor, (QDoubleSpinBox, QSpinBox)):
+        if isinstance(editor, QComboBox):
+            assert self._can_use_bool_switch(register)
+            editor.setCurrentIndex(int(bool(register.cached_value[0])))
+            _logger.info('Value %r has been represented as %r', register.cached_value, editor.currentText())
+        elif isinstance(editor, (QDoubleSpinBox, QSpinBox)):
             assert self._can_use_spinbox(register)
             editor.setValue(register.cached_value[0])
         elif isinstance(editor, QLineEdit):
@@ -83,7 +93,18 @@ class EditorDelegate(QStyledItemDelegate):
         """Invoked ad the end of the editing session; data transferred from the editor to the model"""
         register = self._get_register_from_index(index)
 
-        if isinstance(editor, (QDoubleSpinBox, QSpinBox)):
+        if isinstance(editor, QComboBox):
+            assert self._can_use_bool_switch(register)
+            # >>> int('1')
+            # 1
+            # >>> bool(int(False))
+            # False
+            # >>> bool('False')
+            # True
+            # Wait what?!
+            value = bool(editor.currentIndex())
+            _logger.info('Value %r has been interpreted as %r', editor.currentText(), value)
+        elif isinstance(editor, (QDoubleSpinBox, QSpinBox)):
             assert self._can_use_spinbox(register)
             editor.interpretText()                          # Beware!!1
             value = editor.value()
@@ -127,3 +148,9 @@ class EditorDelegate(QStyledItemDelegate):
             register.kind == Register.ValueKind.ARRAY_OF_SCALARS and \
             len(register.cached_value) == 1 and \
             register.has_min_and_max_values
+
+    @staticmethod
+    def _can_use_bool_switch(register: Register) -> bool:
+        # No need to check for min and max, they are evident for booleans
+        return register.type_id == Register.ValueType.BOOLEAN and \
+            len(register.cached_value) == 1

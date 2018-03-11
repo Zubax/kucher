@@ -134,7 +134,7 @@ class Model(QAbstractItemModel):
                 return str()
 
             if column == column_indices.TYPE:
-                out = str(node.value.type_id).split('.')[-1].lower().replace('boolean', 'bool')
+                out = str(node.value.type_id).split('.')[-1].lower()
                 if node.value.cached_value and not isinstance(node.value.cached_value, (str, bytes)):
                     size = len(node.value.cached_value)
                     if size > 1:
