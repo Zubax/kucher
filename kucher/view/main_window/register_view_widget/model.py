@@ -268,26 +268,28 @@ def parse_value(text: str, type_id: Register.ValueType):
     """
     Inverse to @ref display_value().
     """
-    if type_id == Register.ValueType.EMPTY:
-        return None
+    def impl():
+        if type_id == Register.ValueType.EMPTY:
+            return None
 
-    if type_id == Register.ValueType.STRING:
-        return text
+        if type_id == Register.ValueType.STRING:
+            return text
 
-    if type_id == Register.ValueType.UNSTRUCTURED:
-        return text.encode('latin1')
+        if type_id == Register.ValueType.UNSTRUCTURED:
+            return text.encode('latin1')
 
-    if str(Register.ValueType(type_id)).split('.')[-1][0].lower() == 'f':
-        native_type = float
-    else:
-        native_type = int
+        if str(Register.ValueType(type_id)).split('.')[-1][0].lower() == 'f':
+            native_type = float
+        else:
+            native_type = int
 
-    # Normalize the case and resolve some special values
-    normalized_text = text.lower().replace('true', '1').replace('false', '0')
+        # Normalize the case and resolve some special values
+        normalized = text.lower().replace('true', '1').replace('false', '0')
 
-    value = [native_type(x) for x in normalized_text.split(',')]
+        return [native_type(x) for x in normalized.split(',')]
 
-    _logger.info('Value parser: %r --> %r', text, value)
+    value = impl()
+    _logger.info('Value parser [with type %r]: %r --> %r', type_id, text, value)
     return value
 
 
@@ -386,6 +388,8 @@ def _unittest_parse_value():
     tid = Register.ValueType
     assert parse_value('', tid.EMPTY) is None
     assert parse_value('Arbitrary', tid.EMPTY) is None
+    assert parse_value('Arbitrary', tid.STRING) == 'Arbitrary'
+    assert parse_value('\x01\x02\x88\xFF', tid.UNSTRUCTURED) == bytes([1, 2, 0x88, 0xFF])
     assert parse_value('0', tid.BOOLEAN) == [False]
     assert parse_value('True, false', tid.BOOLEAN) == [True, False]
     assert parse_value('true, False', tid.I8) == [1, 0]
