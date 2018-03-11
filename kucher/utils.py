@@ -38,12 +38,12 @@ class Event:
         self._handlers: typing.Set[typing.Callable] = set()
         self._logger = getLogger(__name__ + f'.Event[{self}]')
 
-    def connect(self, handler: typing.Callable):
+    def connect(self, handler: typing.Callable) -> 'Event':
         self._logger.debug('Adding new handler %r', handler)
         self._handlers.add(handler)
         return self
 
-    def disconnect(self, handler: typing.Callable):
+    def disconnect(self, handler: typing.Callable) -> 'Event':
         self._logger.debug('Removing handler %r', handler)
         try:
             self._handlers.remove(handler)
@@ -66,9 +66,14 @@ class Event:
     def __len__(self):
         return len(self._handlers)
 
-    __iadd__ = connect
-    __isub__ = disconnect
-    __call__ = emit
+    def __iadd__(self, other: typing.Callable):
+        return self.connect(other)
+
+    def __isub__(self, other: typing.Callable):
+        return self.disconnect(other)
+
+    def __call__(self, *args, **kwargs):
+        return self.emit(*args, **kwargs)
 
 
 def _unittest_event():
