@@ -268,7 +268,27 @@ def parse_value(text: str, type_id: Register.ValueType):
     """
     Inverse to @ref display_value().
     """
-    raise NotImplementedError('Parser is not yet implemented')
+    if type_id == Register.ValueType.EMPTY:
+        return None
+
+    if type_id == Register.ValueType.STRING:
+        return text
+
+    if type_id == Register.ValueType.UNSTRUCTURED:
+        return text.encode('latin1')
+
+    if str(Register.ValueType(type_id)).split('.')[-1][0].lower() == 'f':
+        native_type = float
+    else:
+        native_type = int
+
+    # Normalize the case and resolve some special values
+    normalized_text = text.lower().replace('true', '1').replace('false', '0')
+
+    value = [native_type(x) for x in normalized_text.split(',')]
+
+    _logger.info('Value parser: %r --> %r', text, value)
+    return value
 
 
 @dataclasses.dataclass
@@ -359,6 +379,18 @@ def _draw_flags_icon(mutable: bool, persistent: bool, icon_size: int) -> QPixmap
     painter.drawPixmap(QRect(icon_size, 0, icon_size, icon_size),
                        persistence, icon_size_rect)
     return pixmap
+
+
+def _unittest_parse_value():
+    from pytest import approx
+    tid = Register.ValueType
+    assert parse_value('', tid.EMPTY) is None
+    assert parse_value('Arbitrary', tid.EMPTY) is None
+    assert parse_value('0', tid.BOOLEAN) == [False]
+    assert parse_value('True, false', tid.BOOLEAN) == [True, False]
+    assert parse_value('true, False', tid.I8) == [1, 0]
+    assert parse_value('0.123, 56.45', tid.F32) == [approx(0.123), approx(56.45)]
+    assert parse_value('0.123, 56.45', tid.F64) == [approx(0.123), approx(56.45)]
 
 
 def _unittest_register_tree():

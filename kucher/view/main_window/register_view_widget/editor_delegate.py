@@ -44,6 +44,13 @@ class EditorDelegate(QStyledItemDelegate):
         super(EditorDelegate, self).__init__(parent)
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QWidget:
+        """
+        The set of editors that we have defined here are only good for small-dimensioned registers with a few values.
+        They are not good for unstructured data and large arrays. For that, shall the need arise, we'll need to define
+        dedicated complex widgets. Luckily, it is very easy to do, just not really necessary at the moment.
+        The framework doesn't care what kind of widget we're displaying when editing, it's just a basic pop-up that
+        appears on top of the view.
+        """
         register = self._get_register_from_index(index)
         _logger.info('Constructing editor for %r', register)
 
