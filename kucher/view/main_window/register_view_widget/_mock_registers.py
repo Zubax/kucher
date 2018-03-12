@@ -12,6 +12,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import asyncio
 from view.device_model_representation import Register
 
 
@@ -20,6 +21,7 @@ def get_mock_registers():
     This function is only needed for unit testing. I decided to move it into a separate file because
     it is quite cumbersome and I don't want to contaminate the sources with large bundles of unrelated code.
     """
+    import time
     from popcop.standard.register import Flags, ValueType
 
     # noinspection PyShadowingBuiltins
@@ -28,18 +30,22 @@ def get_mock_registers():
         flags.mutable = mutable
         flags.persistent = persistent
 
-        def set_get_callback(value):
-            raise NotImplementedError('Mock objects do not model the device')
+        async def set_get_callback(value):
+            print('MOCK REGISTER WRITE/READ:', out, value)
+            await asyncio.sleep(3)
+            return value, time.monotonic(), time.monotonic()
 
-        return Register(value=cached,
-                        default_value=default,
-                        min_value=min,
-                        max_value=max,
-                        flags=flags,
-                        update_timestamp_device_time=ts_device,
-                        update_timestamp_monotonic=ts_mono,
-                        set_get_callback=set_get_callback,
-                        **kwargs)
+        out = Register(value=cached,
+                       default_value=default,
+                       min_value=min,
+                       max_value=max,
+                       flags=flags,
+                       update_timestamp_device_time=ts_device,
+                       update_timestamp_monotonic=ts_mono,
+                       set_get_callback=set_get_callback,
+                       **kwargs)
+        return out
+
     return [
         mock(name='exec_aux_command', type_id=ValueType.I16, cached=[-1], default=[-1], min=[-1], max=[9999],
              mutable=True, persistent=True, ts_device=167.120176761, ts_mono=11474.095037309),

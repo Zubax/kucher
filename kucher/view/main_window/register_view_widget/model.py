@@ -12,8 +12,10 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import time
 import enum
 import typing
+import asyncio
 import datetime
 import functools
 import dataclasses
@@ -67,8 +69,12 @@ class Model(QAbstractItemModel):
         super(Model, self).__init__(parent)
 
         self._regular_font = get_monospace_font()
+
         self._underlined_font = get_monospace_font()
         self._underlined_font.setUnderline(True)
+
+        self._italic_font = get_monospace_font()
+        self._italic_font.setItalic(True)
 
         self._icon_size = QFontMetrics(QFont()).height()
 
@@ -76,7 +82,6 @@ class Model(QAbstractItemModel):
 
         self._default_tree = _plant_tree(registers)
         _logger.debug('Default tree:\n%s\n', self._default_tree.to_pretty_string())
-        # TODO: Trees grouped by mutability and persistence
 
     def reload(self, register: Register):
         pass    # TODO: locate the register in the tree and invalidate it
@@ -84,7 +89,7 @@ class Model(QAbstractItemModel):
     @staticmethod
     def get_register_from_index(index: QModelIndex) -> Register:
         """Returns None if no register is bound to the index."""
-        return Model._unwrap(index).value
+        return Model._unwrap(index).register
 
     def index(self, row: int, column: int, parent: QModelIndex=None) -> QModelIndex:
         if column >= self.columnCount(parent):
@@ -130,58 +135,67 @@ class Model(QAbstractItemModel):
             if column == column_indices.NAME:
                 return node.name
 
-            if node.value is None:
+            if node.register is None:
                 return str()
 
             if column == column_indices.TYPE:
-                out = str(node.value.type_id).split('.')[-1].lower()
-                if node.value.cached_value and not isinstance(node.value.cached_value, (str, bytes)):
-                    size = len(node.value.cached_value)
+                out = str(node.register.type_id).split('.')[-1].lower()
+                if node.register.cached_value and not isinstance(node.register.cached_value, (str, bytes)):
+                    size = len(node.register.cached_value)
                     if size > 1:
                         out += f'[{size}]'
 
                 return out
 
             if column == column_indices.VALUE:
-                return display_value(node.value.cached_value, node.value.type_id)
+                return display_value(node.register.cached_value, node.register.type_id)
 
             if column == column_indices.DEFAULT:
-                return display_value(node.value.default_value, node.value.type_id)
+                return display_value(node.register.default_value, node.register.type_id)
 
             if column == column_indices.MIN:
-                return display_value(node.value.min_value, node.value.type_id)
+                return display_value(node.register.min_value, node.register.type_id)
 
             if column == column_indices.MAX:
-                return display_value(node.value.max_value, node.value.type_id)
+                return display_value(node.register.max_value, node.register.type_id)
 
             if column == column_indices.DEVICE_TIMESTAMP:
-                return str(datetime.timedelta(seconds=float(node.value.update_timestamp_device_time)))
+                return str(datetime.timedelta(seconds=float(node.register.update_timestamp_device_time)))
 
             if column == column_indices.FULL_NAME:
-                return node.value.name
+                return node.register.name
 
         if role in (Qt.ToolTipRole, Qt.StatusTipRole):
+            if column == column_indices.NAME:
+                if node.message.strip():
+                    return node.message
+
             if column == column_indices.VALUE:
-                if node.value is not None:
-                    out = f'This register is {"mutable" if node.value.mutable else "immutable"}. '
-                    if node.value.mutable and node.value.has_default_value:
-                        if node.value.cached_value_is_default_value:
+                if node.register is not None:
+                    out = f'This register is {"mutable" if node.register.mutable else "immutable"}. '
+                    if node.register.mutable and node.register.has_default_value:
+                        if node.register.cached_value_is_default_value:
                             out += 'Current value is default value.'
                         else:
                             out += 'Current value differs from the default value.'
                     return out
 
             if column == column_indices.FLAGS:
-                if node.value is not None:
+                if node.register is not None:
                     return ', '.join([
-                        'mutable' if node.value.mutable else 'immutable',
-                        'persistent' if node.value.persistent else 'not persistent',
+                        'mutable' if node.register.mutable else 'immutable',
+                        'persistent' if node.register.persistent else 'not persistent',
                     ]).capitalize()
+
+            if column == column_indices.DEVICE_TIMESTAMP:
+                if node.register is not None:
+                    delta = time.monotonic() - node.register.update_timestamp_monotonic
+                    return f'Last synchronized {round(delta)} seconds ago'
 
         if role == Qt.ForegroundRole:
             palette = QPalette()
-            if node.value and (self.flags(index) & Qt.ItemIsEditable):
-                if node.value.cached_value_is_default_value or not node.value.has_default_value:
+            if node.register and (self.flags(index) & Qt.ItemIsEditable):
+                if node.register.cached_value_is_default_value or not node.register.has_default_value:
                     return palette.color(QPalette.Link)
                 else:
                     return palette.color(QPalette.LinkVisited)
@@ -196,33 +210,72 @@ class Model(QAbstractItemModel):
                 return palette.color(QPalette.AlternateBase)
 
         if role == Qt.FontRole:
+            if node.state == node.State.PENDING:
+                return self._italic_font
+
             if self.flags(index) & Qt.ItemIsEditable:
                 return self._underlined_font
             else:
                 return self._regular_font
 
         if role == Qt.DecorationRole:
-            if node.value is not None:
+            if node.register is not None:
+                if column == column_indices.NAME:
+                    return get_icon({
+                        _Node.State.NORMAL:  'ok',
+                        _Node.State.PENDING: 'process',
+                        _Node.State.ERROR:   'error',
+                    }[node.state])
+
                 if column == column_indices.FLAGS:
-                    return _draw_flags_icon(mutable=node.value.mutable,
-                                            persistent=node.value.persistent,
+                    return _draw_flags_icon(mutable=node.register.mutable,
+                                            persistent=node.register.persistent,
                                             icon_size=self._icon_size)
+            else:
+                if column == column_indices.NAME:
+                    return get_icon('hierarchy')
 
         return QVariant()
 
-    def setData(self, index: QModelIndex, value, role=None) -> bool:
-        # TODO: Execute request to the device! Right now we're just changing the data locally, for testing
-        # noinspection PyProtectedMember
-        self._unwrap(index).value._cached_value = Register._stricten(value)
+    def setData(self, index: QModelIndex, value, role: int=None) -> bool:
+        # As per http://doc.qt.io/qt-5/model-view-programming.html
+        if not index.isValid() or role != Qt.EditRole:
+            return False
+
+        node = self._unwrap(index)
+        if node.register is None:
+            raise ValueError(f'The specified index {index} has no register associated with it')
+
+        if not node.register.mutable:
+            raise ValueError(f'The register is immutable: {node.register}')
+
+        async def executor():
+            node.set_state(node.State.PENDING, 'Write in progress...')
+            self._invalidate(index)
+            # noinspection PyBroadException
+            try:
+                _logger.info('Writing register %r with %r', node.register, value)
+                new_value = await node.register.write_through(value)
+            except Exception as ex:
+                _logger.exception('Could not write register %r', node.register)
+                node.set_state(node.State.ERROR, f'Write failed: {ex}')
+            else:
+                _logger.info('Write to %r complete; new value: %r', node.register, new_value)
+                node.set_state(node.State.NORMAL)
+            finally:
+                self._invalidate(index)
+
+        asyncio.get_event_loop().create_task(executor())
         return True
 
     def flags(self, index: QModelIndex) -> int:
         node = self._unwrap(index)
         out = Qt.ItemIsEnabled
-        if node and node.value and node.value.type_id != Register.ValueType.EMPTY:
+        if node and node.register and node.register.type_id != Register.ValueType.EMPTY:
             out |= Qt.ItemIsSelectable
-            if node.value.mutable and index.column() == self._ColumnIndices.VALUE:
-                out |= Qt.ItemIsEditable
+            if node.register.mutable and index.column() == self._ColumnIndices.VALUE:
+                if node.state != node.State.PENDING:
+                    out |= Qt.ItemIsEditable
 
         return out
 
@@ -232,6 +285,15 @@ class Model(QAbstractItemModel):
                 return self._COLUMNS[section]
 
         return QVariant()
+
+    # noinspection PyArgumentList,PyUnresolvedReferences
+    def _invalidate(self, index: QModelIndex):
+        parent = index.parent()
+        top_left: QModelIndex = self.index(index.row(), 0, parent)
+        bottom_right: QModelIndex = self.index(index.row(), self.columnCount(parent) - 1, parent)
+        assert top_left.isValid()
+        assert bottom_right.isValid()
+        self.dataChanged.emit(top_left, bottom_right)
 
     def _resolve_parent_node(self, index: typing.Optional[QModelIndex]) -> '_Node':
         if index is None or not index.isValid():
@@ -296,14 +358,26 @@ def parse_value(text: str, type_id: Register.ValueType):
 @dataclasses.dataclass
 class _Node:
     """
-    An element of a register tree.
-    Each element may have at most one value and an arbitrary number of children.
+    An element of the register tree.
+    Each element may have at most one register and an arbitrary number of children.
     Each child node is referred to by the name of its segment.
     """
     parent:   typing.Optional['_Node']                  # Only the root node doesn't have one
     name:     str
-    value:    typing.Optional[Register]        = None
+    register: typing.Optional[Register]        = None
     children: typing.DefaultDict[str, '_Node'] = dataclasses.field(default_factory=dict)
+
+    class State(enum.Enum):
+        NORMAL  = enum.auto()
+        PENDING = enum.auto()
+        ERROR   = enum.auto()
+
+    state:    State = State.NORMAL
+    message:  str = ''
+
+    def set_state(self, state: '_Node.State', message: str=''):
+        self.message = message
+        self.state = self.State(state)
 
     def __getitem__(self, item: typing.Union[str, int]) -> '_Node':
         if isinstance(item, str):
@@ -331,7 +405,7 @@ class _Node:
 
     def to_pretty_string(self, _depth=0) -> str:
         """Traverses the tree in depth starting from the current node and returns a neat multi-line formatted string"""
-        return ''.join(map(lambda x: '\n'.join([(' ' * _depth * 4 + x[0]).ljust(40) + ' ' + str(x[1].value or ''),
+        return ''.join(map(lambda x: '\n'.join([(' ' * _depth * 4 + x[0]).ljust(40) + ' ' + str(x[1].register or ''),
                                                 x[1].to_pretty_string(_depth + 1)]),
                            self.children.items())).rstrip('\n' if not _depth else '')
 
@@ -349,8 +423,8 @@ def _plant_tree(registers: typing.Iterable[Register]) -> _Node:
 
             node = node[segment]
 
-        assert node.value is None
-        node.value = reg
+        assert node.register is None
+        node.register = reg
 
     return root
 
@@ -366,7 +440,7 @@ def _draw_flags_icon(mutable: bool, persistent: bool, icon_size: int) -> QPixmap
     mutability: QPixmap = get_icon(icon_name).pixmap(icon_size, icon_size)
 
     # https://youtu.be/AX2uz2XYkbo?t=21s
-    icon_name = 'sd' if persistent else 'random-access-memory'
+    icon_name = 'save' if persistent else 'random-access-memory'
     persistence: QPixmap = get_icon(icon_name).pixmap(icon_size, icon_size)
 
     icon_size_rect = QRect(0, 0, icon_size, icon_size)
@@ -405,14 +479,13 @@ def _unittest_register_tree():
     print('Register tree view:', tree.to_pretty_string(), sep='\n')
 
     uavcan_transfer_cnt_tx = tree['uavcan']['transfer_cnt']['tx']
-    assert uavcan_transfer_cnt_tx.value.name == 'uavcan.transfer_cnt.tx'
-    assert uavcan_transfer_cnt_tx.parent['tx'].value.name == 'uavcan.transfer_cnt.tx'
+    assert uavcan_transfer_cnt_tx.register.name == 'uavcan.transfer_cnt.tx'
+    assert uavcan_transfer_cnt_tx.parent['tx'].register.name == 'uavcan.transfer_cnt.tx'
 
 
 # noinspection PyArgumentList
 @gui_test
 def _unittest_register_tree_model():
-    import time
     from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView, QHeaderView
     from ._mock_registers import get_mock_registers
     from .editor_delegate import EditorDelegate
@@ -436,12 +509,19 @@ def _unittest_register_tree_model():
     win.setCentralWidget(tw)
     win.show()
 
-    def go_go_go():
-        for _ in range(1000):
-            time.sleep(0.001)
-            app.processEvents()
+    good_night_sweet_prince = False
 
-    while True:
-        go_go_go()
+    async def run_events():
+        while not good_night_sweet_prince:
+            app.processEvents()
+            await asyncio.sleep(0.01)
+
+    async def walk():
+        await asyncio.sleep(3600)
+
+    asyncio.get_event_loop().run_until_complete(asyncio.gather(
+        run_events(),
+        walk()
+    ))
 
     win.close()
