@@ -74,7 +74,8 @@ class RegisterViewWidget(WidgetBase):
                     (None, 1),
                     visibility_group,
                 ),
-                (self._tree, 1))
+                (self._tree, 1)
+            )
         )
 
     def reset(self):
@@ -96,12 +97,24 @@ class RegisterViewWidget(WidgetBase):
         finally:
             self._reload_all_task = None
 
+        old_model = self._tree.model()
+
         # Configure the new model
         filtered_registers = filter(register_visibility_predicate, self._registers)
         # It is important to set the Tree widget as the parent in order to let the widget take ownership
         new_model = Model(self._tree, filtered_registers)
         _logger.info('New model %r', new_model)
         self._tree.setModel(new_model)
+
+        # TODO: Something fishy is going on. Something keeps the old model alive when we're replacing it.
+        #       We could call deleteLater() on it, but it seems dangerous, because if that something ever decided
+        #       to refer to that dead model later for any reason, we'll get a rougue dangling pointer access on
+        #       our hands. The horror!
+        if old_model is not None:
+            import gc
+            model_referrers = gc.get_referrers(old_model)
+            if len(model_referrers) > 1:
+                _logger.warning('Extra references to the old model %r: %r', old_model, model_referrers)
 
         # Update the widget - all root items are expanded by default
         for row in itertools.count():

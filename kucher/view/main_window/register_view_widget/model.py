@@ -82,7 +82,7 @@ class Model(QAbstractItemModel):
         self._registers = list(sorted(registers, key=lambda r: r.name))
 
         self._tree = _plant_tree(self._registers)
-        _logger.debug('Register tree:\n%s\n', self._tree.to_pretty_string())
+        _logger.debug('Register tree for %r:\n%s\n', self, self._tree.to_pretty_string())
 
         # This map contains references from register name to the model index pointing to the zero column
         self._register_name_to_index_column_zero_map: typing.Dict[str, QModelIndex] = {}
@@ -371,6 +371,14 @@ class Model(QAbstractItemModel):
     @staticmethod
     def _unwrap(index: QModelIndex) -> '_Node':
         return index.internalPointer()
+
+    def __str__(self):
+        return f'Model({len(self._registers)} registers, id=0x{id(self):x})'
+
+    __repr__ = __str__
+
+    def __del__(self):
+        _logger.info('Model instance %r is being deleted', self)
 
 
 def display_value(value, type_id: Register.ValueType) -> str:
