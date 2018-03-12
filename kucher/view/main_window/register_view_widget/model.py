@@ -100,7 +100,7 @@ class Model(QAbstractItemModel):
                     break
 
         build_index(QModelIndex())
-        _logger.info('Register look-up table: %r', self._register_name_to_index_column_zero_map)
+        _logger.debug('Register look-up table: %r', self._register_name_to_index_column_zero_map)
 
         # Set up register update callbacks decoupled via weak references
         # It is important to use weak references because we don't want the events to keep our object alive

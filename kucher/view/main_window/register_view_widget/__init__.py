@@ -14,8 +14,9 @@
 
 import typing
 import asyncio
+import itertools
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QRadioButton, QGroupBox
+from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QRadioButton
 from view.widgets import WidgetBase
 from view.utils import gui_test, make_button, lay_out_vertically, lay_out_horizontally, show_error
 from view.device_model_representation import Register
@@ -34,7 +35,7 @@ class RegisterViewWidget(WidgetBase):
 
         self._registers = []
 
-        self._reload_all_task: asyncio.Task= None
+        self._reload_all_task: asyncio.Task = None
 
         # noinspection PyArgumentList
         visibility_group = QWidget(self)
@@ -60,9 +61,7 @@ class RegisterViewWidget(WidgetBase):
         self._tree.setItemDelegateForColumn(0, StyleOptionModifyingDelegate(self._tree, QStyleOptionViewItem.Right))
         self._tree.setVerticalScrollMode(QTreeView.ScrollPerPixel)
         self._tree.setHorizontalScrollMode(QTreeView.ScrollPerPixel)
-        self._tree.setStyleSheet('''
-        QTreeView::item { padding: 0 5px; }
-        ''')
+        self._tree.setAnimated(True)
 
         header: QHeaderView = self._tree.header()
         header.setSectionResizeMode(QHeaderView.ResizeToContents)
@@ -86,6 +85,7 @@ class RegisterViewWidget(WidgetBase):
         self._on_visibility_changed()
 
     def _replace_model(self, register_visibility_predicate: typing.Callable[[Register], bool]):
+        # Cancel all operations that might be pending on the old model
         # noinspection PyBroadException
         try:
             self._reload_all_task.cancel()
@@ -96,11 +96,20 @@ class RegisterViewWidget(WidgetBase):
         finally:
             self._reload_all_task = None
 
+        # Configure the new model
         filtered_registers = filter(register_visibility_predicate, self._registers)
         # It is important to set the Tree widget as the parent in order to let the widget take ownership
         new_model = Model(self._tree, filtered_registers)
         _logger.info('New model %r', new_model)
         self._tree.setModel(new_model)
+
+        # Update the widget - all root items are expanded by default
+        for row in itertools.count():
+            index = self._tree.model().index(row, 0)
+            if not index.isValid():
+                break
+
+            self._tree.expand(index)
 
     def _on_visibility_changed(self):
         if self._show_only_config_params_check.isChecked():
