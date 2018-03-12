@@ -13,6 +13,9 @@
 #
 
 import typing
+import weakref
+import inspect
+import functools
 from logging import getLogger
 
 
@@ -43,6 +46,40 @@ class Event:
         self._handlers.add(handler)
         return self
 
+    # noinspection PyUnusedLocal
+    def connect_weak(self, instance, unbound_method: 'type(Event.connect)') -> 'Event':
+        """
+        Adds a weak handler that points to a method. This callback will be automatically removed when
+        the pointed-to object is garbage collected. Observe that we require a reference to an instance
+        here, and not just a bound method, because bound methods are dedicated objects themselves, and
+        therefore if we were to keep a weak reference to that, our bound method instance would be immediately
+        garbage collected. Weak-referenced bound methods, like lambdas, are always dead on arrival. More info:
+          https://stackoverflow.com/questions/599430/why-doesnt-the-weakref-work-on-this-bound-method
+          https://stackoverflow.com/questions/5394772/why-are-my-weakrefs-dead-in-the-water-when-they-point-to-a-method
+        """
+        weak_instance = weakref.ref(instance)
+        instance_as_str = repr(instance)    # We're formatting it right now because we can't keep strong references
+        instance = None                     # Erase to prevent accidental re-use
+
+        if inspect.ismethod(unbound_method):
+            raise TypeError(f'Usage of bound methods, lambdas, and proxy functions as weak handlers is not '
+                            f'possible, because these are dedicated objects themselves and they will be '
+                            f'garbage collected immediately after the last strong reference is removed. '
+                            f'You should use unbound methods instead. '
+                            f'Here are the arguments that you tried to use: {instance}, {unbound_method}')
+
+        # noinspection PyShadowingNames
+        @functools.wraps(unbound_method)
+        def proxy(*args, **kwargs):
+            instance = weak_instance()
+            if instance is not None:
+                return unbound_method(instance, *args, **kwargs)
+            else:
+                self._logger.info('Weak reference has died: %r', instance_as_str)
+                self.disconnect(proxy)
+
+        return self.connect(proxy)
+
     def disconnect(self, handler: typing.Callable) -> 'Event':
         self._logger.debug('Removing handler %r', handler)
         try:
@@ -53,7 +90,7 @@ class Event:
         return self
 
     def emit(self, *args, **kwargs):
-        for handler in self._handlers:
+        for handler in list(self._handlers):        # The invocation list can be modified from callbacks!
             try:
                 handler(*args, **kwargs)
             except Exception as ex:
@@ -66,17 +103,12 @@ class Event:
     def __len__(self):
         return len(self._handlers)
 
-    def __iadd__(self, other: typing.Callable):
-        return self.connect(other)
-
-    def __isub__(self, other: typing.Callable):
-        return self.disconnect(other)
-
     def __call__(self, *args, **kwargs):
         return self.emit(*args, **kwargs)
 
 
 def _unittest_event():
+    import gc
     from pytest import raises
 
     e = Event()
@@ -90,7 +122,7 @@ def _unittest_event():
         nonlocal acc
         acc += ''.join(s)
 
-    e += acc_add
+    e.connect(acc_add)
     e('123', 'abc')
     e('def')
     e()
@@ -98,8 +130,45 @@ def _unittest_event():
     assert acc == '123abcdef'
 
     with raises(ValueError):
-        e -= lambda a: None
+        e.disconnect(lambda a: None)
 
-    e -= acc_add
+    e.disconnect(acc_add)
     assert len(e) == 0
     e(123, '456')
+
+    # noinspection PyMethodMayBeStatic
+    class Holder:
+        def __init__(self, evt: Event):
+            evt.connect_weak(self, Holder.receiver)
+
+        def receiver(self, *args):
+            nonlocal acc
+            acc += ''.join(args)
+
+    assert len(e) == 0
+    holder = Holder(e)
+    assert len(e) == 1
+    e(' Weak')
+    assert len(e) == 1
+    del holder
+    gc.collect()
+
+    assert len(e) == 1
+    e('Dead x_x')
+    assert len(e) == 0
+
+    assert acc == '123abcdef Weak'
+
+    holder = Holder(e)
+    assert len(e) == 1
+
+    with raises(TypeError):
+        e.connect_weak(holder, holder.receiver)
+
+    del holder
+    gc.collect()
+
+    assert len(e) == 1
+    e('Dead x_x')
+    assert len(e) == 0
+    assert acc == '123abcdef Weak'
