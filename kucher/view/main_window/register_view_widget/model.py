@@ -83,8 +83,13 @@ class Model(QAbstractItemModel):
         self._default_tree = _plant_tree(registers)
         _logger.debug('Default tree:\n%s\n', self._default_tree.to_pretty_string())
 
-    def reload(self, register: Register):
-        pass    # TODO: locate the register in the tree and invalidate it
+        # This map contains references from register name to the model index pointing to the zero column
+        self._register_name_to_index_column_zero_map: typing.Dict[str, QModelIndex] = {}
+
+        # Set up register update callbacks decoupled via weak references
+        # It is important to use weak references because we don't want the events to keep our object alive
+        for r in registers:
+            r.update_event.connect_weak(self, Model._on_register_update)
 
     @staticmethod
     def get_register_from_index(index: QModelIndex) -> Register:
@@ -96,9 +101,16 @@ class Model(QAbstractItemModel):
             return QModelIndex()
 
         try:
-            return self.createIndex(row, column, self._resolve_parent_node(parent)[row])
+            out: QModelIndex = self.createIndex(row, column, self._resolve_parent_node(parent)[row])
         except IndexError:
             return QModelIndex()
+        else:
+            # Updating the register mapping
+            register = self._unwrap(out).register
+            if register is not None:
+                self._register_name_to_index_column_zero_map[register.name] = out.sibling(row, 0)
+
+            return out
 
     def parent(self, index: QModelIndex) -> QModelIndex:
         parent_node = self._unwrap(index).parent
@@ -221,19 +233,19 @@ class Model(QAbstractItemModel):
         if role == Qt.DecorationRole:
             if node.register is not None:
                 if column == column_indices.NAME:
-                    return get_icon({
-                        _Node.State.NORMAL:  'ok',
-                        _Node.State.PENDING: 'process',
-                        _Node.State.ERROR:   'error',
-                    }[node.state])
+                    try:
+                        return get_icon({
+                            _Node.State.PENDING: 'process',
+                            _Node.State.SUCCESS: 'ok',
+                            _Node.State.ERROR:   'error',
+                        }[node.state])
+                    except KeyError:
+                        pass
 
                 if column == column_indices.FLAGS:
                     return _draw_flags_icon(mutable=node.register.mutable,
                                             persistent=node.register.persistent,
                                             icon_size=self._icon_size)
-            else:
-                if column == column_indices.NAME:
-                    return get_icon('hierarchy')
 
         return QVariant()
 
@@ -261,7 +273,7 @@ class Model(QAbstractItemModel):
                 node.set_state(node.State.ERROR, f'Write failed: {ex}')
             else:
                 _logger.info('Write to %r complete; new value: %r', node.register, new_value)
-                node.set_state(node.State.NORMAL)
+                node.set_state(node.State.SUCCESS, 'Value has been written successfully')
             finally:
                 self._invalidate(index)
 
@@ -287,13 +299,29 @@ class Model(QAbstractItemModel):
         return QVariant()
 
     # noinspection PyArgumentList,PyUnresolvedReferences
-    def _invalidate(self, index: QModelIndex):
-        parent = index.parent()
-        top_left: QModelIndex = self.index(index.row(), 0, parent)
-        bottom_right: QModelIndex = self.index(index.row(), self.columnCount(parent) - 1, parent)
+    def _invalidate(self, index_or_register: typing.Union[QModelIndex, Register]):
+        if isinstance(index_or_register, Register):
+            index = self._register_name_to_index_column_zero_map[index_or_register.name]
+        elif isinstance(index_or_register, QModelIndex):
+            index = index_or_register
+        else:
+            raise TypeError(f'Unexpected type: {type(index_or_register)}')
+
+        top_left: QModelIndex = index.sibling(index.row(), 0)
+        bottom_right: QModelIndex = index.sibling(index.row(), self.columnCount(index.parent()) - 1)
         assert top_left.isValid()
         assert bottom_right.isValid()
         self.dataChanged.emit(top_left, bottom_right)
+
+    def _on_register_update(self, register: Register):
+        """
+        This is invoked by Register objects when they get updated.
+        Note that when we write a new value, this callback is invoked as well!
+        """
+        index = self._register_name_to_index_column_zero_map[register.name]
+        node = self._unwrap(index)
+        node.set_state(node.State.DEFAULT)
+        self._invalidate(index)
 
     def _resolve_parent_node(self, index: typing.Optional[QModelIndex]) -> '_Node':
         if index is None or not index.isValid():
@@ -368,11 +396,12 @@ class _Node:
     children: typing.DefaultDict[str, '_Node'] = dataclasses.field(default_factory=dict)
 
     class State(enum.Enum):
-        NORMAL  = enum.auto()
+        DEFAULT = enum.auto()
         PENDING = enum.auto()
+        SUCCESS = enum.auto()
         ERROR   = enum.auto()
 
-    state:    State = State.NORMAL
+    state:    State = State.DEFAULT
     message:  str = ''
 
     def set_state(self, state: '_Node.State', message: str=''):
@@ -486,15 +515,17 @@ def _unittest_register_tree():
 # noinspection PyArgumentList
 @gui_test
 def _unittest_register_tree_model():
-    from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView, QHeaderView
+    from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView, QHeaderView, QStyleOptionViewItem
     from ._mock_registers import get_mock_registers
     from .editor_delegate import EditorDelegate
+    from .style_option_modifying_delegate import StyleOptionModifyingDelegate
 
     app = QApplication([])
     win = QMainWindow()
 
     tw = QTreeView(win)
     tw.setItemDelegate(EditorDelegate(tw))
+    tw.setItemDelegateForColumn(0, StyleOptionModifyingDelegate(tw, QStyleOptionViewItem.Right))
     tw.setStyleSheet('''
     QTreeView::item { padding: 0 5px; }
     ''')
