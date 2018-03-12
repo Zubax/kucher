@@ -80,6 +80,14 @@ class EditorDelegate(QStyledItemDelegate):
             editor.setFont(get_monospace_font())
             editor.setMinimumWidth(QFontMetrics(editor.font()).width('9' * 50))
 
+        editor.setFont(Model.get_font())
+
+        # noinspection PyBroadException
+        try:
+            parent.window().statusBar().showMessage('Press Esc to cancel editing', 5000)
+        except Exception:
+            _logger.exception('Could not display editing hint')
+
         return editor
 
     def setEditorData(self, editor: QWidget, index: QModelIndex):

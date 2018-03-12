@@ -69,15 +69,15 @@ class Model(QAbstractItemModel):
                  registers: typing.Iterable[Register]):
         super(Model, self).__init__(parent)
 
-        self._regular_font = get_monospace_font()
+        self._regular_font = self.get_font()
 
-        self._underlined_font = get_monospace_font()
+        self._underlined_font = self.get_font()
         self._underlined_font.setUnderline(True)
 
-        self._italic_font = get_monospace_font()
+        self._italic_font = self.get_font()
         self._italic_font.setItalic(True)
 
-        self._icon_size = QFontMetrics(QFont()).height()
+        self._icon_size = QFontMetrics(self._regular_font).height()
 
         self._registers = list(sorted(registers, key=lambda r: r.name))
 
@@ -151,6 +151,10 @@ class Model(QAbstractItemModel):
     def get_register_from_index(index: QModelIndex) -> Register:
         """Returns None if no register is bound to the index."""
         return Model._unwrap(index).register
+
+    @staticmethod
+    def get_font() -> QFont:
+        return get_monospace_font(small=True)
 
     def index(self, row: int, column: int, parent: QModelIndex=None) -> QModelIndex:
         if column >= self.columnCount(parent):

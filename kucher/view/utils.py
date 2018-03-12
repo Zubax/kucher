@@ -50,12 +50,14 @@ def get_icon(name: str) -> QIcon:
     return QIcon(get_icon_path(name))
 
 
-def get_monospace_font() -> QFont:  # We can't cache the result because it will become a shared singleton
+def get_monospace_font(small=False) -> QFont:  # We can't cache the result because it will become a shared singleton
+    multiplier = 0.8 if small else 1.0
+
     preferred = ['Consolas', 'DejaVu Sans Mono', 'Monospace', 'Lucida Console', 'Monaco']
     for name in preferred:
         font = QFont(name)
         if QFontInfo(font).fixedPitch():
-            font.setPointSize(QFont().pointSize())
+            font.setPointSize(round(QFont().pointSize() * multiplier))
             _logger.info('Selected monospace font: %r', font.toString())
             return font
 
