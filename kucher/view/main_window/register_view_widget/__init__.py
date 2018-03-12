@@ -50,12 +50,12 @@ class RegisterViewWidget(WidgetBase):
                                                   on_clicked=self._do_reset_selected)
 
         self._reload_selected_button = make_button(self, 'Fetch selected',
-                                                   icon_name='process-1',
+                                                   icon_name='process',
                                                    tool_tip='Read the currently selected registers only',
                                                    on_clicked=self._do_reload_selected)
 
         self._reload_all_button = make_button(self, 'Fetch all',
-                                              icon_name='process',
+                                              icon_name='process-plus',
                                               tool_tip='Read all registers from the device',
                                               on_clicked=self._do_reload_all)
 
