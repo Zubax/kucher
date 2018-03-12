@@ -37,27 +37,37 @@ class RegisterViewWidget(WidgetBase):
         self._reload_task: asyncio.Task = None
 
         self._visibility_selector = QComboBox(self)
-        self._visibility_selector.addItem('All registers', lambda _: True)
+        self._visibility_selector.addItem('Show all registers', lambda _: True)
         self._visibility_selector.addItem('Only configuration parameters', lambda r: r.mutable and r.persistent)
 
         # noinspection PyUnresolvedReferences
         self._visibility_selector.currentIndexChanged.connect(lambda _: self._on_visibility_changed())
 
-        self._reset_selected_button = make_button(self, 'Restore',
+        self._reset_selected_button = make_button(self, 'Restore selected',
                                                   icon_name='clear-symbol',
                                                   tool_tip='Reset the currently selected registers to their default '
                                                            'values. The restored values will be committed immediately.',
                                                   on_clicked=self._do_reset_selected)
 
-        self._reload_selected_button = make_button(self, 'Fetch',
+        self._reload_selected_button = make_button(self, 'Fetch selected',
                                                    icon_name='process-1',
-                                                   tool_tip='Fetch the currently selected registers only',
+                                                   tool_tip='Read the currently selected registers only',
                                                    on_clicked=self._do_reload_selected)
 
         self._reload_all_button = make_button(self, 'Fetch all',
                                               icon_name='process',
-                                              tool_tip='Retrieve all registers from the device',
+                                              tool_tip='Read all registers from the device',
                                               on_clicked=self._do_reload_all)
+
+        self._expand_all_button = make_button(self, '',
+                                              icon_name='expand-arrow',
+                                              tool_tip='Expand all namespaces',
+                                              on_clicked=lambda: self._tree.expandAll())
+
+        self._collapse_all_button = make_button(self, '',
+                                                icon_name='collapse-arrow',
+                                                tool_tip='Collapse all namespaces',
+                                                on_clicked=lambda: self._tree.collapseAll())
 
         self._tree = QTreeView(self)
         self._tree.setItemDelegate(EditorDelegate(self._tree))
@@ -87,11 +97,16 @@ class RegisterViewWidget(WidgetBase):
         self.setLayout(
             lay_out_vertically(
                 lay_out_horizontally(
-                    self._reset_selected_button,
-                    self._reload_selected_button,
-                    self._reload_all_button,
-                    (None, 1),
                     self._visibility_selector,
+                    (None, 1),
+                    self._expand_all_button,
+                    self._collapse_all_button,
+                ),
+                lay_out_horizontally(
+                    self._reload_all_button,
+                    self._reload_selected_button,
+                    self._reset_selected_button,
+                    (None, 1),
                 ),
                 (self._tree, 1)
             )

@@ -86,26 +86,31 @@ class Model(QAbstractItemModel):
 
         # This map contains references from register name to the model index pointing to the zero column
         self._register_name_to_index_column_zero_map: typing.Dict[str, QModelIndex] = {}
+        for index in self.iter_indices():
+            try:
+                self._register_name_to_index_column_zero_map[self._unwrap(index).register.name] = index
+            except AttributeError:
+                pass
 
-        def build_index(root: QModelIndex):
-            for row in itertools.count():
-                index = self.index(row, 0, root)
-                if index.isValid():
-                    build_index(index)
-                    try:
-                        self._register_name_to_index_column_zero_map[self._unwrap(index).register.name] = index
-                    except AttributeError:
-                        pass
-                else:
-                    break
-
-        build_index(QModelIndex())
         _logger.debug('Register look-up table: %r', self._register_name_to_index_column_zero_map)
 
         # Set up register update callbacks decoupled via weak references
         # It is important to use weak references because we don't want the events to keep our object alive
         for r in self._registers:
             r.update_event.connect_weak(self, Model._on_register_update)
+
+    def iter_indices(self, root: QModelIndex=None) -> typing.Generator[QModelIndex, None, None]:
+        """
+        Iterates over all indexes in this model starting from :param root:. Returns a generator of QModelIndex.
+        """
+        root = root if root is not None else QModelIndex()
+        for row in itertools.count():
+            index = self.index(row, 0, root)
+            if index.isValid():
+                yield index
+                yield from self.iter_indices(index)
+            else:
+                break
 
     @property
     def registers(self) -> typing.List[Register]:
