@@ -16,7 +16,7 @@ import typing
 import asyncio
 import itertools
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QRadioButton
+from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QComboBox
 from view.widgets import WidgetBase
 from view.utils import gui_test, make_button, lay_out_vertically, lay_out_horizontally, show_error
 from view.device_model_representation import Register
@@ -29,27 +29,18 @@ _logger = getLogger(__name__)
 
 
 class RegisterViewWidget(WidgetBase):
-    def __init__(self,
-                 parent:    QWidget):
+    def __init__(self, parent: QWidget):
         super(RegisterViewWidget, self).__init__(parent)
 
         self._registers = []
-
         self._reload_all_task: asyncio.Task = None
 
-        # noinspection PyArgumentList
-        visibility_group = QWidget(self)
-        self._show_all_registers_check = QRadioButton('Show all registers', visibility_group)
-        self._show_all_registers_check.setChecked(True)
-        self._show_only_config_params_check = QRadioButton('Only configuration parameters', visibility_group)
-        register_filtering_buttons = (self._show_all_registers_check,
-                                      self._show_only_config_params_check)
-        for w in register_filtering_buttons:
-            # noinspection PyUnresolvedReferences
-            w.clicked.connect(lambda *_: self._on_visibility_changed())
+        self._visibility_selector = QComboBox(self)
+        self._visibility_selector.addItem('All registers', lambda _: True)
+        self._visibility_selector.addItem('Only configuration parameters', lambda r: r.mutable and r.persistent)
 
-        visibility_group.setLayout(lay_out_horizontally(*register_filtering_buttons))
-        visibility_group.layout().setContentsMargins(0, 0, 0, 0)
+        # noinspection PyUnresolvedReferences
+        self._visibility_selector.currentIndexChanged.connect(lambda _: self._on_visibility_changed())
 
         self._reload_all_button = make_button(self, 'Fetch all',
                                               icon_name='process',
@@ -72,7 +63,7 @@ class RegisterViewWidget(WidgetBase):
                 lay_out_horizontally(
                     self._reload_all_button,
                     (None, 1),
-                    visibility_group,
+                    self._visibility_selector,
                 ),
                 (self._tree, 1)
             )
@@ -125,10 +116,7 @@ class RegisterViewWidget(WidgetBase):
             self._tree.expand(index)
 
     def _on_visibility_changed(self):
-        if self._show_only_config_params_check.isChecked():
-            self._replace_model(lambda r: r.mutable and r.persistent)
-        else:
-            self._replace_model(lambda _: True)
+        self._replace_model(self._visibility_selector.currentData())
 
     def _do_reload_all(self):
         def progress_callback(register: Register, current_register_index: int, total_registers: int):
