@@ -125,7 +125,7 @@ class EditorDelegate(QStyledItemDelegate):
                 value = parse_value(text, register.type_id)
             except Exception as ex:
                 _logger.warning('The following value could not be parsed: %r', text, exc_info=True)
-                show_error('Invalid value', 'Could not parse the entered value', str(ex), editor.window())
+                show_error('Invalid value', 'Could not parse the entered value', repr(ex), editor.window())
                 value = None
         else:
             raise TypeError(f'Unexpected editor: {editor}')

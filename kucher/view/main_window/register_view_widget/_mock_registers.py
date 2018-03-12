@@ -32,7 +32,12 @@ def get_mock_registers():
 
         async def set_get_callback(value):
             print('MOCK REGISTER WRITE/READ:', out, value)
-            await asyncio.sleep(3)
+            if value is not None:
+                await asyncio.sleep(3)
+            else:
+                value = out.cached_value
+                await asyncio.sleep(0.5)
+
             return value, time.monotonic(), time.monotonic()
 
         out = Register(value=cached,

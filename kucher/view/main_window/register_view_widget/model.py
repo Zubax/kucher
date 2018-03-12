@@ -18,6 +18,7 @@ import typing
 import asyncio
 import datetime
 import functools
+import itertools
 import dataclasses
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget
@@ -78,18 +79,63 @@ class Model(QAbstractItemModel):
 
         self._icon_size = QFontMetrics(QFont()).height()
 
-        registers = list(sorted(registers, key=lambda r: r.name))
+        self._registers = list(sorted(registers, key=lambda r: r.name))
 
-        self._tree = _plant_tree(registers)
+        self._tree = _plant_tree(self._registers)
         _logger.debug('Register tree:\n%s\n', self._tree.to_pretty_string())
 
         # This map contains references from register name to the model index pointing to the zero column
         self._register_name_to_index_column_zero_map: typing.Dict[str, QModelIndex] = {}
 
+        def build_index(root: QModelIndex):
+            for row in itertools.count():
+                index = self.index(row, 0, root)
+                if index.isValid():
+                    build_index(index)
+                    try:
+                        self._register_name_to_index_column_zero_map[self._unwrap(index).register.name] = index
+                    except AttributeError:
+                        pass
+                else:
+                    break
+
+        build_index(QModelIndex())
+        _logger.info('Register look-up table: %r', self._register_name_to_index_column_zero_map)
+
         # Set up register update callbacks decoupled via weak references
         # It is important to use weak references because we don't want the events to keep our object alive
-        for r in registers:
+        for r in self._registers:
             r.update_event.connect_weak(self, Model._on_register_update)
+
+    async def reload_all(self, progress_callback: typing.Optional[typing.Callable[[Register, int, int], None]]=None):
+        """
+        :param progress_callback: (register: Register, current_register_index: int, total_registers: int) -> None
+        """
+        progress_callback = progress_callback if progress_callback is not None else lambda *_: None
+
+        _logger.info('Reload-all: %r registers to go', len(self._registers))
+
+        # Mark all for update
+        for r in self._registers:
+            # Great Scott! One point twenty-one gigawatt of power!
+            node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
+            node.set_state(_Node.State.PENDING, 'Waiting for update...')
+
+        # Actually update all
+        for index, r in enumerate(self._registers):
+            progress_callback(r, index, len(self._registers))
+            node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
+            # noinspection PyBroadException
+            try:
+                await r.read_through()
+            except asyncio.CancelledError:
+                raise
+            except Exception as ex:
+                _logger.exception('Reload-all progress: Could not read %r', r)
+                node.set_state(node.State.ERROR, f'Update failed: {ex}')
+            else:
+                _logger.info('Reload-all progress: Read %r', r)
+                node.set_state(node.State.DEFAULT)
 
     @staticmethod
     def get_register_from_index(index: QModelIndex) -> Register:
@@ -101,16 +147,9 @@ class Model(QAbstractItemModel):
             return QModelIndex()
 
         try:
-            out: QModelIndex = self.createIndex(row, column, self._resolve_parent_node(parent)[row])
+            return self.createIndex(row, column, self._resolve_parent_node(parent)[row])
         except IndexError:
             return QModelIndex()
-        else:
-            # Updating the register mapping
-            register = self._unwrap(out).register
-            if register is not None:
-                self._register_name_to_index_column_zero_map[register.name] = out.sibling(row, 0)
-
-            return out
 
     def parent(self, index: QModelIndex) -> QModelIndex:
         parent_node = self._unwrap(index).parent
