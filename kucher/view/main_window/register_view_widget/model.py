@@ -515,6 +515,7 @@ def _unittest_register_tree():
 # noinspection PyArgumentList
 @gui_test
 def _unittest_register_tree_model():
+    import gc
     from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView, QHeaderView, QStyleOptionViewItem
     from ._mock_registers import get_mock_registers
     from .editor_delegate import EditorDelegate
@@ -534,8 +535,15 @@ def _unittest_register_tree_model():
     header.setSectionResizeMode(QHeaderView.ResizeToContents)
     header.setStretchLastSection(False)     # Horizontal scroll bar doesn't work if this is enabled
 
-    model = Model(win, get_mock_registers())
+    registers = get_mock_registers()
+    for r in registers:
+        assert r.update_event.num_handlers == 0
+
+    model = Model(win, registers)
     tw.setModel(model)
+
+    for r in registers:
+        assert r.update_event.num_handlers == 1
 
     win.setCentralWidget(tw)
     win.show()
@@ -548,7 +556,9 @@ def _unittest_register_tree_model():
             await asyncio.sleep(0.01)
 
     async def walk():
-        await asyncio.sleep(3600)
+        nonlocal good_night_sweet_prince
+        await asyncio.sleep(5)
+        good_night_sweet_prince = True
 
     asyncio.get_event_loop().run_until_complete(asyncio.gather(
         run_events(),
@@ -556,3 +566,18 @@ def _unittest_register_tree_model():
     ))
 
     win.close()
+
+    # At the very end, making sure that our registers do not keep the model alive via weak callback references
+    del tw
+    del win
+    del app
+    gc.collect()
+
+    print('Model references:', gc.get_referrers(model))
+    del model
+    gc.collect()
+
+    for r in registers:
+        assert r.update_event.num_handlers == 1
+        r.update_event.emit(r)
+        assert r.update_event.num_handlers == 0
