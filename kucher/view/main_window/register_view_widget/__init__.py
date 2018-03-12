@@ -16,6 +16,7 @@ import typing
 import asyncio
 import itertools
 from logging import getLogger
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QComboBox
 from view.widgets import WidgetBase
 from view.utils import gui_test, make_button, lay_out_vertically, lay_out_horizontally, show_error
@@ -49,10 +50,23 @@ class RegisterViewWidget(WidgetBase):
 
         self._tree = QTreeView(self)
         self._tree.setItemDelegate(EditorDelegate(self._tree))
-        self._tree.setItemDelegateForColumn(0, StyleOptionModifyingDelegate(self._tree, QStyleOptionViewItem.Right))
         self._tree.setVerticalScrollMode(QTreeView.ScrollPerPixel)
         self._tree.setHorizontalScrollMode(QTreeView.ScrollPerPixel)
         self._tree.setAnimated(True)
+
+        # Register state icons should be shown on the right; on the left it looks quite ugly
+        self._tree.setItemDelegateForColumn(
+            int(Model.ColumnIndices.NAME),
+            StyleOptionModifyingDelegate(self._tree,
+                                         decoration_position=QStyleOptionViewItem.Right))
+
+        # It doesn't seem to be explicitly documented, but it seems to be necessary to select either top or bottom
+        # decoration position in order to be able to use center alignment. Left or right positions do not work here.
+        self._tree.setItemDelegateForColumn(
+            int(Model.ColumnIndices.FLAGS),
+            StyleOptionModifyingDelegate(self._tree,
+                                         decoration_position=QStyleOptionViewItem.Top,  # Important
+                                         decoration_alignment=Qt.AlignCenter))
 
         header: QHeaderView = self._tree.header()
         header.setSectionResizeMode(QHeaderView.ResizeToContents)
@@ -148,7 +162,6 @@ def _unittest_register_tree_widget():
     from PyQt5.QtWidgets import QApplication, QMainWindow
     from ._mock_registers import get_mock_registers
     from .editor_delegate import EditorDelegate
-    from .style_option_modifying_delegate import StyleOptionModifyingDelegate
 
     app = QApplication([])
     win = QMainWindow()

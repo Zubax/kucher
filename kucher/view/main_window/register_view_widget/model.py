@@ -53,7 +53,7 @@ class Model(QAbstractItemModel):
         'Full name',
     ]
 
-    class _ColumnIndices(enum.IntEnum):
+    class ColumnIndices(enum.IntEnum):
         NAME             = 0
         TYPE             = 1
         VALUE            = 2
@@ -180,7 +180,7 @@ class Model(QAbstractItemModel):
         node = self._unwrap(index)
         assert node.index_in_parent == row  # These two represent the same concept at different levels of abstraction
 
-        column_indices = self._ColumnIndices
+        column_indices = self.ColumnIndices
 
         if role == Qt.DisplayRole:
             if column == column_indices.NAME:
@@ -324,7 +324,7 @@ class Model(QAbstractItemModel):
         out = Qt.ItemIsEnabled
         if node and node.register and node.register.type_id != Register.ValueType.EMPTY:
             out |= Qt.ItemIsSelectable
-            if node.register.mutable and index.column() == self._ColumnIndices.VALUE:
+            if node.register.mutable and index.column() == self.ColumnIndices.VALUE:
                 if node.state != node.State.PENDING:
                     out |= Qt.ItemIsEditable
 
@@ -573,7 +573,7 @@ def _unittest_register_tree_model():
 
     tw = QTreeView(win)
     tw.setItemDelegate(EditorDelegate(tw))
-    tw.setItemDelegateForColumn(0, StyleOptionModifyingDelegate(tw, QStyleOptionViewItem.Right))
+    tw.setItemDelegateForColumn(0, StyleOptionModifyingDelegate(tw, decoration_position=QStyleOptionViewItem.Right))
     tw.setStyleSheet('''
     QTreeView::item { padding: 0 5px; }
     ''')

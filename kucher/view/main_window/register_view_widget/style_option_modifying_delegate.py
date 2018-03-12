@@ -23,10 +23,20 @@ class StyleOptionModifyingDelegate(QStyledItemDelegate):
     http://doc.qt.io/qt-5/qstyleoptionviewitem.html
     """
 
-    def __init__(self, parent: QObject, decoration_position: int):
+    def __init__(self,
+                 parent: QObject,
+                 *,
+                 decoration_position: int=None,
+                 decoration_alignment: int=None):
         super(StyleOptionModifyingDelegate, self).__init__(parent)
         self._decoration_position = decoration_position
+        self._decoration_alignment = decoration_alignment
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
-        option.decorationPosition = self._decoration_position
+        if self._decoration_position is not None:
+            option.decorationPosition = self._decoration_position
+
+        if self._decoration_alignment is not None:
+            option.decorationAlignment = self._decoration_alignment
+
         super(StyleOptionModifyingDelegate, self).paint(painter, option, index)
