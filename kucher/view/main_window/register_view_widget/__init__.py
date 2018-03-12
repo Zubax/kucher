@@ -16,8 +16,8 @@ import typing
 import asyncio
 import itertools
 from logging import getLogger
-from PyQt5.QtCore import Qt, QModelIndex, QItemSelectionModel
-from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QComboBox
+from PyQt5.QtCore import Qt, QModelIndex
+from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QComboBox, QAbstractItemView
 from view.widgets import WidgetBase
 from view.utils import gui_test, make_button, lay_out_vertically, lay_out_horizontally, show_error
 from view.device_model_representation import Register
@@ -45,13 +45,13 @@ class RegisterViewWidget(WidgetBase):
 
         self._reset_selected_button = make_button(self, 'Restore',
                                                   icon_name='clear-symbol',
-                                                  tool_tip='Reset the currently selected register to its default '
-                                                           'value. The restored value will be committed immediately.',
+                                                  tool_tip='Reset the currently selected registers to their default '
+                                                           'values. The restored values will be committed immediately.',
                                                   on_clicked=self._do_reset_selected)
 
         self._reload_selected_button = make_button(self, 'Fetch',
                                                    icon_name='process-1',
-                                                   tool_tip='Fetch the currently selected register only',
+                                                   tool_tip='Fetch the currently selected registers only',
                                                    on_clicked=self._do_reload_selected)
 
         self._reload_all_button = make_button(self, 'Fetch all',
@@ -64,6 +64,7 @@ class RegisterViewWidget(WidgetBase):
         self._tree.setVerticalScrollMode(QTreeView.ScrollPerPixel)
         self._tree.setHorizontalScrollMode(QTreeView.ScrollPerPixel)
         self._tree.setAnimated(True)
+        self._tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         # Register state icons should be shown on the right; on the left it looks quite ugly
         self._tree.setItemDelegateForColumn(
