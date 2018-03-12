@@ -43,7 +43,7 @@ class RegisterViewWidget(WidgetBase):
         # noinspection PyUnresolvedReferences
         self._visibility_selector.currentIndexChanged.connect(lambda _: self._on_visibility_changed())
 
-        self._reset_selected_button = make_button(self, 'Restore selected',
+        self._reset_selected_button = make_button(self, 'Restore default',
                                                   icon_name='clear-symbol',
                                                   tool_tip='Reset the currently selected registers to their default '
                                                            'values. The restored values will be committed immediately.',
