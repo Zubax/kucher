@@ -153,7 +153,7 @@ class EditorDelegate(QStyledItemDelegate):
         # So, we do NOT enforce size constraints on them. Check this out: if we were to ignore the geometry hint
         # from the framework, our widget would appear at the coordinates (0, 0), which happen to be at the
         # upper-left corner of the parent element. This looks even worse, but at least the widget's available
-        # space is constrained by its small parent cell. So the solution is to use the location data provided
+        # space is not constrained by its small parent cell. So the solution is to use the location data provided
         # by the framework, and disregard the size data, allowing the widget to resize itself in whichever way it
         # pleases. It would overlay the neighboring cells, but that is perfectly acceptable!
         if editor.minimumWidth() < rect.width():
