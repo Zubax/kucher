@@ -80,8 +80,8 @@ class Model(QAbstractItemModel):
 
         registers = list(sorted(registers, key=lambda r: r.name))
 
-        self._default_tree = _plant_tree(registers)
-        _logger.debug('Default tree:\n%s\n', self._default_tree.to_pretty_string())
+        self._tree = _plant_tree(registers)
+        _logger.debug('Register tree:\n%s\n', self._tree.to_pretty_string())
 
         # This map contains references from register name to the model index pointing to the zero column
         self._register_name_to_index_column_zero_map: typing.Dict[str, QModelIndex] = {}
@@ -325,7 +325,7 @@ class Model(QAbstractItemModel):
 
     def _resolve_parent_node(self, index: typing.Optional[QModelIndex]) -> '_Node':
         if index is None or not index.isValid():
-            return self._default_tree
+            return self._tree
         else:
             return self._unwrap(index)
 
