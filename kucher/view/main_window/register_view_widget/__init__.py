@@ -16,7 +16,7 @@ import typing
 import asyncio
 import itertools
 from logging import getLogger
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QModelIndex, QItemSelectionModel
 from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QComboBox
 from view.widgets import WidgetBase
 from view.utils import gui_test, make_button, lay_out_vertically, lay_out_horizontally, show_error
@@ -34,7 +34,7 @@ class RegisterViewWidget(WidgetBase):
         super(RegisterViewWidget, self).__init__(parent)
 
         self._registers = []
-        self._reload_all_task: asyncio.Task = None
+        self._reload_task: asyncio.Task = None
 
         self._visibility_selector = QComboBox(self)
         self._visibility_selector.addItem('All registers', lambda _: True)
@@ -43,9 +43,20 @@ class RegisterViewWidget(WidgetBase):
         # noinspection PyUnresolvedReferences
         self._visibility_selector.currentIndexChanged.connect(lambda _: self._on_visibility_changed())
 
+        self._reset_selected_button = make_button(self, 'Restore',
+                                                  icon_name='clear-symbol',
+                                                  tool_tip='Reset the currently selected register to its default '
+                                                           'value. The restored value will be committed immediately.',
+                                                  on_clicked=self._do_reset_selected)
+
+        self._reload_selected_button = make_button(self, 'Fetch',
+                                                   icon_name='process-1',
+                                                   tool_tip='Fetch the currently selected register only',
+                                                   on_clicked=self._do_reload_selected)
+
         self._reload_all_button = make_button(self, 'Fetch all',
                                               icon_name='process',
-                                              tool_tip='Reload all registers from the device',
+                                              tool_tip='Retrieve all registers from the device',
                                               on_clicked=self._do_reload_all)
 
         self._tree = QTreeView(self)
@@ -75,6 +86,8 @@ class RegisterViewWidget(WidgetBase):
         self.setLayout(
             lay_out_vertically(
                 lay_out_horizontally(
+                    self._reset_selected_button,
+                    self._reload_selected_button,
                     self._reload_all_button,
                     (None, 1),
                     self._visibility_selector,
@@ -94,22 +107,25 @@ class RegisterViewWidget(WidgetBase):
         # Cancel all operations that might be pending on the old model
         # noinspection PyBroadException
         try:
-            self._reload_all_task.cancel()
+            self._reload_task.cancel()
         except Exception:
             pass
         else:
             _logger.info('Reload-all task has been cancelled because the model is being replaced')
         finally:
-            self._reload_all_task = None
+            self._reload_task = None
 
         old_model = self._tree.model()
 
         # Configure the new model
-        filtered_registers = filter(register_visibility_predicate, self._registers)
+        filtered_registers = list(filter(register_visibility_predicate, self._registers))
         # It is important to set the Tree widget as the parent in order to let the widget take ownership
         new_model = Model(self._tree, filtered_registers)
         _logger.info('New model %r', new_model)
         self._tree.setModel(new_model)
+
+        # The selection model is implicitly replaced when we replace the model, so it has to be reconfigured
+        self._tree.selectionModel().selectionChanged.connect(lambda *_: self._on_selection_changed())
 
         # TODO: Something fishy is going on. Something keeps the old model alive when we're replacing it.
         #       We could call deleteLater() on it, but it seems dangerous, because if that something ever decided
@@ -129,18 +145,43 @@ class RegisterViewWidget(WidgetBase):
 
             self._tree.expand(index)
 
+        self._reset_selected_button.setEnabled(False)
+        self._reload_selected_button.setEnabled(False)
+        self._reload_all_button.setEnabled(len(filtered_registers) > 0)
+
     def _on_visibility_changed(self):
         self._replace_model(self._visibility_selector.currentData())
 
+    def _on_selection_changed(self):
+        selected = self._get_selected_registers()
+
+        self._reset_selected_button.setEnabled(any(map(lambda r: r.has_default_value, selected)))
+        self._reload_selected_button.setEnabled(len(selected) > 0)
+
+    def _do_reload_selected(self):
+        self._reload_specific(self._get_selected_registers())
+
+    def _do_reset_selected(self):
+        pass
+
     def _do_reload_all(self):
+        self._reload_specific(self._tree.model().registers)
+
+    def _reload_specific(self, registers: typing.List[Register]):
+        total_registers_reloaded = None
+
         def progress_callback(register: Register, current_register_index: int, total_registers: int):
+            nonlocal total_registers_reloaded
+            total_registers_reloaded = total_registers
             self.flash(f'Reading register {register.name!r} ({current_register_index + 1} of {total_registers})',
                        duration=3)
 
         async def executor():
             try:
+                _logger.info('Reloading registers: %r', [r.name for r in registers])
                 mod: Model = self._tree.model()
-                await mod.reload_all(progress_callback)
+                await mod.reload(registers=registers,
+                                 progress_callback=progress_callback)
             except asyncio.CancelledError:
                 self.flash(f'Register reload has been cancelled', duration=60)
                 raise
@@ -149,11 +190,25 @@ class RegisterViewWidget(WidgetBase):
                 show_error('Reload failed', 'Could not reload registers', repr(ex), self)
                 self.flash(f'Could not reload registers: {ex!r}')
             else:
-                self.flash(f'Registers have been reloaded', duration=10)
-            finally:
-                self._reload_all_task = None
+                self.flash(f'{total_registers_reloaded} registers have been reloaded', duration=10)
 
-        self._reload_all_task = asyncio.get_event_loop().create_task(executor())
+        # noinspection PyBroadException
+        try:
+            self._reload_task.cancel()
+        except Exception:
+            pass
+
+        self._reload_task = asyncio.get_event_loop().create_task(executor())
+
+    def _get_selected_registers(self) -> typing.List[Register]:
+        selected_indexes: typing.List[QModelIndex] = self._tree.selectedIndexes()
+        selected_registers = {}
+        for si in selected_indexes:
+            r = Model.get_register_from_index(si)
+            if r is not None:
+                selected_registers[r.name] = r
+
+        return list(selected_registers.values())
 
 
 # noinspection PyArgumentList

@@ -107,34 +107,44 @@ class Model(QAbstractItemModel):
         for r in self._registers:
             r.update_event.connect_weak(self, Model._on_register_update)
 
-    async def reload_all(self, progress_callback: typing.Optional[typing.Callable[[Register, int, int], None]]=None):
+    @property
+    def registers(self) -> typing.List[Register]:
+        return self._registers
+
+    async def reload(self,
+                     registers: typing.Iterable[Register],
+                     progress_callback: typing.Optional[typing.Callable[[Register, int, int], None]]=None):
         """
+        :param registers: which ones to reload
         :param progress_callback: (register: Register, current_register_index: int, total_registers: int) -> None
         """
+        registers = list(registers)
         progress_callback = progress_callback if progress_callback is not None else lambda *_: None
 
-        _logger.info('Reload-all: %r registers to go', len(self._registers))
+        _logger.info('Reload-all: %r registers to go', len(registers))
 
         # Mark all for update
-        for r in self._registers:
+        for r in registers:
             # Great Scott! One point twenty-one gigawatt of power!
             node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
             node.set_state(_Node.State.PENDING, 'Waiting for update...')
 
         # Actually update all
-        for index, r in enumerate(self._registers):
-            progress_callback(r, index, len(self._registers))
+        for index, r in enumerate(registers):
+            progress_callback(r, index, len(registers))
             node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
             # noinspection PyBroadException
             try:
                 await r.read_through()
             except asyncio.CancelledError:
+                for reg in registers:
+                    self._unwrap(self._register_name_to_index_column_zero_map[reg.name]).set_state(_Node.State.DEFAULT)
                 raise
             except Exception as ex:
-                _logger.exception('Reload-all progress: Could not read %r', r)
+                _logger.exception('Reload progress: Could not read %r', r)
                 node.set_state(node.State.ERROR, f'Update failed: {ex}')
             else:
-                _logger.info('Reload-all progress: Read %r', r)
+                _logger.info('Reload progress: Read %r', r)
                 node.set_state(node.State.DEFAULT)
 
     @staticmethod
