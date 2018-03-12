@@ -296,7 +296,7 @@ class Model(QAbstractItemModel):
                             _Node.State.PENDING: 'process',
                             _Node.State.SUCCESS: 'ok',
                             _Node.State.ERROR:   'error',
-                        }[node.state])
+                        }[node.state]).pixmap(self._icon_size, self._icon_size)
                     except KeyError:
                         pass
 
