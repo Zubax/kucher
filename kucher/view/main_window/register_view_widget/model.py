@@ -180,7 +180,7 @@ class Model(QAbstractItemModel):
                 assert isinstance(r, Register)
                 await r.write_through(value)
             except asyncio.CancelledError:
-                for reg in register_value_mapping.values():
+                for reg in register_value_mapping.keys():
                     self._unwrap(self._register_name_to_index_column_zero_map[reg.name]).set_state(_Node.State.DEFAULT)
                 raise
             except Exception as ex:
