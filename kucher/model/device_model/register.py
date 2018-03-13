@@ -49,6 +49,7 @@ class Register:
     None of the fields can be changed, except Value. When a new value is written, the class will
     attempt to coerce the new value into the required type. If a coercion cannot be performed or
     is ambiguous, an exception will be thrown.
+    Note that this type is hashable and can be used in mappings like dict.
     """
     ValueType = ValueType
     ValueKind = ValueKind
@@ -229,3 +230,12 @@ class Register:
         return f'Register({out})'
 
     __repr__ = __str__
+
+    def __hash__(self):
+        return hash(self.name + str(self.type_id))
+
+    def __eq__(self, other):
+        if isinstance(other, Register):
+            return (self.name == other.name) and (self.type_id == other.type_id)
+        else:
+            return NotImplemented
