@@ -13,7 +13,7 @@
 #
 
 import typing
-from PyQt5.QtWidgets import QMainWindow, QAction, QSizePolicy, QWIDGETSIZE_MAX
+from PyQt5.QtWidgets import QMainWindow, QAction, QSizePolicy, QWIDGETSIZE_MAX, QWidget
 from PyQt5.QtGui import QDesktopServices, QCloseEvent, QResizeEvent
 from PyQt5.QtCore import QUrl, QSize
 from ..utils import get_application_icon, get_icon, is_small_screen
@@ -128,7 +128,14 @@ class MainWindow(QMainWindow):
                                            'log',
                                            shown_by_default=not is_small_screen())
 
-        self._tool_window_manager.register(RegisterViewWidget,
+        def spawn_register_widget(parent: QWidget):
+            w = RegisterViewWidget(parent)
+            if self._registers is not None:
+                w.setup(self._registers)
+
+            return w
+
+        self._tool_window_manager.register(spawn_register_widget,
                                            'Registers',
                                            'data',
                                            shown_by_default=not is_small_screen())
