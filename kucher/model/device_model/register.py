@@ -14,10 +14,11 @@
 
 import math
 import time
+import numpy
 import typing
 import itertools
 from decimal import Decimal
-from popcop.standard.register import ValueType, Flags, ValueKind, VALUE_TYPE_TO_KIND
+from popcop.standard.register import ValueType, Flags, ValueKind, VALUE_TYPE_TO_KIND, SCALAR_VALUE_TYPE_TO_NUMPY_TYPE
 from utils import Event
 
 
@@ -181,6 +182,13 @@ class Register:
         v, dt, mt = await self._set_get_callback(None)
         self._sync(v, dt, mt)
         return v
+
+    @staticmethod
+    def get_numpy_type(type_id: ValueType) -> typing.Optional[numpy.dtype]:
+        try:
+            return SCALAR_VALUE_TYPE_TO_NUMPY_TYPE[type_id]
+        except KeyError:
+            return None
 
     def _sync(self,
               value:            RelaxedValueTypeAnnotation,

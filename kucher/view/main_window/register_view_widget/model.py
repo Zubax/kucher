@@ -26,6 +26,7 @@ from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QVariant, QRect
 from PyQt5.QtGui import QPalette, QFontMetrics, QFont, QPixmap, QPainter, QBitmap
 from view.utils import gui_test, get_monospace_font, get_icon
 from view.device_model_representation import Register
+from .textual import display_value
 
 
 _logger = getLogger(__name__)
@@ -400,55 +401,6 @@ class Model(QAbstractItemModel):
         _logger.info('Model instance %r is being deleted', self)
 
 
-def display_value(value, type_id: Register.ValueType) -> str:
-    """
-    Converts a register value to human-readable text.
-    """
-    def format_scalar(x) -> str:
-        if type_id == Register.ValueType.F32:
-            return '{:7g}'.format(x).strip()
-        elif type_id == Register.ValueType.F64:
-            return '{:16g}'.format(x).strip()
-        else:
-            return str(x)
-
-    if value is None:
-        return ''
-    elif isinstance(value, (str, bytes)):
-        return str(value)
-    else:
-        return ', '.join(map(format_scalar, value))
-
-
-def parse_value(text: str, type_id: Register.ValueType):
-    """
-    Inverse to @ref display_value().
-    """
-    def impl():
-        if type_id == Register.ValueType.EMPTY:
-            return None
-
-        if type_id == Register.ValueType.STRING:
-            return text
-
-        if type_id == Register.ValueType.UNSTRUCTURED:
-            return text.encode('latin1')
-
-        if str(Register.ValueType(type_id)).split('.')[-1][0].lower() == 'f':
-            native_type = float
-        else:
-            native_type = int
-
-        # Normalize the case and resolve some special values
-        normalized = text.lower().replace('true', '1').replace('false', '0')
-
-        return [native_type(x) for x in normalized.split(',')]
-
-    value = impl()
-    _logger.info('Value parser [with type %r]: %r --> %r', type_id, text, value)
-    return value
-
-
 @dataclasses.dataclass
 class _Node:
     """
@@ -550,20 +502,6 @@ def _draw_flags_icon(mutable: bool, persistent: bool, icon_size: int) -> QPixmap
     painter.drawPixmap(QRect(icon_size, 0, icon_size, icon_size),
                        persistence, icon_size_rect)
     return pixmap
-
-
-def _unittest_parse_value():
-    from pytest import approx
-    tid = Register.ValueType
-    assert parse_value('', tid.EMPTY) is None
-    assert parse_value('Arbitrary', tid.EMPTY) is None
-    assert parse_value('Arbitrary', tid.STRING) == 'Arbitrary'
-    assert parse_value('\x01\x02\x88\xFF', tid.UNSTRUCTURED) == bytes([1, 2, 0x88, 0xFF])
-    assert parse_value('0', tid.BOOLEAN) == [False]
-    assert parse_value('True, false', tid.BOOLEAN) == [True, False]
-    assert parse_value('true, False', tid.I8) == [1, 0]
-    assert parse_value('0.123, 56.45', tid.F32) == [approx(0.123), approx(56.45)]
-    assert parse_value('0.123, 56.45', tid.F64) == [approx(0.123), approx(56.45)]
 
 
 def _unittest_register_tree():

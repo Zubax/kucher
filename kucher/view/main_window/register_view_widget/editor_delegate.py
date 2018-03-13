@@ -14,13 +14,14 @@
 
 import math
 from logging import getLogger
-from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, QLineEdit, \
-    QComboBox
+from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, \
+    QPlainTextEdit, QComboBox
 from PyQt5.QtCore import Qt, QModelIndex, QObject, QAbstractItemModel, QRect, QSize
 from PyQt5.QtGui import QFontMetrics
 from view.utils import get_monospace_font, show_error, get_icon
 from view.device_model_representation import Register
-from .model import Model, display_value, parse_value
+from .model import Model
+from .textual import display_value, parse_value, MAX_LINE_LENGTH
 
 
 _logger = getLogger(__name__)
@@ -30,8 +31,8 @@ _MIN_PREFERRED_NUMBER_OF_STEPS_IN_FULL_RANGE = 1000
 
 # Displayed precision depends on the type of the floating point number
 _FLOATING_POINT_DECIMALS = {
-    Register.ValueType.F32: 6,
-    Register.ValueType.F64: 15,
+    Register.ValueType.F32: 7,
+    Register.ValueType.F64: 16,
 }
 
 
@@ -76,9 +77,9 @@ class EditorDelegate(QStyledItemDelegate):
             editor.setMinimum(minimum)
             editor.setMaximum(maximum)
         else:
-            editor = QLineEdit(parent)
+            editor = QPlainTextEdit(parent)
             editor.setFont(get_monospace_font())
-            editor.setMinimumWidth(QFontMetrics(editor.font()).width('9' * 50))
+            editor.setMinimumWidth(QFontMetrics(editor.font()).width('9' * (MAX_LINE_LENGTH + 10)))
 
         editor.setFont(Model.get_font())
 
@@ -101,9 +102,9 @@ class EditorDelegate(QStyledItemDelegate):
         elif isinstance(editor, (QDoubleSpinBox, QSpinBox)):
             assert self._can_use_spinbox(register)
             editor.setValue(register.cached_value[0])
-        elif isinstance(editor, QLineEdit):
+        elif isinstance(editor, QPlainTextEdit):
             assert not self._can_use_spinbox(register)
-            editor.setText(display_value(register.cached_value, register.type_id))
+            editor.setPlainText(display_value(register.cached_value, register.type_id))
         else:
             raise TypeError(f'Unexpected editor: {editor}')
 
@@ -126,9 +127,9 @@ class EditorDelegate(QStyledItemDelegate):
             assert self._can_use_spinbox(register)
             editor.interpretText()                          # Beware!!1
             value = editor.value()
-        elif isinstance(editor, QLineEdit):
+        elif isinstance(editor, QPlainTextEdit):
             assert not self._can_use_spinbox(register)
-            text = editor.text()
+            text = editor.toPlainText()
             try:
                 value = parse_value(text, register.type_id)
             except Exception as ex:
