@@ -44,8 +44,8 @@ class Model(QAbstractItemModel):
 
     _COLUMNS = [
         'Tree',
-        'Type',
         'Value',
+        'Type',
         'Default',
         'Min',
         'Max',
@@ -56,8 +56,8 @@ class Model(QAbstractItemModel):
 
     class ColumnIndices(enum.IntEnum):
         NAME             = 0
-        TYPE             = 1
-        VALUE            = 2
+        VALUE            = 1
+        TYPE             = 2
         DEFAULT          = 3
         MIN              = 4
         MAX              = 5
@@ -325,13 +325,6 @@ class Model(QAbstractItemModel):
                     return palette.color(QPalette.LinkVisited)
             else:
                 return palette.color(QPalette.WindowText)
-
-        if role == Qt.BackgroundRole:
-            palette = QPalette()
-            if column in (0, column_indices.VALUE, len(self._COLUMNS) - 1):
-                return palette.color(QPalette.Base)
-            else:
-                return palette.color(QPalette.AlternateBase)
 
         if role == Qt.FontRole:
             if node.state == node.State.PENDING:

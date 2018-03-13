@@ -79,6 +79,7 @@ class RegisterViewWidget(WidgetBase):
         self._tree.setHorizontalScrollMode(QTreeView.ScrollPerPixel)
         self._tree.setAnimated(True)
         self._tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self._tree.setAlternatingRowColors(True)
 
         # Register state icons should be shown on the right; on the left it looks quite ugly
         self._tree.setItemDelegateForColumn(
