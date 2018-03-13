@@ -184,8 +184,10 @@ class EditorDelegate(QStyledItemDelegate):
         # because that may expose the overlaid value we're editing, which looks bad (hence the limiting).
         x_offset = max(0, editor_size.width() - rect.width()) // 2
         y_offset = max(0, editor_size.height() - rect.height()) // 2
-        editor.move(rect.x() - x_offset,
-                    rect.y() - y_offset)
+        # We also have to make sure that we don't accidentally move it into negative coordinates!
+        # That would hide part of the widget, unacceptable
+        editor.move(max(0, rect.x() - x_offset),
+                    max(0, rect.y() - y_offset))
 
     @staticmethod
     def _get_register_from_index(index: QModelIndex) -> Register:
