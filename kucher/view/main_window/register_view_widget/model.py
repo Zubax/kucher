@@ -127,7 +127,7 @@ class Model(QAbstractItemModel):
         registers = list(registers)
         progress_callback = progress_callback if progress_callback is not None else lambda *_: None
 
-        _logger.info('Reload-all: %r registers to go', len(registers))
+        _logger.info('Reload: %r registers to go', len(registers))
 
         # Mark all for update
         for r in registers:
@@ -141,6 +141,7 @@ class Model(QAbstractItemModel):
             node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
             # noinspection PyBroadException
             try:
+                assert isinstance(r, Register)
                 await r.read_through()
             except asyncio.CancelledError:
                 for reg in registers:
@@ -151,6 +152,42 @@ class Model(QAbstractItemModel):
                 node.set_state(node.State.ERROR, f'Update failed: {ex}')
             else:
                 _logger.info('Reload progress: Read %r', r)
+                node.set_state(node.State.DEFAULT)
+
+    async def write(self,
+                    register_value_mapping: typing.Dict[Register, typing.Any],
+                    progress_callback: typing.Optional[typing.Callable[[Register, int, int], None]]=None):
+        """
+        :param register_value_mapping: keys are registers, values are what to assign
+        :param progress_callback: (register: Register, current_register_index: int, total_registers: int) -> None
+        """
+        progress_callback = progress_callback if progress_callback is not None else lambda *_: None
+
+        _logger.info('Write: %r registers to go', len(register_value_mapping))
+
+        # Mark all for write
+        for r, v in register_value_mapping.items():
+            # Great Scott! One point twenty-one gigawatt of power!
+            node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
+            node.set_state(_Node.State.PENDING, f'Waiting to write {v!r}...')
+
+        # Actually write all
+        for index, (r, value) in enumerate(register_value_mapping.items()):
+            progress_callback(r, index, len(register_value_mapping))
+            node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
+            # noinspection PyBroadException
+            try:
+                assert isinstance(r, Register)
+                await r.write_through(value)
+            except asyncio.CancelledError:
+                for reg in register_value_mapping.values():
+                    self._unwrap(self._register_name_to_index_column_zero_map[reg.name]).set_state(_Node.State.DEFAULT)
+                raise
+            except Exception as ex:
+                _logger.exception('Write progress: Could not write %r', r)
+                node.set_state(node.State.ERROR, f'Write failed: {ex}')
+            else:
+                _logger.info('Write progress: Wrote %r with %r', r, value)
                 node.set_state(node.State.DEFAULT)
 
     @staticmethod

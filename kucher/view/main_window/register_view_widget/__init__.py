@@ -34,7 +34,7 @@ class RegisterViewWidget(WidgetBase):
         super(RegisterViewWidget, self).__init__(parent)
 
         self._registers = []
-        self._reload_task: asyncio.Task = None
+        self._running_task: asyncio.Task = None
 
         self._visibility_selector = QComboBox(self)
         self._visibility_selector.addItem('Show all registers', lambda _: True)
@@ -123,13 +123,13 @@ class RegisterViewWidget(WidgetBase):
         # Cancel all operations that might be pending on the old model
         # noinspection PyBroadException
         try:
-            self._reload_task.cancel()
+            self._running_task.cancel()
         except Exception:
             pass
         else:
             _logger.info('Reload-all task has been cancelled because the model is being replaced')
         finally:
-            self._reload_task = None
+            self._running_task = None
 
         old_model = self._tree.model()
 
@@ -178,7 +178,12 @@ class RegisterViewWidget(WidgetBase):
         self._reload_specific(self._get_selected_registers())
 
     def _do_reset_selected(self):
-        pass
+        rv = {}
+        for r in self._get_selected_registers():
+            if r.has_default_value:
+                rv[r] = r.default_value
+
+        self._write_specific(rv)
 
     def _do_reload_all(self):
         self._reload_specific(self._tree.model().registers)
@@ -210,21 +215,54 @@ class RegisterViewWidget(WidgetBase):
 
         # noinspection PyBroadException
         try:
-            self._reload_task.cancel()
+            self._running_task.cancel()
         except Exception:
             pass
 
-        self._reload_task = asyncio.get_event_loop().create_task(executor())
+        self._running_task = asyncio.get_event_loop().create_task(executor())
+
+    def _write_specific(self, register_value_mapping: typing.Dict[Register, typing.Any]):
+        total_registers_assigned = None
+
+        def progress_callback(register: Register, current_register_index: int, total_registers: int):
+            nonlocal total_registers_assigned
+            total_registers_assigned = total_registers
+            self.flash(f'Writing register {register.name!r} ({current_register_index + 1} of {total_registers})',
+                       duration=3)
+
+        async def executor():
+            try:
+                _logger.info('Writing registers: %r', [r.name for r in register_value_mapping.keys()])
+                mod: Model = self._tree.model()
+                await mod.write(register_value_mapping=register_value_mapping,
+                                progress_callback=progress_callback)
+            except asyncio.CancelledError:
+                self.flash(f'Register write has been cancelled', duration=60)
+                raise
+            except Exception as ex:
+                _logger.exception('Register write failed')
+                show_error('Write failed', 'Could not reload registers', repr(ex), self)
+                self.flash(f'Could not write registers: {ex!r}')
+            else:
+                self.flash(f'{total_registers_assigned} registers have been written', duration=10)
+
+        # noinspection PyBroadException
+        try:
+            self._running_task.cancel()
+        except Exception:
+            pass
+
+        self._running_task = asyncio.get_event_loop().create_task(executor())
 
     def _get_selected_registers(self) -> typing.List[Register]:
         selected_indexes: typing.List[QModelIndex] = self._tree.selectedIndexes()
-        selected_registers = {}
+        selected_registers = set()
         for si in selected_indexes:
             r = Model.get_register_from_index(si)
             if r is not None:
-                selected_registers[r.name] = r
+                selected_registers.add(r)
 
-        return list(selected_registers.values())
+        return list(selected_registers)
 
 
 # noinspection PyArgumentList
