@@ -13,6 +13,7 @@
 #
 
 import math
+import numpy
 from logging import getLogger
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, \
     QPlainTextEdit, QComboBox
@@ -28,12 +29,6 @@ _logger = getLogger(__name__)
 
 # Preferred minimal number of steps between minimum and maximum values for real valued registers when using arrows
 _MIN_PREFERRED_NUMBER_OF_STEPS_IN_FULL_RANGE = 1000
-
-# Displayed precision depends on the type of the floating point number
-_FLOATING_POINT_DECIMALS = {
-    Register.ValueType.F32: 7,
-    Register.ValueType.F64: 16,
-}
 
 
 class EditorDelegate(QStyledItemDelegate):
@@ -63,14 +58,20 @@ class EditorDelegate(QStyledItemDelegate):
         elif self._can_use_spinbox(register):
             minimum, maximum = register.min_value[0], register.max_value[0]
 
-            if register.type_id in _FLOATING_POINT_DECIMALS:
+            try:
+                dtype = Register.get_numpy_type(register.type_id)
+                float_decimals = int(abs(math.log10(numpy.finfo(dtype).resolution)) + 0.5) + 1
+            except ValueError:
+                float_decimals = None
+
+            if float_decimals is not None:
                 step = (maximum - minimum) / _MIN_PREFERRED_NUMBER_OF_STEPS_IN_FULL_RANGE
                 step = 10 ** round(math.log10(step))
                 step = min(1.0, step)                       # Step can't be greater than one for UX reasons
                 _logger.info('Constructing QDoubleSpinBox with single step set to %r', step)
                 editor = QDoubleSpinBox(parent)
                 editor.setSingleStep(step)
-                editor.setDecimals(_FLOATING_POINT_DECIMALS[register.type_id])
+                editor.setDecimals(float_decimals)
             else:
                 editor = QSpinBox(parent)
 
