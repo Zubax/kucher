@@ -127,13 +127,25 @@ class Model(QAbstractItemModel):
         registers = list(registers)
         progress_callback = progress_callback if progress_callback is not None else lambda *_: None
 
-        _logger.info('Reload: %r registers to go', len(registers))
+        # If we're updating a lot of registers, it is computationally cheaper to invalidate the whole model at once
+        invalidate_all = len(registers) > (len(self._registers) / 2)
+
+        _logger.info('Reload: %r registers to go; invalidation policy: invalidate_all=%r',
+                     len(registers), invalidate_all)
+
+        if invalidate_all:
+            self.beginResetModel()
 
         # Mark all for update
         for r in registers:
             # Great Scott! One point twenty-one gigawatt of power!
             node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
             node.set_state(_Node.State.PENDING, 'Waiting for update...')
+            if not invalidate_all:
+                self._invalidate(r)
+
+        if invalidate_all:
+            self.endResetModel()
 
         # Actually update all
         for index, r in enumerate(registers):
@@ -170,6 +182,10 @@ class Model(QAbstractItemModel):
             # Great Scott! One point twenty-one gigawatt of power!
             node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
             node.set_state(_Node.State.PENDING, f'Waiting to write {v!r}...')
+            # Usually we don't write a lot of registers simultaneously, so it should be acceptable to invalidate
+            # them one by one. The benefit is that we only invalidate what should be invalidated, leaving the rest
+            # unchanged.
+            self._invalidate(r)
 
         # Actually write all
         for index, (r, value) in enumerate(register_value_mapping.items()):

@@ -243,8 +243,9 @@ class RegisterViewWidget(WidgetBase):
             r = Model.get_register_from_index(si)
             if r is not None:
                 selected_registers.add(r)
-
-        return list(selected_registers)
+        # Beware that sets are not sorted, this may lead to weird user experience when watching the registers
+        # reload in a funny order.
+        return list(sorted(selected_registers, key=lambda r: r.name))
 
     def _cancel_task(self):
         # noinspection PyBroadException
