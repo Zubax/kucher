@@ -121,15 +121,7 @@ class RegisterViewWidget(WidgetBase):
 
     def _replace_model(self, register_visibility_predicate: typing.Callable[[Register], bool]):
         # Cancel all operations that might be pending on the old model
-        # noinspection PyBroadException
-        try:
-            self._running_task.cancel()
-        except Exception:
-            pass
-        else:
-            _logger.info('Reload-all task has been cancelled because the model is being replaced')
-        finally:
-            self._running_task = None
+        self._cancel_task()
 
         old_model = self._tree.model()
 
@@ -213,12 +205,7 @@ class RegisterViewWidget(WidgetBase):
             else:
                 self.flash(f'{total_registers_reloaded} registers have been reloaded', duration=10)
 
-        # noinspection PyBroadException
-        try:
-            self._running_task.cancel()
-        except Exception:
-            pass
-
+        self._cancel_task()
         self._running_task = asyncio.get_event_loop().create_task(executor())
 
     def _write_specific(self, register_value_mapping: typing.Dict[Register, typing.Any]):
@@ -246,12 +233,7 @@ class RegisterViewWidget(WidgetBase):
             else:
                 self.flash(f'{total_registers_assigned} registers have been written', duration=10)
 
-        # noinspection PyBroadException
-        try:
-            self._running_task.cancel()
-        except Exception:
-            pass
-
+        self._cancel_task()
         self._running_task = asyncio.get_event_loop().create_task(executor())
 
     def _get_selected_registers(self) -> typing.List[Register]:
@@ -263,6 +245,17 @@ class RegisterViewWidget(WidgetBase):
                 selected_registers.add(r)
 
         return list(selected_registers)
+
+    def _cancel_task(self):
+        # noinspection PyBroadException
+        try:
+            self._running_task.cancel()
+        except Exception:
+            pass
+        else:
+            _logger.info('A running task had to be cancelled: %r', self._running_task)
+        finally:
+            self._running_task = None
 
 
 # noinspection PyArgumentList
