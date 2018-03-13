@@ -244,4 +244,6 @@ def get_mock_registers():
              mutable=False, persistent=False, ts_device=168.839961416, ts_mono=11474.097399175),
         mock(name='z.synthesized', type_id=ValueType.F32, cached=[0.0, 0.0], default=None, min=[-1.0, -2.0],
              max=[32.112, 450000.25], mutable=True, persistent=False, ts_device=168.839961416, ts_mono=11474.097399175),
+        mock(name='z.long', type_id=ValueType.F64, cached=list(range(16)), default=None, min=list(range(16)),
+             max=list(range(16)), mutable=True, persistent=False, ts_device=168.839961416, ts_mono=11474.097399175),
     ]

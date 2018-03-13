@@ -53,8 +53,8 @@ class EditorDelegate(QStyledItemDelegate):
         if self._can_use_bool_switch(register):
             editor = QComboBox(parent)
             editor.setEditable(False)
-            editor.addItem(get_icon('cancel'), 'False')
-            editor.addItem(get_icon('ok'), 'True')
+            editor.addItem(get_icon('cancel'), 'False (0)')
+            editor.addItem(get_icon('ok'), 'True (1)')
         elif self._can_use_spinbox(register):
             minimum, maximum = register.min_value[0], register.max_value[0]
 
@@ -66,7 +66,11 @@ class EditorDelegate(QStyledItemDelegate):
 
             if float_decimals is not None:
                 step = (maximum - minimum) / _MIN_PREFERRED_NUMBER_OF_STEPS_IN_FULL_RANGE
-                step = 10 ** round(math.log10(step))
+                try:
+                    step = 10 ** round(math.log10(step))
+                except ValueError:
+                    step = 1        # Math domain error corner case
+
                 step = min(1.0, step)                       # Step can't be greater than one for UX reasons
                 _logger.info('Constructing QDoubleSpinBox with single step set to %r', step)
                 editor = QDoubleSpinBox(parent)
@@ -80,7 +84,7 @@ class EditorDelegate(QStyledItemDelegate):
         else:
             editor = QPlainTextEdit(parent)
             editor.setFont(get_monospace_font())
-            editor.setMinimumWidth(QFontMetrics(editor.font()).width('9' * (MAX_LINE_LENGTH + 10)))
+            editor.setMinimumWidth(QFontMetrics(editor.font()).width('9' * (MAX_LINE_LENGTH + 5)))
 
         editor.setFont(Model.get_font())
 
@@ -202,14 +206,31 @@ class EditorDelegate(QStyledItemDelegate):
 
     @staticmethod
     def _can_use_spinbox(register: Register) -> bool:
+        # Observe that we also check the length of min and max.
+        # If the register is variable size, the user may set it to a single scalar using the vector editor,
+        # and the next time it tries to edit it we still have to show the vector editor rather than scalar.
+        # Hence we check the sizes of the min and max to prevent the user from being stuck with the scalar editor.
         return \
             register.kind == Register.ValueKind.ARRAY_OF_SCALARS and \
+            register.has_min_and_max_values and \
             len(register.cached_value) == 1 and \
-            register.has_min_and_max_values
+            len(register.min_value) == 1 and \
+            len(register.max_value) == 1
 
     @staticmethod
     def _can_use_bool_switch(register: Register) -> bool:
-        # No need to check for min and max, they are evident for booleans
-        return \
-            register.type_id == Register.ValueType.BOOLEAN and \
-            len(register.cached_value) == 1
+        # We don't require min and max because they are evident for booleans
+        if register.type_id != Register.ValueType.BOOLEAN:
+            return False
+
+        if len(register.cached_value) != 1:
+            return False
+
+        # Check the dimensions of default and min/max if available due to the above explained considerations
+        if register.has_default_value and len(register.default_value) != 1:
+            return False
+
+        if register.has_min_and_max_values and (len(register.min_value) != 1 or len(register.max_value) != 1):
+            return False
+
+        return True
