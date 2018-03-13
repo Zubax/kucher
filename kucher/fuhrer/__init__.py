@@ -49,7 +49,8 @@ class Fuhrer:
 
     def _on_connection_status_change(self, device_info_or_error: typing.Union[DeviceInfoView, str, Exception]):
         if isinstance(device_info_or_error, DeviceInfoView):
-            self._main_window.on_connection_established(_make_view_basic_device_info(device_info_or_error))
+            self._main_window.on_connection_established(_make_view_basic_device_info(device_info_or_error),
+                                                        list(self._device_model.registers.values()))
         elif isinstance(device_info_or_error, (str, Exception)):
             reason = str(device_info_or_error) or repr(device_info_or_error)    # Some exceptions may not contain text
             self._main_window.on_connection_loss(reason)

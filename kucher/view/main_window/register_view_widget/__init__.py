@@ -69,6 +69,10 @@ class RegisterViewWidget(WidgetBase):
                                                 tool_tip='Collapse all namespaces',
                                                 on_clicked=lambda: self._tree.collapseAll())
 
+        self._reset_selected_button.setEnabled(False)
+        self._reload_selected_button.setEnabled(False)
+        self._reload_all_button.setEnabled(False)
+
         self._tree = QTreeView(self)
         self._tree.setItemDelegate(EditorDelegate(self._tree))
         self._tree.setVerticalScrollMode(QTreeView.ScrollPerPixel)
@@ -113,9 +117,9 @@ class RegisterViewWidget(WidgetBase):
         )
 
     def reset(self):
-        self._replace_model(lambda _: False)
+        self.setup([])
 
-    def set_registers(self, registers: typing.Iterable[Register]):
+    def setup(self, registers: typing.Iterable[Register]):
         self._registers = list(registers)
         self._on_visibility_changed()
 
@@ -270,7 +274,7 @@ def _unittest_register_tree_widget():
     win = QMainWindow()
 
     tw = RegisterViewWidget(win)
-    tw.set_registers(get_mock_registers())
+    tw.setup(get_mock_registers())
 
     win.setCentralWidget(tw)
     win.show()

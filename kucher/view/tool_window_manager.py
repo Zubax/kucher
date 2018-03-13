@@ -63,8 +63,8 @@ class ToolWindowManager:
         # Set up the appearance
         self._parent_window.setTabPosition(Qt.TopDockWidgetArea,    QTabWidget.North)
         self._parent_window.setTabPosition(Qt.BottomDockWidgetArea, QTabWidget.South)
-        self._parent_window.setTabPosition(Qt.LeftDockWidgetArea,   QTabWidget.West)
-        self._parent_window.setTabPosition(Qt.RightDockWidgetArea,  QTabWidget.East)
+        self._parent_window.setTabPosition(Qt.LeftDockWidgetArea,   QTabWidget.South)
+        self._parent_window.setTabPosition(Qt.RightDockWidgetArea,  QTabWidget.South)
 
         # Now, most screens are wide but not very tall; we need to optimize the layout for that
         # More info (this is for Qt4 but works for Qt5 as well): https://doc.qt.io/archives/4.6/qt4-mainwindow.html

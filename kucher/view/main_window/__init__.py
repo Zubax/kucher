@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import QMainWindow, QAction, QSizePolicy, QWIDGETSIZE_MAX
 from PyQt5.QtGui import QDesktopServices, QCloseEvent, QResizeEvent
 from PyQt5.QtCore import QUrl, QSize
 from ..utils import get_application_icon, get_icon, is_small_screen
-from ..device_model_representation import GeneralStatusView, TaskStatisticsView, BasicDeviceInfo, Commander
+from ..device_model_representation import GeneralStatusView, TaskStatisticsView, BasicDeviceInfo, Commander, Register
 from ..tool_window_manager import ToolWindowManager, ToolWindowLocation, ToolWindowGroupingCondition
 from data_dir import LOG_DIR
 
@@ -25,6 +25,7 @@ from .device_management_widget import ConnectionRequestCallback, DisconnectionRe
 from .main_widget import MainWidget
 from .task_statistics_widget import TaskStatisticsWidget
 from .log_widget import LogWidget
+from .register_view_widget import RegisterViewWidget
 
 
 _WINDOW_TITLE_PREFIX = 'Zubax Kucher'
@@ -50,6 +51,8 @@ class MainWindow(QMainWindow):
         self._on_close = on_close
         self._tool_window_manager = ToolWindowManager(self)
 
+        self._registers: typing.List[Register] = None
+
         self._main_widget = MainWidget(self,
                                        on_connection_request=on_connection_request,
                                        on_disconnection_request=on_disconnection_request,
@@ -69,10 +72,16 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self._main_widget)
 
-    def on_connection_established(self, device_info: BasicDeviceInfo):
+    def on_connection_established(self,
+                                  device_info: BasicDeviceInfo,
+                                  registers: typing.List[Register]):
         self._main_widget.on_connection_established(device_info)
         for w in self._tool_window_manager.select_widgets(LogWidget):
             w.on_device_connected(device_info)
+
+        self._registers = registers
+        for w in self._tool_window_manager.select_widgets(RegisterViewWidget):
+            w.setup(self._registers)
 
         self.setWindowTitle(f'{_WINDOW_TITLE_PREFIX} - #{device_info.globally_unique_id.hex()}')
 
@@ -80,6 +89,10 @@ class MainWindow(QMainWindow):
         self._main_widget.on_connection_loss(reason)
         for w in self._tool_window_manager.select_widgets(LogWidget):
             w.on_device_disconnected(reason)
+
+        self._registers = None
+        for w in self._tool_window_manager.select_widgets(RegisterViewWidget):
+            w.reset()
 
         self.setWindowTitle(_WINDOW_TITLE_PREFIX)
 
@@ -101,6 +114,10 @@ class MainWindow(QMainWindow):
                                                        group_when=ToolWindowGroupingCondition.ALWAYS,
                                                        location=ToolWindowLocation.BOTTOM)
 
+        self._tool_window_manager.add_arrangement_rule(apply_to=[RegisterViewWidget],
+                                                       group_when=ToolWindowGroupingCondition.ALWAYS,
+                                                       location=ToolWindowLocation.RIGHT)
+
         self._tool_window_manager.register(lambda parent: TaskStatisticsWidget(parent, on_task_statistics_request),
                                            'Task statistics',
                                            'spreadsheet',
@@ -109,6 +126,11 @@ class MainWindow(QMainWindow):
         self._tool_window_manager.register(LogWidget,
                                            'Device log',
                                            'log',
+                                           shown_by_default=not is_small_screen())
+
+        self._tool_window_manager.register(RegisterViewWidget,
+                                           'Registers',
+                                           'data',
                                            shown_by_default=not is_small_screen())
 
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
