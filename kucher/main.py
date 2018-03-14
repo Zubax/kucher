@@ -15,6 +15,7 @@
 
 import os
 import sys
+import atexit
 import logging
 import datetime
 
@@ -88,10 +89,13 @@ def main():
         except ImportError:
             import profile
 
+        def save_profile():
+            prof.disable()
+            prof.dump_stats(log_file_name.replace('.log', '.pstat'))
+
         prof = profile.Profile()
+        atexit.register(save_profile)
         prof.enable()
-    else:
-        prof = None
 
     if '--test' in sys.argv:
         if not os.environ.get('PYTHONASYNCIODEBUG'):
@@ -117,10 +121,6 @@ def main():
     with loop:
         ctrl = Fuhrer()
         loop.run_until_complete(ctrl.run())
-
-    if prof is not None:
-        prof.disable()
-        prof.dump_stats(log_file_name.replace('.log', '.pstat'))
 
 
 if __name__ == '__main__':

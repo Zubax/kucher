@@ -246,7 +246,6 @@ class Model(QAbstractItemModel):
     def data(self, index: QModelIndex, role: int=None):
         row, column = index.row(), index.column()
         node = self._unwrap(index)
-        assert node.index_in_parent == row  # These two represent the same concept at different levels of abstraction
 
         column_indices = self.ColumnIndices
 
@@ -481,7 +480,10 @@ class _Node:
 
     @property
     def index_in_parent(self) -> int:
-        """Computes the index of the current node in its parent. If it has no parent, returns zero."""
+        """
+        Computes the index of the current node in its parent. If it has no parent, returns zero.
+        WARNING: This operation is extremely slow
+        """
         if self.parent is None:
             return 0
 
