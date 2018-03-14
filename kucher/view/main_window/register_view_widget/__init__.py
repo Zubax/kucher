@@ -17,18 +17,18 @@ import asyncio
 import itertools
 from logging import getLogger
 from PyQt5.QtCore import Qt, QModelIndex
-from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QComboBox, QAbstractItemView, \
-    QLabel, QShortcut
+    QLabel, QAction
 from view.widgets import WidgetBase
-from view.utils import gui_test, make_button, lay_out_vertically, lay_out_horizontally, show_error
+from view.utils import gui_test, make_button, lay_out_vertically, lay_out_horizontally, show_error, get_icon
 from view.device_model_representation import Register
 from .model import Model
 from .style_option_modifying_delegate import StyleOptionModifyingDelegate
 from .editor_delegate import EditorDelegate
 
 
-READ_SELECTED_SHORTCUT = 'Ctrl+R'      # Like Reload
+READ_SELECTED_SHORTCUT = 'Ctrl+R'       # Like Reload
+RESET_SELECTED_SHORTCUT = 'Ctrl+D'      # Like Delete
 
 
 _logger = getLogger(__name__)
@@ -50,10 +50,10 @@ class RegisterViewWidget(WidgetBase):
 
         self._reset_selected_button = make_button(self, 'Reset selected',
                                                   icon_name='clear-symbol',
-                                                  tool_tip='Reset the currently selected registers to their default '
-                                                           'values. The restored values will be committed '
-                                                           'immediately. This function is available only if a '
-                                                           'default value is defined.',
+                                                  tool_tip=f'Reset the currently selected registers to their default '
+                                                           f'values. The restored values will be committed '
+                                                           f'immediately. This function is available only if a '
+                                                           f'default value is defined. [{RESET_SELECTED_SHORTCUT}]',
                                                   on_clicked=self._do_reset_selected)
 
         self._read_selected_button = make_button(self, 'Read selected',
@@ -77,14 +77,8 @@ class RegisterViewWidget(WidgetBase):
                                                 tool_tip='Collapse all namespaces',
                                                 on_clicked=lambda: self._tree.collapseAll())
 
-        self._read_selected_shortcut = QShortcut(QKeySequence(READ_SELECTED_SHORTCUT), self)
-        self._read_selected_shortcut.setAutoRepeat(False)
-        # noinspection PyUnresolvedReferences
-        self._read_selected_shortcut.activated.connect(self._do_read_selected)
-
         self._status_display = QLabel(self)
         self._status_display.setWordWrap(True)
-        self._status_display.setText(f'Press {READ_SELECTED_SHORTCUT} to read selected registers')
 
         self._reset_selected_button.setEnabled(False)
         self._read_selected_button.setEnabled(False)
@@ -97,6 +91,25 @@ class RegisterViewWidget(WidgetBase):
         self._tree.setAnimated(True)
         self._tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self._tree.setAlternatingRowColors(True)
+        self._tree.setContextMenuPolicy(Qt.ActionsContextMenu)
+
+        def add_action(callback: typing.Callable[[], None],
+                       icon_name: str,
+                       name: str,
+                       shortcut: typing.Optional[str]=None):
+            action = QAction(get_icon(icon_name), name, self)
+            # noinspection PyUnresolvedReferences
+            action.triggered.connect(callback)
+            if shortcut:
+                action.setShortcut(shortcut)
+                action.setShortcutVisibleInContextMenu(True)
+                action.setAutoRepeat(False)
+
+            self._tree.addAction(action)
+
+        add_action(self._do_read_all, 'process-plus', 'Read all registers')
+        add_action(self._do_read_selected, 'process', 'Read selected registers', READ_SELECTED_SHORTCUT)
+        add_action(self._do_reset_selected, 'clear-symbol', 'Reset selected to default', RESET_SELECTED_SHORTCUT)
 
         # It doesn't seem to be explicitly documented, but it seems to be necessary to select either top or bottom
         # decoration position in order to be able to use center alignment. Left or right positions do not work here.
@@ -268,7 +281,7 @@ class RegisterViewWidget(WidgetBase):
                 selected_registers.add(r)
         # Beware that sets are not sorted, this may lead to weird user experience when watching the registers
         # read in a funny order.
-        return list(sorted(selected_registers, key=lambda r: r.name))
+        return list(sorted(selected_registers, key=lambda x: x.name))
 
     def _cancel_task(self):
         # noinspection PyBroadException
