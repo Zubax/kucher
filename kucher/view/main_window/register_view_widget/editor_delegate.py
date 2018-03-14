@@ -14,6 +14,7 @@
 
 import math
 import numpy
+import typing
 from logging import getLogger
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, \
     QPlainTextEdit, QComboBox
@@ -36,8 +37,11 @@ class EditorDelegate(QStyledItemDelegate):
     Factory and manager of editing widgets for use with the Register view table.
     """
 
-    def __init__(self, parent: QObject):
+    def __init__(self,
+                 parent: QObject,
+                 message_display_callback: typing.Callable[[str], None]):
         super(EditorDelegate, self).__init__(parent)
+        self._message_display_callback = message_display_callback
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QWidget:
         """
@@ -88,11 +92,7 @@ class EditorDelegate(QStyledItemDelegate):
 
         editor.setFont(Model.get_font())
 
-        # noinspection PyBroadException
-        try:
-            parent.window().statusBar().showMessage('Press Esc to cancel editing', 5000)
-        except Exception:
-            _logger.exception('Could not display editing hint')
+        self._message_display_callback('Press Esc to cancel editing')
 
         return editor
 

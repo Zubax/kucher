@@ -116,35 +116,24 @@ class Model(QAbstractItemModel):
     def registers(self) -> typing.List[Register]:
         return self._registers
 
-    async def reload(self,
-                     registers: typing.Iterable[Register],
-                     progress_callback: typing.Optional[typing.Callable[[Register, int, int], None]]=None):
+    async def read(self,
+                   registers: typing.Iterable[Register],
+                   progress_callback: typing.Optional[typing.Callable[[Register, int, int], None]]=None):
         """
-        :param registers: which ones to reload
+        :param registers: which ones to read
         :param progress_callback: (register: Register, current_register_index: int, total_registers: int) -> None
         """
         registers = list(registers)
         progress_callback = progress_callback if progress_callback is not None else lambda *_: None
 
-        # If we're updating a lot of registers, it is computationally cheaper to invalidate the whole model at once
-        invalidate_all = len(registers) > (len(self._registers) / 2)
-
-        _logger.info('Reload: %r registers to go; invalidation policy: invalidate_all=%r',
-                     len(registers), invalidate_all)
-
-        if invalidate_all:
-            self.beginResetModel()
+        _logger.info('Read: %r registers to go', len(registers))
 
         # Mark all for update
         for r in registers:
             # Great Scott! One point twenty-one gigawatt of power!
             node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
             node.set_state(_Node.State.PENDING, 'Waiting for update...')
-            if not invalidate_all:
-                self._invalidate(r)
-
-        if invalidate_all:
-            self.endResetModel()
+            self._invalidate(r)
 
         # Actually update all
         for index, r in enumerate(registers):
@@ -159,10 +148,10 @@ class Model(QAbstractItemModel):
                     self._unwrap(self._register_name_to_index_column_zero_map[reg.name]).set_state(_Node.State.DEFAULT)
                 raise
             except Exception as ex:
-                _logger.exception('Reload progress: Could not read %r', r)
+                _logger.exception('Read progress: Could not read %r', r)
                 node.set_state(node.State.ERROR, f'Update failed: {ex}')
             else:
-                _logger.info('Reload progress: Read %r', r)
+                _logger.info('Read progress: Read %r', r)
                 node.set_state(node.State.DEFAULT)
 
     async def write(self,
