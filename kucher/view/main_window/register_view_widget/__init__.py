@@ -215,7 +215,7 @@ class RegisterViewWidget(WidgetBase):
         def progress_callback(register: Register, current_register_index: int, total_registers: int):
             nonlocal total_registers_read
             total_registers_read = total_registers
-            self._display_status(f'Reading register {register.name!r} '
+            self._display_status(f'Reading {register.name!r} '
                                  f'({current_register_index + 1} of {total_registers})')
 
         async def executor():
@@ -225,7 +225,7 @@ class RegisterViewWidget(WidgetBase):
                 await mod.read(registers=registers,
                                progress_callback=progress_callback)
             except asyncio.CancelledError:
-                self._display_status(f'Register read has been cancelled')
+                self._display_status(f'Read has been cancelled')
                 raise
             except Exception as ex:
                 _logger.exception('Register read failed')
@@ -243,7 +243,7 @@ class RegisterViewWidget(WidgetBase):
         def progress_callback(register: Register, current_register_index: int, total_registers: int):
             nonlocal total_registers_assigned
             total_registers_assigned = total_registers
-            self._display_status(f'Writing register {register.name!r} '
+            self._display_status(f'Writing {register.name!r} '
                                  f'({current_register_index + 1} of {total_registers})')
 
         async def executor():
@@ -253,7 +253,7 @@ class RegisterViewWidget(WidgetBase):
                 await mod.write(register_value_mapping=register_value_mapping,
                                 progress_callback=progress_callback)
             except asyncio.CancelledError:
-                self._display_status(f'Register write has been cancelled')
+                self._display_status(f'Write has been cancelled')
                 raise
             except Exception as ex:
                 _logger.exception('Register write failed')
