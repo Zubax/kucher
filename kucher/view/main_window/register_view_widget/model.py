@@ -64,6 +64,13 @@ class Model(QAbstractItemModel):
         DEVICE_TIMESTAMP = 7
         FULL_NAME        = 8
 
+    # All columns are assumed to contain constant data except those listed here
+    # This is needed for optimization purposes
+    _NON_CONSTANT_COLUMNS = [
+        ColumnIndices.VALUE,
+        ColumnIndices.DEVICE_TIMESTAMP,
+    ]
+
     def __init__(self,
                  parent: QWidget,
                  registers: typing.Iterable[Register]):
@@ -315,17 +322,18 @@ class Model(QAbstractItemModel):
                 return palette.color(QPalette.WindowText)
 
         if role == Qt.FontRole:
-            if node.state == node.State.PENDING:
-                return self._italic_font
+            if column == column_indices.VALUE:
+                if node.state == node.State.PENDING:
+                    return self._italic_font
 
-            if self.flags(index) & Qt.ItemIsEditable:
-                return self._underlined_font
-            else:
-                return self._regular_font
+                if self.flags(index) & Qt.ItemIsEditable:
+                    return self._underlined_font
+
+            return self._regular_font
 
         if role == Qt.DecorationRole:
             if node.register is not None:
-                if column == column_indices.NAME:
+                if column == column_indices.VALUE:
                     try:
                         return get_icon_pixmap({
                             _Node.State.PENDING: 'process',
@@ -400,11 +408,10 @@ class Model(QAbstractItemModel):
         else:
             raise TypeError(f'Unexpected type: {type(index_or_register)}')
 
-        top_left: QModelIndex = index.sibling(index.row(), 0)
-        bottom_right: QModelIndex = index.sibling(index.row(), self.columnCount(index.parent()) - 1)
-        assert top_left.isValid()
-        assert bottom_right.isValid()
-        self.dataChanged.emit(top_left, bottom_right)
+        for column in self._NON_CONSTANT_COLUMNS:
+            which: QModelIndex = index.sibling(index.row(), column)
+            assert which.isValid()
+            self.dataChanged.emit(which, which)
 
     def _on_register_update(self, register: Register):
         """

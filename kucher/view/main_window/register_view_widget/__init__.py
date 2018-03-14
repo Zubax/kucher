@@ -98,12 +98,6 @@ class RegisterViewWidget(WidgetBase):
         self._tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self._tree.setAlternatingRowColors(True)
 
-        # Register state icons should be shown on the right; on the left it looks quite ugly
-        self._tree.setItemDelegateForColumn(
-            int(Model.ColumnIndices.NAME),
-            StyleOptionModifyingDelegate(self._tree,
-                                         decoration_position=QStyleOptionViewItem.Right))
-
         # It doesn't seem to be explicitly documented, but it seems to be necessary to select either top or bottom
         # decoration position in order to be able to use center alignment. Left or right positions do not work here.
         self._tree.setItemDelegateForColumn(
