@@ -17,14 +17,13 @@ import enum
 import typing
 import asyncio
 import datetime
-import functools
 import itertools
 import dataclasses
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QVariant, QRect
 from PyQt5.QtGui import QPalette, QFontMetrics, QFont, QPixmap, QPainter, QBitmap
-from view.utils import gui_test, get_monospace_font, get_icon
+from view.utils import gui_test, get_monospace_font, get_icon_pixmap, cached
 from view.device_model_representation import Register
 from .textual import display_value
 
@@ -339,11 +338,11 @@ class Model(QAbstractItemModel):
             if node.register is not None:
                 if column == column_indices.NAME:
                     try:
-                        return get_icon({
+                        return get_icon_pixmap({
                             _Node.State.PENDING: 'process',
                             _Node.State.SUCCESS: 'ok',
                             _Node.State.ERROR:   'error',
-                        }[node.state]).pixmap(self._icon_size, self._icon_size)
+                        }[node.state], self._icon_size)
                     except KeyError:
                         pass
 
@@ -522,7 +521,7 @@ def _plant_tree(registers: typing.Iterable[Register]) -> _Node:
     return root
 
 
-@functools.lru_cache()
+@cached
 def _draw_flags_icon(mutable: bool, persistent: bool, icon_size: int) -> QPixmap:
     """
     Combines icons into a single large icon and renders it into a pixmap of specified size.
@@ -530,11 +529,11 @@ def _draw_flags_icon(mutable: bool, persistent: bool, icon_size: int) -> QPixmap
     so we cache the results in a LRU cache.
     """
     icon_name = 'edit' if mutable else 'lock'
-    mutability: QPixmap = get_icon(icon_name).pixmap(icon_size, icon_size)
+    mutability = get_icon_pixmap(icon_name, icon_size)
 
     # https://youtu.be/AX2uz2XYkbo?t=21s
     icon_name = 'save' if persistent else 'random-access-memory'
-    persistence: QPixmap = get_icon(icon_name).pixmap(icon_size, icon_size)
+    persistence = get_icon_pixmap(icon_name, icon_size)
 
     icon_size_rect = QRect(0, 0, icon_size, icon_size)
 

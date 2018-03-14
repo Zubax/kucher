@@ -15,9 +15,9 @@
 import math
 import numpy
 import typing
-import functools
 from logging import getLogger
 from view.device_model_representation import Register
+from view.utils import cached
 
 
 MAX_LINE_LENGTH = 40
@@ -61,7 +61,7 @@ def _display_array_of_scalars(value, dtype: numpy.dtype) -> str:
     return text
 
 
-@functools.lru_cache(None)
+@cached
 def _get_numpy_formatter(dtype: numpy.dtype) -> dict:
     """Formatter construction can be very slow, we optimize it by caching the results"""
     try:

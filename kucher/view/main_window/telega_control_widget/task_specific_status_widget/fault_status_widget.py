@@ -18,7 +18,7 @@ from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtCore import Qt
 from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport, get_icon_name_for_task_id, \
     get_human_friendly_task_name
-from view.utils import lay_out_horizontally, lay_out_vertically, get_monospace_font, get_icon
+from view.utils import lay_out_horizontally, lay_out_vertically, get_monospace_font, get_icon_pixmap
 
 
 class Widget(StatusWidgetBase):
@@ -71,8 +71,8 @@ class Widget(StatusWidgetBase):
 
         self._last_displayed = tssr
 
-        icon = get_icon(get_icon_name_for_task_id(tssr.failed_task_id))
-        self._task_icon_display.setPixmap(icon.pixmap(self._line_height, self._line_height))
+        pixmap = get_icon_pixmap(get_icon_name_for_task_id(tssr.failed_task_id), self._line_height)
+        self._task_icon_display.setPixmap(pixmap)
 
         self._task_name_display.setText(str(tssr.failed_task_id).split('.')[-1])
         self._task_name_display.setToolTip(get_human_friendly_task_name(tssr.failed_task_id))

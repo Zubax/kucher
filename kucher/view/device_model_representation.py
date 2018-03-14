@@ -14,8 +14,8 @@
 
 import typing
 import datetime
-import functools
 from dataclasses import dataclass
+from .utils import cached
 
 # This is an undesirable coupling, but it allows us to avoid excessive code duplication.
 # We keep it this way while the codebase is new and fluid. In the future we may want to come up with an
@@ -39,7 +39,7 @@ _TASK_ID_TO_ICON_MAPPING: typing.Dict[TaskID, str] = {
 }
 
 
-@functools.lru_cache()
+@cached
 def get_icon_name_for_task_id(tid: TaskID) -> str:
     try:
         return _TASK_ID_TO_ICON_MAPPING[tid]
@@ -47,7 +47,7 @@ def get_icon_name_for_task_id(tid: TaskID) -> str:
         return 'question-mark'
 
 
-@functools.lru_cache()
+@cached
 def get_human_friendly_task_name(tid: TaskID,
                                  multi_line=False,
                                  short=False) -> str:
@@ -63,7 +63,7 @@ def get_human_friendly_task_name(tid: TaskID,
     return out
 
 
-@functools.lru_cache()
+@cached
 def get_human_friendly_control_mode_name_and_its_icon_name(control_mode: ControlMode,
                                                            short=False) -> typing.Tuple[str, str]:
     try:

@@ -19,19 +19,24 @@ import functools
 from logging import getLogger
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QMessageBox, QLayout, QHBoxLayout, QVBoxLayout, \
     QBoxLayout
-from PyQt5.QtGui import QFont, QFontInfo, QIcon
+from PyQt5.QtGui import QFont, QFontInfo, QIcon, QPixmap
 from PyQt5.QtCore import Qt
 from resources import get_absolute_path
+
+
+# Wraps the function with a cache.
+# The cache is not size-bounded! Every combination of arguments will be kept as long as the program runs.
+cached = functools.lru_cache(None)
 
 
 _logger = getLogger(__name__)
 
 
 def get_application_icon() -> QIcon:
-    return QIcon(get_absolute_path('view', 'icons', 'zee.png'))
+    return get_icon('zee')
 
 
-@functools.lru_cache(None)
+@cached
 def get_icon_path(name: str) -> str:
     def attempt(ext: str) -> str:
         return get_absolute_path('view', 'icons', f'{name}.{ext}', check_existence=True)
@@ -45,12 +50,33 @@ def get_icon_path(name: str) -> str:
     return out
 
 
-@functools.lru_cache(None)
+@cached
 def get_icon(name: str) -> QIcon:
     return QIcon(get_icon_path(name))
 
 
-def get_monospace_font(small=False) -> QFont:  # We can't cache the result because it will become a shared singleton
+@cached
+def get_icon_pixmap(icon_name: str, width: int, height: int=None) -> QPixmap:
+    """
+    Caching wrapper around get_icon(...).pixmap(...).
+    Every generated pixmap is cached permanently.
+    """
+    begun = time.monotonic()
+    height = height or width
+    output = get_icon(icon_name).pixmap(width, height)
+    elapsed = time.monotonic() - begun
+    _logger.info('Pixmap %r has been rendered with size %rx%r in %.6f seconds', icon_name, width, height, elapsed)
+    return output
+
+
+def get_monospace_font(small=False) -> QFont:
+    # We have to copy the result because we don't want to share the same instance globally - users may mutate it
+    return QFont(_get_monospace_font_impl(small))
+
+
+@cached
+def _get_monospace_font_impl(small=False) -> QFont:
+    begun = time.monotonic()
     multiplier = 0.8 if small else 1.0
 
     preferred = ['Consolas', 'DejaVu Sans Mono', 'Monospace', 'Lucida Console', 'Monaco']
@@ -58,17 +84,17 @@ def get_monospace_font(small=False) -> QFont:  # We can't cache the result becau
         font = QFont(name)
         if QFontInfo(font).fixedPitch():
             font.setPointSize(round(QFont().pointSize() * multiplier))
-            _logger.info('Selected monospace font: %r', font.toString())
+            _logger.info('Selected monospace font (%.6f seconds): %r', time.monotonic() - begun, font.toString())
             return font
 
     font = QFont()
     font.setStyleHint(QFont().Monospace)
     font.setFamily('monospace')
-    _logger.info('Using fallback monospace font: %r', font.toString())
+    _logger.info('Using fallback monospace font (%.6f seconds): %r', time.monotonic() - begun, font.toString())
     return font
 
 
-@functools.lru_cache()
+@cached
 def is_small_screen() -> bool:
     # See this for reference: http://screensiz.es/monitor
     # noinspection PyArgumentList

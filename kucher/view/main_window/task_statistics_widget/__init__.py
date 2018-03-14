@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtCore import QTimer, Qt, QAbstractTableModel, QModelIndex, QVariant
 from PyQt5.QtGui import QFontMetrics, QFont
 from view.widgets import WidgetBase
-from view.utils import gui_test, get_icon
+from view.utils import gui_test, get_icon_pixmap
 from view.device_model_representation import TaskStatisticsView, TaskID, get_icon_name_for_task_id, \
     get_human_friendly_task_name
 
@@ -194,6 +194,8 @@ class _TableModel(QAbstractTableModel):
 
         self._data: TaskStatisticsView = TaskStatisticsView()
 
+        self._icon_size = QFontMetrics(QFont()).height()
+
     def rowCount(self, _parent=None):
         return len(self._data.entries)
 
@@ -223,8 +225,7 @@ class _TableModel(QAbstractTableModel):
                 except KeyError:
                     pass
                 else:
-                    icon_size = QFontMetrics(QFont()).height()
-                    return get_icon(icon_name).pixmap(icon_size, icon_size)
+                    return get_icon_pixmap(icon_name, self._icon_size)
 
         if role == Qt.TextAlignmentRole:
             return Qt.AlignCenter

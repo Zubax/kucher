@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtGui import QFont, QFontMetrics, QPixmap
 from PyQt5.QtCore import Qt
-from ..utils import gui_test, get_icon, is_small_screen
+from ..utils import gui_test, get_icon_pixmap
 from . import WidgetBase
 
 
@@ -160,8 +160,7 @@ class _Comment(QLabel):
         try:
             pixmap = self._pixmap_cache[icon_name]
         except KeyError:
-            icon = get_icon(icon_name)
-            pixmap = icon.pixmap(self._icon_size, self._icon_size)
+            pixmap = get_icon_pixmap(icon_name, self._icon_size)
             self._pixmap_cache[icon_name] = pixmap
 
         self.setPixmap(pixmap)
