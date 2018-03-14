@@ -81,6 +81,18 @@ def main():
     file_handler.setFormatter(logging.Formatter('%(asctime)s pid=%(process)-5d %(levelname)-8s %(name)s: %(message)s'))
     logging.root.addHandler(file_handler)
 
+    if '--profile' in sys.argv:
+        try:
+            # noinspection PyPep8Naming
+            import cProfile as profile
+        except ImportError:
+            import profile
+
+        prof = profile.Profile()
+        prof.enable()
+    else:
+        prof = None
+
     if '--test' in sys.argv:
         if not os.environ.get('PYTHONASYNCIODEBUG'):
             raise RuntimeError('PYTHONASYNCIODEBUG should be set while unit testing')
@@ -105,6 +117,10 @@ def main():
     with loop:
         ctrl = Fuhrer()
         loop.run_until_complete(ctrl.run())
+
+    if prof is not None:
+        prof.disable()
+        prof.dump_stats(log_file_name.replace('.log', '.pstat'))
 
 
 if __name__ == '__main__':
