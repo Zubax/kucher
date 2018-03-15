@@ -19,7 +19,7 @@ from logging import getLogger
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, \
     QPlainTextEdit, QComboBox
 from PyQt5.QtCore import Qt, QModelIndex, QObject, QAbstractItemModel, QRect, QSize
-from PyQt5.QtGui import QFontMetrics
+from PyQt5.QtGui import QFontMetrics, QPainter
 from view.utils import get_monospace_font, show_error, get_icon
 from view.device_model_representation import Register
 from .model import Model
@@ -192,6 +192,14 @@ class EditorDelegate(QStyledItemDelegate):
         # That would hide part of the widget, unacceptable
         editor.move(max(0, rect.x() - x_offset),
                     max(0, rect.y() - y_offset))
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
+        """
+        Reposition the icon to the right side.
+        """
+        option.decorationPosition = QStyleOptionViewItem.Right
+        option.decorationAlignment = Qt.AlignRight | Qt.AlignVCenter
+        super(EditorDelegate, self).paint(painter, option, index)
 
     @staticmethod
     def _get_register_from_index(index: QModelIndex) -> Register:

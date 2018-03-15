@@ -85,7 +85,6 @@ class RegisterViewWidget(WidgetBase):
         self._read_all_button.setEnabled(False)
 
         self._tree = QTreeView(self)
-        self._tree.setItemDelegate(EditorDelegate(self._tree, self._display_status))
         self._tree.setVerticalScrollMode(QTreeView.ScrollPerPixel)
         self._tree.setHorizontalScrollMode(QTreeView.ScrollPerPixel)
         self._tree.setAnimated(True)
@@ -113,9 +112,7 @@ class RegisterViewWidget(WidgetBase):
 
         self._tree.setItemDelegateForColumn(
             int(Model.ColumnIndices.VALUE),
-            StyleOptionModifyingDelegate(self._tree,
-                                         decoration_position=QStyleOptionViewItem.Right,
-                                         decoration_alignment=Qt.AlignRight | Qt.AlignVCenter))
+            EditorDelegate(self._tree, self._display_status))
 
         # It doesn't seem to be explicitly documented, but it seems to be necessary to select either top or bottom
         # decoration position in order to be able to use center alignment. Left or right positions do not work here.

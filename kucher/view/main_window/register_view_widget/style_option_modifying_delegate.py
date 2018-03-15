@@ -13,7 +13,7 @@
 #
 
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyleOptionViewItem
-from PyQt5.QtCore import Qt, QModelIndex, QObject, QAbstractItemModel, QRect, QSize
+from PyQt5.QtCore import QModelIndex, QObject
 from PyQt5.QtGui import QPainter
 
 
