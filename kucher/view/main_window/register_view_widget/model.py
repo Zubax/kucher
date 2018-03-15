@@ -25,7 +25,7 @@ from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QVariant, QRect
 from PyQt5.QtGui import QPalette, QFontMetrics, QFont, QPixmap, QPainter, QBitmap
 from view.utils import gui_test, get_monospace_font, get_icon_pixmap, cached
 from view.device_model_representation import Register
-from .textual import display_value
+from .textual import display_value, display_type
 
 
 _logger = getLogger(__name__)
@@ -64,13 +64,6 @@ class Model(QAbstractItemModel):
         DEVICE_TIMESTAMP = 7
         FULL_NAME        = 8
 
-    # All columns are assumed to contain constant data except those listed here
-    # This is needed for optimization purposes
-    _NON_CONSTANT_COLUMNS = [
-        ColumnIndices.VALUE,
-        ColumnIndices.DEVICE_TIMESTAMP,
-    ]
-
     def __init__(self,
                  parent: QWidget,
                  registers: typing.Iterable[Register]):
@@ -86,7 +79,7 @@ class Model(QAbstractItemModel):
 
         self._icon_size = QFontMetrics(self._regular_font).height()
 
-        self._registers = list(sorted(registers, key=lambda r: r.name))
+        self._registers = list(sorted(registers, key=lambda x: x.name))
 
         self._tree = _plant_tree(self._registers)
         _logger.debug('Register tree for %r:\n%s\n', self, self._tree.to_pretty_string())
@@ -140,7 +133,10 @@ class Model(QAbstractItemModel):
             # Great Scott! One point twenty-one gigawatt of power!
             node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
             node.set_state(_Node.State.PENDING, 'Waiting for update...')
-            self._invalidate(r)
+            # Normally, we should invalidate the altered items, to signal the view that they should be redrawn.
+            # However, when we do that, the Qt engine gets a seizure and takes a few seconds to
+            # redraw the widget a hundred (sic!) times over, freezing completely for a few seconds!
+            # So we skip invalidation completely - the view will get updated eventually anyway
 
         # Actually update all
         for index, r in enumerate(registers):
@@ -160,6 +156,8 @@ class Model(QAbstractItemModel):
             else:
                 _logger.info('Read progress: Read %r', r)
                 node.set_state(node.State.DEFAULT)
+            finally:
+                self._perform_full_slow_invalidation(r)
 
     async def write(self,
                     register_value_mapping: typing.Dict[Register, typing.Any],
@@ -177,10 +175,10 @@ class Model(QAbstractItemModel):
             # Great Scott! One point twenty-one gigawatt of power!
             node = self._unwrap(self._register_name_to_index_column_zero_map[r.name])
             node.set_state(_Node.State.PENDING, f'Waiting to write {v!r}...')
-            # Usually we don't write a lot of registers simultaneously, so it should be acceptable to invalidate
-            # them one by one. The benefit is that we only invalidate what should be invalidated, leaving the rest
-            # unchanged.
-            self._invalidate(r)
+            # Normally, we should invalidate the altered items, to signal the view that they should be redrawn.
+            # However, when we do that, the Qt engine gets a seizure and takes a few seconds to
+            # redraw the widget a hundred (sic!) times over, freezing completely for a few seconds!
+            # So we skip invalidation completely - the view will get updated eventually anyway
 
         # Actually write all
         for index, (r, value) in enumerate(register_value_mapping.items()):
@@ -200,6 +198,8 @@ class Model(QAbstractItemModel):
             else:
                 _logger.info('Write progress: Wrote %r with %r', r, value)
                 node.set_state(node.State.DEFAULT)
+            finally:
+                self._perform_full_slow_invalidation(r)
 
     @staticmethod
     def get_register_from_index(index: QModelIndex) -> Register:
@@ -257,13 +257,7 @@ class Model(QAbstractItemModel):
                 return str()
 
             if column == column_indices.TYPE:
-                out = str(node.register.type_id).split('.')[-1].lower()
-                if node.register.cached_value and not isinstance(node.register.cached_value, (str, bytes)):
-                    size = len(node.register.cached_value)
-                    if size > 1:
-                        out += f'[{size}]'
-
-                return out
+                return display_type(node.register)
 
             if column == column_indices.VALUE:
                 return display_value(node.register.cached_value, node.register.type_id)
@@ -363,7 +357,7 @@ class Model(QAbstractItemModel):
 
         async def executor():
             node.set_state(node.State.PENDING, 'Write in progress...')
-            self._invalidate(index)
+            # Note that we don't invalidate immediately - too slow; invalidate once at the end instead
             # noinspection PyBroadException
             try:
                 _logger.info('Writing register %r with %r', node.register, value)
@@ -375,7 +369,7 @@ class Model(QAbstractItemModel):
                 _logger.info('Write to %r complete; new value: %r', node.register, new_value)
                 node.set_state(node.State.SUCCESS, 'Value has been written successfully')
             finally:
-                self._invalidate(index)
+                self._perform_full_slow_invalidation(index)
 
         asyncio.get_event_loop().create_task(executor())
         return True
@@ -399,7 +393,13 @@ class Model(QAbstractItemModel):
         return QVariant()
 
     # noinspection PyArgumentList,PyUnresolvedReferences
-    def _invalidate(self, index_or_register: typing.Union[QModelIndex, Register]):
+    def _perform_full_slow_invalidation(self, index_or_register: typing.Union[QModelIndex, Register]):
+        """
+        The function is named this way in order to make it explicit that it has a ridiculous performance impact.
+        It invokes the dataChanged() event, which under certain unclear circumstances may cause the view to
+        invoke the data() method hundreds of times in a row, freezing the GUI for a second or more.
+        This is probably a bug in Qt.
+        """
         if isinstance(index_or_register, Register):
             index = self._register_name_to_index_column_zero_map[index_or_register.name]
         elif isinstance(index_or_register, QModelIndex):
@@ -407,20 +407,27 @@ class Model(QAbstractItemModel):
         else:
             raise TypeError(f'Unexpected type: {type(index_or_register)}')
 
-        for column in self._NON_CONSTANT_COLUMNS:
-            which: QModelIndex = index.sibling(index.row(), column)
-            assert which.isValid()
-            self.dataChanged.emit(which, which)
+        # Invalidate only value column.
+        # Other columns are assumed to be updated by the view lazily, e.g. on focus change.
+        # Otherwise the performance impact is too significant - the view becomes virtually unusable.
+        # Observe that we also update only the most critical roles.
+        which: QModelIndex = index.sibling(index.row(), self.ColumnIndices.VALUE)
+        assert which.isValid()
+        assert self._unwrap(which).register == self._unwrap(index).register
+        self.dataChanged.emit(which, which, [
+            Qt.DisplayRole,
+            Qt.DecorationRole,
+        ])
 
     def _on_register_update(self, register: Register):
         """
         This is invoked by Register objects when they get updated.
         Note that when we write a new value, this callback is invoked as well!
+        We do NOT invalidate the item here because that has a tremendous performance impact on the view.
+        Instead, we let the view update the item lazily, e.g. on focus change and such.
         """
-        index = self._register_name_to_index_column_zero_map[register.name]
-        node = self._unwrap(index)
+        node = self._unwrap(self._register_name_to_index_column_zero_map[register.name])
         node.set_state(node.State.DEFAULT)
-        self._invalidate(index)
 
     def _resolve_parent_node(self, index: typing.Optional[QModelIndex]) -> '_Node':
         if index is None or not index.isValid():

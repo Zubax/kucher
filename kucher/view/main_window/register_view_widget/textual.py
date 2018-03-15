@@ -181,3 +181,31 @@ def _unittest_parse_value():
     assert parse_value('true, False', tid.I8) == [1, 0]
     assert parse_value('0.123, 56.45', tid.F32) == [approx(0.123), approx(56.45)]
     assert parse_value('0.123, 56.45, 123', tid.F64) == [approx(0.123), approx(56.45), 123]
+
+
+@cached
+def display_type(register: Register) -> str:
+    """
+    Registers are guaranteed to never change their type, so this function is fully cached.
+    TODO: This may lead to conflicts as different devices may expose similarly named registers with different
+    TODO: dimensionality. Perhaps dimensionality should be considered in the register's __hash__() and __eq__()?
+    TODO: Alternatively, just make the cache local rather than global.
+    """
+    out = str(register.type_id).split('.')[-1].lower()
+
+    def get_vector_dimension(value):
+        if value and not isinstance(value, (str, bytes)):
+            if len(value) != 1:     # Length 1 is a scalar, dimensional annotation is redundant
+                return len(value)
+
+    # Default value is preferred if available because it can't change dimensions at all, whereas the cached value
+    # *should not change* normally, but the guarantee is less strong.
+    if register.has_default_value:
+        dimension = get_vector_dimension(register.default_value)
+    else:
+        dimension = get_vector_dimension(register.cached_value)
+
+    if dimension is not None:
+        out += f'[{dimension}]'
+
+    return out
