@@ -111,6 +111,12 @@ class RegisterViewWidget(WidgetBase):
         add_action(self._do_read_selected, 'process', 'Read selected registers', READ_SELECTED_SHORTCUT)
         add_action(self._do_reset_selected, 'clear-symbol', 'Reset selected to default', RESET_SELECTED_SHORTCUT)
 
+        self._tree.setItemDelegateForColumn(
+            int(Model.ColumnIndices.VALUE),
+            StyleOptionModifyingDelegate(self._tree,
+                                         decoration_position=QStyleOptionViewItem.Right,
+                                         decoration_alignment=Qt.AlignRight | Qt.AlignVCenter))
+
         # It doesn't seem to be explicitly documented, but it seems to be necessary to select either top or bottom
         # decoration position in order to be able to use center alignment. Left or right positions do not work here.
         self._tree.setItemDelegateForColumn(
