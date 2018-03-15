@@ -92,6 +92,9 @@ class RegisterViewWidget(WidgetBase):
         self._tree.setAlternatingRowColors(True)
         self._tree.setContextMenuPolicy(Qt.ActionsContextMenu)
 
+        # Not sure about this one. This hardcoded value may look bad on some platforms.
+        self._tree.setIndentation(8)
+
         def add_action(callback: typing.Callable[[], None],
                        icon_name: str,
                        name: str,
