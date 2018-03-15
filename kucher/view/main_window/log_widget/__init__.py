@@ -166,9 +166,9 @@ class _TableModel(QAbstractTableModel):
 
         self._rows: typing.List[self.Entry] = []
 
-        self._monospace_font = get_monospace_font()
+        self._monospace_font = get_monospace_font(small=True)
 
-        self._special_event_font = get_monospace_font()
+        self._special_event_font = get_monospace_font(small=True)
         self._special_event_font.setItalic(True)
 
     @property
