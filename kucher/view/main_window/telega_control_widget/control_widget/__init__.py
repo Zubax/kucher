@@ -63,10 +63,9 @@ class ControlWidget(GroupBoxWidget):
         self._panel.addTab(self._low_level_manipulation_widget, get_icon('hand-button'), 'Low-level manipulation')
 
         self._current_widget: SpecializedControlWidgetBase = self._hardware_test_widget
-        self._panel.setCurrentWidget(self._hardware_test_widget)
 
-        # Configuring the event handler in the last order, because it might fire while we're configuring the widgets!
-        self._panel.currentChanged.connect(self._on_current_widget_changed)
+        # Selecting which widget to show by default - let it be Run widget, it's easy to understand and it's first
+        self._panel.setCurrentWidget(self._run_widget)
 
         # Shared buttons
         self._stop_button =\
@@ -120,6 +119,11 @@ class ControlWidget(GroupBoxWidget):
                 )
             )
         )
+
+        # Configuring the event handler in the last order, because it might fire while we're configuring the widgets!
+        self._panel.currentChanged.connect(self._on_current_widget_changed)
+        # Invoking the handler to complete initialization
+        self._on_current_widget_changed(self._panel.currentIndex())
 
     def on_connection_established(self):
         self._last_seen_timestamped_general_status = None
