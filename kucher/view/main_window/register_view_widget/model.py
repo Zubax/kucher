@@ -19,10 +19,11 @@ import asyncio
 import datetime
 import itertools
 import dataclasses
+import collections
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QVariant, QRect
-from PyQt5.QtGui import QPalette, QFontMetrics, QFont, QPixmap, QPainter, QBitmap
+from PyQt5.QtGui import QPalette, QFontMetrics, QFont, QPixmap, QPainter, QBitmap, QColor
 from view.utils import gui_test, get_monospace_font, get_icon_pixmap, cached
 from view.device_model_representation import Register
 from .textual import display_value, display_type
@@ -78,6 +79,22 @@ class Model(QAbstractItemModel):
         self._italic_font.setItalic(True)
 
         self._icon_size = QFontMetrics(self._regular_font).height()
+
+        def make_default_data_handler():
+            def default_data_handler(*_) -> QVariant:
+                return QVariant()
+
+            return default_data_handler
+
+        self._data_role_dispatch: typing.DefaultDict[int, typing.Callable[[QModelIndex], typing.Any]] = \
+            collections.defaultdict(make_default_data_handler)
+
+        self._data_role_dispatch[Qt.DisplayRole]    = self._data_display
+        self._data_role_dispatch[Qt.ToolTipRole]    = self._data_tool_tip_status_tip
+        self._data_role_dispatch[Qt.StatusTipRole]  = self._data_tool_tip_status_tip
+        self._data_role_dispatch[Qt.ForegroundRole] = self._data_foreground
+        self._data_role_dispatch[Qt.FontRole]       = self._data_font
+        self._data_role_dispatch[Qt.DecorationRole] = self._data_decoration
 
         self._registers = list(sorted(registers, key=lambda x: x.name))
 
@@ -243,105 +260,125 @@ class Model(QAbstractItemModel):
     def columnCount(self, parent: QModelIndex=None) -> int:
         return len(self._COLUMNS)
 
-    def data(self, index: QModelIndex, role: int=None):
+    def _data_display(self, index: QModelIndex) -> str:
         row, column = index.row(), index.column()
         node = self._unwrap(index)
 
-        column_indices = self.ColumnIndices
+        if column == self.ColumnIndices.NAME:
+            return node.name
 
-        if role == Qt.DisplayRole:
-            if column == column_indices.NAME:
-                return node.name
+        if node.register is None:
+            return str()
 
-            if node.register is None:
-                return str()
+        if column == self.ColumnIndices.TYPE:
+            return display_type(node.register)
 
-            if column == column_indices.TYPE:
-                return display_type(node.register)
+        if column == self.ColumnIndices.VALUE:
+            return display_value(node.register.cached_value, node.register.type_id)
 
-            if column == column_indices.VALUE:
-                return display_value(node.register.cached_value, node.register.type_id)
+        if column == self.ColumnIndices.DEFAULT:
+            return display_value(node.register.default_value, node.register.type_id)
 
-            if column == column_indices.DEFAULT:
-                return display_value(node.register.default_value, node.register.type_id)
+        if column == self.ColumnIndices.MIN:
+            return display_value(node.register.min_value, node.register.type_id)
 
-            if column == column_indices.MIN:
-                return display_value(node.register.min_value, node.register.type_id)
+        if column == self.ColumnIndices.MAX:
+            return display_value(node.register.max_value, node.register.type_id)
 
-            if column == column_indices.MAX:
-                return display_value(node.register.max_value, node.register.type_id)
+        if column == self.ColumnIndices.DEVICE_TIMESTAMP:
+            return str(datetime.timedelta(seconds=float(node.register.update_timestamp_device_time)))
 
-            if column == column_indices.DEVICE_TIMESTAMP:
-                return str(datetime.timedelta(seconds=float(node.register.update_timestamp_device_time)))
+        if column == self.ColumnIndices.FULL_NAME:
+            return node.register.name
 
-            if column == column_indices.FULL_NAME:
-                return node.register.name
+        return str()
 
-        if role in (Qt.ToolTipRole, Qt.StatusTipRole):
-            if column == column_indices.NAME:
-                if node.message.strip():
-                    return node.message
+    def _data_tool_tip_status_tip(self, index: QModelIndex) -> str:
+        row, column = index.row(), index.column()
+        node = self._unwrap(index)
 
-            if column == column_indices.VALUE:
-                if node.register is not None:
-                    out = f'This register is {"mutable" if node.register.mutable else "immutable"}. '
-                    if node.register.mutable and node.register.has_default_value:
-                        if node.register.cached_value_is_default_value:
-                            out += 'Current value is default value.'
-                        else:
-                            out += 'Current value differs from the default value.'
-                    return out
+        if column == self.ColumnIndices.NAME:
+            if node.message.strip():
+                return node.message
 
-            if column == column_indices.FLAGS:
-                if node.register is not None:
-                    return ', '.join([
-                        'mutable' if node.register.mutable else 'immutable',
-                        'persistent' if node.register.persistent else 'not persistent',
-                    ]).capitalize()
-
-            if column == column_indices.DEVICE_TIMESTAMP:
-                if node.register is not None:
-                    delta = time.monotonic() - node.register.update_timestamp_monotonic
-                    return f'Last synchronized {round(delta)} seconds ago'
-
-        if role == Qt.ForegroundRole:
-            palette = QPalette()
-            if node.register and (self.flags(index) & Qt.ItemIsEditable):
-                if node.register.cached_value_is_default_value or not node.register.has_default_value:
-                    return palette.color(QPalette.Link)
-                else:
-                    return palette.color(QPalette.LinkVisited)
-            else:
-                return palette.color(QPalette.WindowText)
-
-        if role == Qt.FontRole:
-            if column == column_indices.VALUE:
-                if node.state == node.State.PENDING:
-                    return self._italic_font
-
-                if self.flags(index) & Qt.ItemIsEditable:
-                    return self._underlined_font
-
-            return self._regular_font
-
-        if role == Qt.DecorationRole:
+        if column == self.ColumnIndices.VALUE:
             if node.register is not None:
-                if column == column_indices.VALUE:
-                    try:
-                        return get_icon_pixmap({
-                            _Node.State.PENDING: 'process',
-                            _Node.State.SUCCESS: 'ok',
-                            _Node.State.ERROR:   'error',
-                        }[node.state], self._icon_size)
-                    except KeyError:
-                        pass
+                out = f'This register is {"mutable" if node.register.mutable else "immutable"}. '
+                if node.register.mutable and node.register.has_default_value:
+                    if node.register.cached_value_is_default_value:
+                        out += 'Current value is default value.'
+                    else:
+                        out += 'Current value differs from the default value.'
+                return out
 
-                if column == column_indices.FLAGS:
-                    return _draw_flags_icon(mutable=node.register.mutable,
-                                            persistent=node.register.persistent,
-                                            icon_size=self._icon_size)
+        if column == self.ColumnIndices.FLAGS:
+            if node.register is not None:
+                return ', '.join([
+                    'mutable' if node.register.mutable else 'immutable',
+                    'persistent' if node.register.persistent else 'not persistent',
+                ]).capitalize()
+
+        if column == self.ColumnIndices.DEVICE_TIMESTAMP:
+            if node.register is not None:
+                delta = time.monotonic() - node.register.update_timestamp_monotonic
+                return f'Last synchronized {round(delta)} seconds ago'
+
+        return str()
+
+    def _data_foreground(self, index: QModelIndex) -> QColor:
+        node = self._unwrap(index)
+        palette = QPalette()
+        if node.register and (self.flags(index) & Qt.ItemIsEditable):
+            if node.register.cached_value_is_default_value or not node.register.has_default_value:
+                return palette.color(QPalette.Link)
+            else:
+                return palette.color(QPalette.LinkVisited)
+
+        return palette.color(QPalette.WindowText)
+
+    def _data_font(self, index: QModelIndex) -> QFont:
+        row, column = index.row(), index.column()
+        node = self._unwrap(index)
+
+        if column == self.ColumnIndices.VALUE:
+            if node.state == node.State.PENDING:
+                return self._italic_font
+
+            if self.flags(index) & Qt.ItemIsEditable:
+                return self._underlined_font
+
+        return self._regular_font
+
+    def _data_decoration(self, index: QModelIndex) -> typing.Union[QPixmap, QVariant]:
+        row, column = index.row(), index.column()
+        node = self._unwrap(index)
+
+        if node.register is not None:
+            if column == self.ColumnIndices.VALUE:
+                try:
+                    return get_icon_pixmap({
+                        _Node.State.PENDING: 'process',
+                        _Node.State.SUCCESS: 'ok',
+                        _Node.State.ERROR:   'error',
+                    }[node.state], self._icon_size)
+                except KeyError:
+                    pass
+
+            if column == self.ColumnIndices.FLAGS:
+                return _draw_flags_icon(mutable=node.register.mutable,
+                                        persistent=node.register.persistent,
+                                        icon_size=self._icon_size)
 
         return QVariant()
+
+    def data(self, index: QModelIndex, role: int=None):
+        """
+        This function is a major performance bottleneck. Look at the results of profiling, you'll see that it is
+        invoked hundreds of times for every minor data change. Therefore, it is heavily optimized.
+        The dispatch map is faster than a chain of if statements here; additionally, it simplifies profiling
+        because it provides more granular performance data.
+        """
+        return self._data_role_dispatch[role](index)
 
     def setData(self, index: QModelIndex, value, role: int=None) -> bool:
         # As per http://doc.qt.io/qt-5/model-view-programming.html
