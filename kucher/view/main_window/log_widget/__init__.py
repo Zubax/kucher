@@ -210,11 +210,10 @@ class _TableModel(QAbstractTableModel):
             return Qt.AlignLeft + Qt.AlignVCenter
 
         if role == Qt.FontRole:
-            if column == (len(self.COLUMNS) - 1):
-                if entry.is_special_event:
-                    return self._special_event_font
-                else:
-                    return self._monospace_font
+            if entry.is_special_event:
+                return self._special_event_font
+            else:
+                return self._monospace_font
 
         if role == Qt.BackgroundRole:
             if entry.is_special_event:
