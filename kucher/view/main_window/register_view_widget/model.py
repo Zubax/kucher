@@ -616,7 +616,7 @@ def _unittest_register_tree_model():
     win = QMainWindow()
 
     tw = QTreeView(win)
-    tw.setItemDelegate(EditorDelegate(tw))
+    tw.setItemDelegate(EditorDelegate(tw, lambda s: print('Editor display:', s)))
     tw.setItemDelegateForColumn(0, StyleOptionModifyingDelegate(tw, decoration_position=QStyleOptionViewItem.Right))
     tw.setStyleSheet('''
     QTreeView::item { padding: 0 5px; }
