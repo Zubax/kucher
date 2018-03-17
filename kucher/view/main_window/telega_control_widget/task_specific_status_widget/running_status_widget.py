@@ -106,7 +106,7 @@ class Widget(StatusWidgetBase):
         self._dq_display.reset()
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        tssr = self._get_task_specific_status_report(TaskSpecificStatusReport.Running, s)
+        tssr = self._get_task_specific_status_report(TaskSpecificStatusReport.Run, s)
 
         self._stall_count_display.set(f'{tssr.stall_count}')
 
@@ -137,7 +137,7 @@ class Widget(StatusWidgetBase):
         self._saturation_flag_display.set('Saturated' if tssr.controller_saturated else 'Not saturated',
                                           icon_name='control-saturation' if tssr.controller_saturated else 'ok-strong')
 
-    def _display_estimated_active_power(self, tssr: TaskSpecificStatusReport.Running):
+    def _display_estimated_active_power(self, tssr: TaskSpecificStatusReport.Run):
         # We consider this logic part of the view rather than model because it essentially
         # converts representation of existing data using well-known principles
         (u_d, u_q), (i_d, i_q) = tssr.u_dq, tssr.i_dq

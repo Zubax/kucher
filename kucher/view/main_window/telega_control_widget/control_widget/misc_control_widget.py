@@ -82,7 +82,7 @@ class MiscControlWidget(SpecializedControlWidgetBase):
         self._performer_should_stop = True
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        if s.current_task_id in (TaskID.BEEPING,
+        if s.current_task_id in (TaskID.BEEP,
                                  TaskID.IDLE,
                                  TaskID.FAULT):
             self.setEnabled(True)

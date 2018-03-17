@@ -36,8 +36,8 @@ _struct_view = dataclasses.dataclass(frozen=True)
 class TaskID(enum.Enum):
     IDLE                    = enum.auto()
     FAULT                   = enum.auto()
-    BEEPING                 = enum.auto()
-    RUNNING                 = enum.auto()
+    BEEP                    = enum.auto()
+    RUN                     = enum.auto()
     HARDWARE_TEST           = enum.auto()
     MOTOR_IDENTIFICATION    = enum.auto()
     LOW_LEVEL_MANIPULATION  = enum.auto()
@@ -169,7 +169,7 @@ class TaskSpecificStatusReport:
             )
 
     @_struct_view
-    class Running:
+    class Run:
         stall_count:                    int
         demand_factor:                  float
         # Velocity
@@ -192,7 +192,7 @@ class TaskSpecificStatusReport:
 
             mode = CONTROL_MODE_MAPPING[fields['mode']]
 
-            return TaskSpecificStatusReport.Running(
+            return TaskSpecificStatusReport.Run(
                 stall_count=fields['stall_count'],
                 demand_factor=fields['demand_factor'],
                 electrical_angular_velocity=fields['electrical_angular_velocity'],
@@ -236,14 +236,14 @@ class TaskSpecificStatusReport:
                 mode=mode,
             )
 
-    Union = typing.Union[Fault, Running, HardwareTest, MotorIdentification, LowLevelManipulation]
+    Union = typing.Union[Fault, Run, HardwareTest, MotorIdentification, LowLevelManipulation]
 
 
 TASK_ID_MAPPING = {
     'idle':                   (TaskID.IDLE,                   None),
     'fault':                  (TaskID.FAULT,                  TaskSpecificStatusReport.Fault),
-    'beeping':                (TaskID.BEEPING,                None),
-    'running':                (TaskID.RUNNING,                TaskSpecificStatusReport.Running),
+    'beep':                   (TaskID.BEEP,                   None),
+    'run':                    (TaskID.RUN,                    TaskSpecificStatusReport.Run),
     'hardware_test':          (TaskID.HARDWARE_TEST,          TaskSpecificStatusReport.HardwareTest),
     'motor_identification':   (TaskID.MOTOR_IDENTIFICATION,   TaskSpecificStatusReport.MotorIdentification),
     'low_level_manipulation': (TaskID.LOW_LEVEL_MANIPULATION, TaskSpecificStatusReport.LowLevelManipulation),

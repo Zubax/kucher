@@ -38,7 +38,7 @@ class RunControlWidget(SpecializedControlWidgetBase):
 
         self._commander = commander
 
-        self._last_status: typing.Optional[TaskSpecificStatusReport.Running] = None
+        self._last_status: typing.Optional[TaskSpecificStatusReport.Run] = None
 
         # noinspection PyTypeChecker
         self._named_control_policies: typing.Dict[str, _ControlPolicy] = _make_named_control_policies()
@@ -90,12 +90,12 @@ class RunControlWidget(SpecializedControlWidgetBase):
         self._setpoint_control.value = 0
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        if isinstance(s.task_specific_status_report, TaskSpecificStatusReport.Running):
+        if isinstance(s.task_specific_status_report, TaskSpecificStatusReport.Run):
             self._last_status = s.task_specific_status_report
         else:
             self._last_status = None
 
-        if s.current_task_id in (TaskID.IDLE, TaskID.RUNNING):
+        if s.current_task_id in (TaskID.IDLE, TaskID.RUN):
             self.setEnabled(True)
         else:
             self.setEnabled(False)
@@ -181,7 +181,7 @@ class _ControlPolicy:
     setpoint_range:         typing.Tuple[float, float]
     setpoint_step:          float
     only_for_guru:          bool
-    get_value_from_status:  typing.Callable[[TaskSpecificStatusReport.Running], float] = lambda _: 0.0
+    get_value_from_status:  typing.Callable[[TaskSpecificStatusReport.Run], float] = lambda _: 0.0
 
     @property
     def icon_name(self) -> str:
@@ -199,13 +199,13 @@ class _ControlPolicy:
 def _make_named_control_policies():
     percent_range = -100.0, +100.0
 
-    def get_rpm(s: TaskSpecificStatusReport.Running) -> float:
+    def get_rpm(s: TaskSpecificStatusReport.Run) -> float:
         return _angular_velocity_to_rpm(s.mechanical_angular_velocity)
 
-    def get_i_q(s: TaskSpecificStatusReport.Running) -> float:
+    def get_i_q(s: TaskSpecificStatusReport.Run) -> float:
         return s.i_dq[1]
 
-    def get_u_q(s: TaskSpecificStatusReport.Running) -> float:
+    def get_u_q(s: TaskSpecificStatusReport.Run) -> float:
         return s.u_dq[1]
 
     return {cp.name: cp for cp in [

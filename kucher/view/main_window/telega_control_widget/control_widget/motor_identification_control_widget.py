@@ -62,8 +62,8 @@ class MotorIdentificationControlWidget(SpecializedControlWidgetBase):
         self.setEnabled(False)
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        if s.current_task_id in (TaskID.RUNNING,
-                                 TaskID.BEEPING,
+        if s.current_task_id in (TaskID.RUN,
+                                 TaskID.BEEP,
                                  TaskID.HARDWARE_TEST,
                                  TaskID.LOW_LEVEL_MANIPULATION,
                                  TaskID.MOTOR_IDENTIFICATION):

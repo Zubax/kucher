@@ -111,8 +111,8 @@ TaskIDFormat = con.Enum(
 
     idle=0,
     fault=1,
-    beeping=2,
-    running=3,
+    beep=2,
+    run=3,
     hardware_test=4,
     motor_identification=5,
     low_level_manipulation=6,
@@ -158,7 +158,7 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
         'failed_task_id'                / TaskIDFormat,
         'failed_task_exit_code'         / U8,
     ),
-    'running': con.Struct(
+    'run': con.Struct(
         'stall_count'                   / U32,
         'demand_factor'                 / F32,
         # Velocity
@@ -280,11 +280,11 @@ CommandMessageFormatV1 = con.Struct(
         'fault': con.Struct(
             'magic'             / U32,
         ),
-        'beeping': con.Struct(
+        'beep': con.Struct(
             'frequency'         / F32,
             'duration'          / F32,
         ),
-        'running': con.Struct(
+        'run': con.Struct(
             'mode'              / ControlModeFormat,
             con.Padding(3),
             'value'             / F32,
@@ -490,7 +490,7 @@ def _unittest_codec():
     c = Codec((1, 2))
 
     msg = Message(MessageType.COMMAND)
-    msg.fields.task_id = 'running'
+    msg.fields.task_id = 'run'
     msg.fields.task_specific_command = {
         'mode': 'current',
         'value': 123.456,

@@ -31,8 +31,8 @@ from model.device_model import Register
 _TASK_ID_TO_ICON_MAPPING: typing.Dict[TaskID, str] = {
     TaskID.IDLE:                   'sleep',
     TaskID.FAULT:                  'skull',
-    TaskID.BEEPING:                'speaker',
-    TaskID.RUNNING:                'running',
+    TaskID.BEEP:                   'speaker',
+    TaskID.RUN:                    'running',
     TaskID.HARDWARE_TEST:          'pass-fail',
     TaskID.MOTOR_IDENTIFICATION:   'caliper',
     TaskID.LOW_LEVEL_MANIPULATION: 'hand-button',
