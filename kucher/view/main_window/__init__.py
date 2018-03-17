@@ -138,7 +138,7 @@ class MainWindow(QMainWindow):
         self._tool_window_manager.register(spawn_register_widget,
                                            'Registers',
                                            'data',
-                                           shown_by_default=not is_small_screen())
+                                           shown_by_default=True)
 
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
     def _configure_file_menu(self):
