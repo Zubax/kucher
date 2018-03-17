@@ -106,7 +106,7 @@ class TaskStatisticsWidget(WidgetBase):
         layout.addWidget(self._table_view, 1)
         self.setLayout(layout)
 
-        self.setMinimumSize(400, 150)
+        self.setMinimumSize(400, 100)
 
     def __del__(self):
         _logger.debug('Widget deleted')
