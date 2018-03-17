@@ -329,7 +329,7 @@ def _unittest_register_tree_widget():
 
     async def walk():
         nonlocal good_night_sweet_prince
-        await asyncio.sleep(3600)
+        await asyncio.sleep(10)
         good_night_sweet_prince = True
 
     asyncio.get_event_loop().run_until_complete(asyncio.gather(
