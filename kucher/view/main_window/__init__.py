@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
         self._tool_window_manager.register(LogWidget,
                                            'Device log',
                                            'log',
-                                           shown_by_default=not is_small_screen())
+                                           shown_by_default=True)
 
         def spawn_register_widget(parent: QWidget):
             w = RegisterViewWidget(parent)
