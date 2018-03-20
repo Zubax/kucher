@@ -106,8 +106,11 @@ class RegisterViewWidget(WidgetBase):
             action.triggered.connect(callback)
             if shortcut:
                 action.setShortcut(shortcut)
-                action.setShortcutVisibleInContextMenu(True)
                 action.setAutoRepeat(False)
+                try:
+                    action.setShortcutVisibleInContextMenu(True)
+                except AttributeError:
+                    pass                # This feature is not available in PyQt before 5.10
 
             self._tree.addAction(action)
 
