@@ -18,9 +18,10 @@ from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QTabWidget, QSizePolicy, QShortcut, QLabel
 from PyQt5.QtGui import QKeySequence, QFont
 from PyQt5.QtCore import Qt
-from view.device_model_representation import Commander, GeneralStatusView
-from view.widgets.group_box_widget import GroupBoxWidget
-from view.utils import make_button, lay_out_vertically, lay_out_horizontally, get_icon
+
+from kucher.view.device_model_representation import Commander, GeneralStatusView
+from kucher.view.widgets.group_box_widget import GroupBoxWidget
+from kucher.view.utils import make_button, lay_out_vertically, lay_out_horizontally, get_icon
 
 from .base import SpecializedControlWidgetBase
 from .run_control_widget import RunControlWidget

@@ -17,9 +17,10 @@ from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QApplication
 from PyQt5.QtGui import QKeyEvent, QKeySequence
 from PyQt5.QtCore import Qt
-from view.utils import get_monospace_font
-from view.device_model_representation import BasicDeviceInfo
-from view.widgets import WidgetBase
+
+from kucher.view.utils import get_monospace_font
+from kucher.view.device_model_representation import BasicDeviceInfo
+from kucher.view.widgets import WidgetBase
 
 
 _logger = getLogger(__name__)

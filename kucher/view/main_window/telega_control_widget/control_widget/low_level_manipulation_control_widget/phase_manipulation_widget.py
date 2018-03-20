@@ -16,9 +16,11 @@ from contextlib import contextmanager
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox
 from PyQt5.QtGui import QFont
-from model.device_model import Commander, LowLevelManipulationMode, GeneralStatusView, TaskID
-from view.utils import lay_out_horizontally, get_icon, make_button
-from view.widgets.spinbox_linked_with_slider import SpinboxLinkedWithSlider
+
+from kucher.model.device_model import Commander, LowLevelManipulationMode, GeneralStatusView, TaskID
+from kucher.view.utils import lay_out_horizontally, get_icon, make_button
+from kucher.view.widgets.spinbox_linked_with_slider import SpinboxLinkedWithSlider
+
 from .base import LowLevelManipulationControlSubWidgetBase
 
 

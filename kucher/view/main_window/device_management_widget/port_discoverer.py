@@ -19,7 +19,8 @@ from logging import getLogger
 from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtGui import QIcon
 from PyQt5 import QtSerialPort
-from view.utils import time_tracked, get_icon
+
+from kucher.view.utils import time_tracked, get_icon
 
 
 _logger = getLogger(__name__)

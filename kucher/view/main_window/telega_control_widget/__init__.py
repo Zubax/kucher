@@ -13,10 +13,11 @@
 #
 
 from PyQt5.QtWidgets import QWidget
-from view.widgets import WidgetBase
-from view.monitored_quantity import MonitoredQuantity
-from view.device_model_representation import GeneralStatusView, Commander
-from view.utils import lay_out_horizontally, lay_out_vertically
+
+from kucher.view.widgets import WidgetBase
+from kucher.view.monitored_quantity import MonitoredQuantity
+from kucher.view.device_model_representation import GeneralStatusView, Commander
+from kucher.view.utils import lay_out_horizontally, lay_out_vertically
 
 from .dc_quantities_widget import DCQuantitiesWidget
 from .temperature_widget import TemperatureWidget

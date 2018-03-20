@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # Copyright (C) 2018 Zubax Robotics OU
 #
@@ -15,26 +14,9 @@
 
 import os
 import sys
-import atexit
 import logging
-import datetime
 
-import data_dir
-import version
-
-if sys.version_info[:2] < (3, 6):
-    raise ImportError('A newer version of Python is required')
-
-try:
-    # noinspection PyUnresolvedReferences
-    sys.getwindowsversion()
-    RUNNING_ON_WINDOWS = True
-except AttributeError:
-    RUNNING_ON_WINDOWS = False
-
-#
-# Configuring logging before other packages are imported
-#
+# Configuring logging before other packages are imported.
 if '--debug' in sys.argv:
     sys.argv.remove('--debug')
     LOGGING_LEVEL = logging.DEBUG
@@ -49,30 +31,21 @@ logging.getLogger('quamash').setLevel(logging.INFO)
 
 _logger = logging.getLogger(__name__.replace('__', ''))
 
-#
-# Configuring the third-party modules
-#
-SOURCE_PATH = os.path.abspath(os.path.dirname(__file__))
-LIBRARIES_PATH = os.path.join(SOURCE_PATH, 'libraries')
 
-sys.path.insert(0, SOURCE_PATH)
-sys.path.insert(0, os.path.join(LIBRARIES_PATH))
-sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'popcop', 'python'))
-sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'construct'))
-sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'dataclasses'))
-sys.path.insert(0, os.path.join(LIBRARIES_PATH, 'quamash'))
+def main() -> int:
+    """
+    This is the main entry point of the application.
+    We must import packages here, in the function, rather than globally, because the logging subsystem
+    must be set up correctly at the import time.
+    """
+    import atexit
+    import asyncio
+    import datetime
+    from PyQt5.QtWidgets import QApplication
+    from quamash import QEventLoop
+    from . import THIRDPARTY_PATH_ROOT, data_dir, version
+    from .fuhrer import Fuhrer
 
-#
-# Now we can import the other modules, since the path is now configured and the third-party libraries are reachable.
-#
-import asyncio
-from PyQt5.QtWidgets import QApplication
-from quamash import QEventLoop
-
-from fuhrer import Fuhrer
-
-
-def main():
     data_dir.init()
 
     # Only the main process will be logging into the file
@@ -104,7 +77,7 @@ def main():
         import pytest
         args = sys.argv[:]
         args.remove('--test')
-        args.append('--ignore=' + LIBRARIES_PATH)
+        args.append('--ignore=' + THIRDPARTY_PATH_ROOT)
         args.append('--capture=no')
         args.append('--fulltrace')
         args.append('-vv')
@@ -122,6 +95,4 @@ def main():
         ctrl = Fuhrer()
         loop.run_until_complete(ctrl.run())
 
-
-if __name__ == '__main__':
-    sys.exit(main())
+    return 0

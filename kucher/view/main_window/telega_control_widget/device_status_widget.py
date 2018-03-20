@@ -17,8 +17,9 @@ import datetime
 import decimal
 from decimal import Decimal
 from PyQt5.QtWidgets import QWidget
-from view.widgets.value_display_group_widget import ValueDisplayGroupWidget
-from view.device_model_representation import TaskID, get_icon_name_for_task_id, get_human_friendly_task_name
+
+from kucher.view.widgets.value_display_group_widget import ValueDisplayGroupWidget
+from kucher.view.device_model_representation import TaskID, get_icon_name_for_task_id, get_human_friendly_task_name
 
 
 class DeviceStatusWidget(ValueDisplayGroupWidget):

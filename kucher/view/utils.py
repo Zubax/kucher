@@ -21,7 +21,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QMessageBox, QLa
     QBoxLayout
 from PyQt5.QtGui import QFont, QFontInfo, QIcon, QPixmap
 from PyQt5.QtCore import Qt
-from resources import get_absolute_path
+
+from kucher.resources import get_absolute_path
 
 
 # Wraps the function with a cache.

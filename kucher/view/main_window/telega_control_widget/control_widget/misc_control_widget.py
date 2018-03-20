@@ -17,8 +17,10 @@ import asyncio
 from dataclasses import dataclass
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QDoubleSpinBox, QLabel
-from view.device_model_representation import Commander, GeneralStatusView, TaskID
-from view.utils import make_button, lay_out_horizontally, lay_out_vertically, get_icon_path
+
+from kucher.view.device_model_representation import Commander, GeneralStatusView, TaskID
+from kucher.view.utils import make_button, lay_out_horizontally, lay_out_vertically, get_icon_path
+
 from .base import SpecializedControlWidgetBase
 
 

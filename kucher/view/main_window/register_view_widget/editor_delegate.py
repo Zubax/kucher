@@ -20,8 +20,10 @@ from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, 
     QPlainTextEdit, QComboBox
 from PyQt5.QtCore import Qt, QModelIndex, QObject, QAbstractItemModel, QRect, QSize
 from PyQt5.QtGui import QFontMetrics, QPainter
-from view.utils import get_monospace_font, show_error, get_icon
-from view.device_model_representation import Register
+
+from kucher.view.utils import get_monospace_font, show_error, get_icon
+from kucher.view.device_model_representation import Register
+
 from .model import Model
 from .textual import display_value, parse_value, MAX_LINE_LENGTH
 

@@ -24,8 +24,10 @@ from logging import getLogger
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QVariant, QRect
 from PyQt5.QtGui import QPalette, QFontMetrics, QFont, QPixmap, QPainter, QBitmap, QColor
-from view.utils import gui_test, get_monospace_font, get_icon_pixmap, cached
-from view.device_model_representation import Register
+
+from kucher.view.utils import gui_test, get_monospace_font, get_icon_pixmap, cached
+from kucher.view.device_model_representation import Register
+
 from .textual import display_value, display_type
 
 

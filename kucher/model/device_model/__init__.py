@@ -14,7 +14,7 @@
 
 import typing
 import asyncio
-from utils import Event
+from kucher.utils import Event
 from logging import getLogger
 from .communicator import MessageType, Message
 from .connection import connect, Connection, ConnectionNotEstablishedException

@@ -16,9 +16,11 @@ import typing
 import importlib
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QStackedLayout
-from view.device_model_representation import GeneralStatusView, TaskID, get_icon_name_for_task_id, \
+
+from kucher.view.device_model_representation import GeneralStatusView, TaskID, get_icon_name_for_task_id, \
     get_human_friendly_task_name
-from view.widgets.group_box_widget import GroupBoxWidget
+from kucher.view.widgets.group_box_widget import GroupBoxWidget
+
 from .placeholder_widget import PlaceholderWidget
 from .base import StatusWidgetBase
 

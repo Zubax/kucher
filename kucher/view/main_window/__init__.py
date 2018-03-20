@@ -16,10 +16,12 @@ import typing
 from PyQt5.QtWidgets import QMainWindow, QAction, QSizePolicy, QWIDGETSIZE_MAX, QWidget
 from PyQt5.QtGui import QDesktopServices, QCloseEvent, QResizeEvent
 from PyQt5.QtCore import QUrl, QSize
-from ..utils import get_application_icon, get_icon, is_small_screen
-from ..device_model_representation import GeneralStatusView, TaskStatisticsView, BasicDeviceInfo, Commander, Register
-from ..tool_window_manager import ToolWindowManager, ToolWindowLocation, ToolWindowGroupingCondition
-from data_dir import LOG_DIR
+
+from kucher.data_dir import LOG_DIR
+from kucher.view.utils import get_application_icon, get_icon, is_small_screen
+from kucher.view.tool_window_manager import ToolWindowManager, ToolWindowLocation, ToolWindowGroupingCondition
+from kucher.view.device_model_representation import GeneralStatusView, TaskStatisticsView, BasicDeviceInfo, Commander,\
+    Register
 
 from .device_management_widget import ConnectionRequestCallback, DisconnectionRequestCallback
 from .main_widget import MainWidget

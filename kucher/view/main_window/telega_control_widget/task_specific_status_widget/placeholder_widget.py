@@ -15,8 +15,10 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
+
+from kucher.view.device_model_representation import GeneralStatusView
+
 from .base import StatusWidgetBase
-from view.device_model_representation import GeneralStatusView
 
 
 class PlaceholderWidget(StatusWidgetBase):

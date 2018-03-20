@@ -20,9 +20,11 @@ from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QMainWindow, QAction, QMenu, QTabWidget, QTabBar
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
+
+from kucher.utils import Event
+
 from .widgets.tool_window import ToolWindow
 from .utils import get_icon, is_small_screen
-from utils import Event
 
 
 _WidgetTypeVar = typing.TypeVar('W')

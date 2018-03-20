@@ -19,7 +19,7 @@ import typing
 import itertools
 from decimal import Decimal
 from popcop.standard.register import ValueType, Flags, ValueKind, VALUE_TYPE_TO_KIND, SCALAR_VALUE_TYPE_TO_NUMPY_TYPE
-from utils import Event
+from kucher.utils import Event
 
 
 StrictValueTypeAnnotation = typing.Union[

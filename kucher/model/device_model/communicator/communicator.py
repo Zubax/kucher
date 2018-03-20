@@ -299,7 +299,7 @@ def _unittest_communicator_message_matcher():
 
 
 async def _async_unittest_communicator_loopback():
-    from pytest import raises, approx
+    from pytest import raises
 
     loop = asyncio.get_event_loop()
     com = await Communicator.new(LOOPBACK_PORT_NAME, loop)

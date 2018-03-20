@@ -13,9 +13,10 @@
 #
 
 from PyQt5.QtWidgets import QWidget
-from view.utils import gui_test
-from view.monitored_quantity import MonitoredQuantity, MonitoredQuantityPresenter
-from view.widgets.value_display_group_widget import ValueDisplayGroupWidget, ValueDisplayWidget
+
+from kucher.view.utils import gui_test
+from kucher.view.monitored_quantity import MonitoredQuantity, MonitoredQuantityPresenter
+from kucher.view.widgets.value_display_group_widget import ValueDisplayGroupWidget, ValueDisplayWidget
 
 
 class TemperatureWidget(ValueDisplayGroupWidget):

@@ -13,29 +13,10 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import os
 import sys
+import multiprocessing
 
-if sys.version_info[:2] < (3, 6):
-    raise ImportError('A newer version of Python is required')
-
-from .version import *
-from .main import main
-
-#
-# Configuring the third-party modules.
-# The list of paths defined here can also be used by external packaging tools such as PyInstaller.
-#
-_SOURCE_PATH = os.path.abspath(os.path.dirname(__file__))
-THIRDPARTY_PATH_ROOT = os.path.join(_SOURCE_PATH, 'libraries')
-
-THIRDPARTY_PATH = [
-    os.path.join(THIRDPARTY_PATH_ROOT),
-    os.path.join(THIRDPARTY_PATH_ROOT, 'popcop', 'python'),
-    os.path.join(THIRDPARTY_PATH_ROOT, 'construct'),
-    os.path.join(THIRDPARTY_PATH_ROOT, 'dataclasses'),
-    os.path.join(THIRDPARTY_PATH_ROOT, 'quamash'),
-]
-
-for tp in THIRDPARTY_PATH:
-    sys.path.insert(0, tp)
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
+    from kucher import main
+    sys.exit(main())

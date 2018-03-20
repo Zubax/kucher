@@ -17,8 +17,9 @@ import numpy
 import typing
 import functools
 from logging import getLogger
-from view.device_model_representation import Register
-from view.utils import cached
+
+from kucher.view.device_model_representation import Register
+from kucher.view.utils import cached
 
 
 MAX_LINE_LENGTH = 40

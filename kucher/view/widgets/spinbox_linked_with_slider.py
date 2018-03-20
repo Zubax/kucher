@@ -18,8 +18,9 @@ from logging import getLogger
 from contextlib import contextmanager
 from PyQt5.QtWidgets import QWidget, QSlider, QDoubleSpinBox
 from PyQt5.QtCore import Qt
-from view.utils import gui_test
-from utils import Event
+
+from kucher.view.utils import gui_test
+from kucher.utils import Event
 
 
 _logger = getLogger(__name__)

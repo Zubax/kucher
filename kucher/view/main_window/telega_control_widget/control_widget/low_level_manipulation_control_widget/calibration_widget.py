@@ -14,8 +14,10 @@
 
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QLabel
-from model.device_model import Commander, LowLevelManipulationMode, GeneralStatusView, TaskID
-from view.utils import lay_out_vertically, lay_out_horizontally, make_button
+
+from kucher.model.device_model import Commander, LowLevelManipulationMode, GeneralStatusView, TaskID
+from kucher.view.utils import lay_out_vertically, lay_out_horizontally, make_button
+
 from .base import LowLevelManipulationControlSubWidgetBase
 
 

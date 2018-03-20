@@ -17,10 +17,12 @@ import typing
 from dataclasses import dataclass
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QCheckBox, QComboBox, QLabel
-from view.device_model_representation import Commander, GeneralStatusView, ControlMode, TaskID, \
+
+from kucher.view.device_model_representation import Commander, GeneralStatusView, ControlMode, TaskID, \
     TaskSpecificStatusReport, get_human_friendly_control_mode_name_and_its_icon_name
-from view.utils import get_icon, lay_out_vertically, lay_out_horizontally
-from view.widgets.spinbox_linked_with_slider import SpinboxLinkedWithSlider
+from kucher.view.utils import get_icon, lay_out_vertically, lay_out_horizontally
+from kucher.view.widgets.spinbox_linked_with_slider import SpinboxLinkedWithSlider
+
 from .base import SpecializedControlWidgetBase
 
 

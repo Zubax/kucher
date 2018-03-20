@@ -19,9 +19,11 @@ from logging import getLogger
 from PyQt5.QtCore import Qt, QModelIndex
 from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QComboBox, QAbstractItemView, \
     QLabel, QAction
-from view.widgets import WidgetBase
-from view.utils import gui_test, make_button, lay_out_vertically, lay_out_horizontally, show_error, get_icon
-from view.device_model_representation import Register
+
+from kucher.view.widgets import WidgetBase
+from kucher.view.utils import gui_test, make_button, lay_out_vertically, lay_out_horizontally, show_error, get_icon
+from kucher.view.device_model_representation import Register
+
 from .model import Model
 from .style_option_modifying_delegate import StyleOptionModifyingDelegate
 from .editor_delegate import EditorDelegate

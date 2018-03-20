@@ -15,8 +15,9 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
-from view.widgets.group_box_widget import GroupBoxWidget
-from view.utils import gui_test
+
+from kucher.view.widgets.group_box_widget import GroupBoxWidget
+from kucher.view.utils import gui_test
 
 
 _ICON_OK = 'ok-strong'

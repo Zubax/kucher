@@ -14,7 +14,8 @@
 
 import typing
 from PyQt5.QtWidgets import QWidget
-from view.device_model_representation import GeneralStatusView
+
+from kucher.view.device_model_representation import GeneralStatusView
 
 
 _TSSRType = typing.TypeVar('TSSR')

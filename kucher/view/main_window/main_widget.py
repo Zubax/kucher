@@ -14,13 +14,14 @@
 
 from PyQt5.QtWidgets import QTabWidget, QWidget
 from PyQt5.QtGui import QResizeEvent
+
+from kucher.utils import Event
+
 from ..utils import get_icon
 from ..device_model_representation import GeneralStatusView, BasicDeviceInfo, Commander
-
 from .device_management_widget import DeviceManagementWidget,\
     ConnectionRequestCallback, DisconnectionRequestCallback
 from .telega_control_widget import TelegaControlWidget
-from utils import Event
 
 
 class MainWidget(QTabWidget):

@@ -16,8 +16,9 @@ import typing
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QDockWidget
 from PyQt5.QtCore import Qt
-from ..utils import get_icon_path
-from utils import Event
+
+from kucher.view.utils import get_icon_path
+from kucher.utils import Event
 
 
 _logger = getLogger(__name__)

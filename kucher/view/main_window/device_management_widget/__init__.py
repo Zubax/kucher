@@ -19,9 +19,11 @@ from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QCompleter, QStackedLayout, QLabel, QProgressBar
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtCore import QTimer, Qt
-from view.utils import get_monospace_font, gui_test, make_button, show_error, get_icon
-from view.device_model_representation import BasicDeviceInfo
-from view.widgets import WidgetBase
+
+from kucher.view.utils import get_monospace_font, gui_test, make_button, show_error, get_icon
+from kucher.view.device_model_representation import BasicDeviceInfo
+from kucher.view.widgets import WidgetBase
+
 from .port_discoverer import PortDiscoverer
 from .little_bobby_tables_widget import LittleBobbyTablesWidget
 

@@ -13,9 +13,11 @@
 #
 
 from PyQt5.QtWidgets import QWidget, QLabel
-from view.device_model_representation import Commander, GeneralStatusView, TaskID
+
+from kucher.view.device_model_representation import Commander, GeneralStatusView, TaskID
+from kucher.view.utils import make_button, lay_out_vertically, lay_out_horizontally
+
 from .base import SpecializedControlWidgetBase
-from view.utils import make_button, lay_out_vertically, lay_out_horizontally
 
 
 class HardwareTestControlWidget(SpecializedControlWidgetBase):

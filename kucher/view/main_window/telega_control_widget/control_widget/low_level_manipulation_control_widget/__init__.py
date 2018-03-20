@@ -16,8 +16,10 @@ import typing
 import importlib
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QTabWidget
-from view.device_model_representation import Commander, GeneralStatusView, LowLevelManipulationMode
-from view.utils import get_icon, lay_out_vertically
+
+from kucher.view.device_model_representation import Commander, GeneralStatusView, LowLevelManipulationMode
+from kucher.view.utils import get_icon, lay_out_vertically
+
 from ..base import SpecializedControlWidgetBase
 from .base import LowLevelManipulationControlSubWidgetBase
 

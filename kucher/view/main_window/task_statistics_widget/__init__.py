@@ -20,9 +20,10 @@ from PyQt5.QtWidgets import QWidget, QTableView, QHeaderView, QSpinBox, QCheckBo
 from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtCore import QTimer, Qt, QAbstractTableModel, QModelIndex, QVariant
 from PyQt5.QtGui import QFontMetrics, QFont
-from view.widgets import WidgetBase
-from view.utils import gui_test, get_icon_pixmap
-from view.device_model_representation import TaskStatisticsView, TaskID, get_icon_name_for_task_id, \
+
+from kucher.view.widgets import WidgetBase
+from kucher.view.utils import gui_test, get_icon_pixmap
+from kucher.view.device_model_representation import TaskStatisticsView, TaskID, get_icon_name_for_task_id, \
     get_human_friendly_task_name
 
 

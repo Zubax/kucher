@@ -13,7 +13,8 @@
 #
 
 from PyQt5.QtWidgets import QWidget
-from view.widgets.value_display_group_widget import ValueDisplayGroupWidget
+
+from kucher.view.widgets.value_display_group_widget import ValueDisplayGroupWidget
 
 
 class VSIStatusWidget(ValueDisplayGroupWidget):

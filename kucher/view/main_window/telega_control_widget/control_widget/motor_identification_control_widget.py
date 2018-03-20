@@ -13,9 +13,11 @@
 #
 
 from PyQt5.QtWidgets import QWidget, QPushButton, QComboBox, QLabel
-from view.device_model_representation import Commander, GeneralStatusView, TaskID, MotorIdentificationMode
+
+from kucher.view.device_model_representation import Commander, GeneralStatusView, TaskID, MotorIdentificationMode
+from kucher.view.utils import get_icon, lay_out_vertically, lay_out_horizontally
+
 from .base import SpecializedControlWidgetBase
-from view.utils import get_icon, lay_out_vertically, lay_out_horizontally
 
 
 class MotorIdentificationControlWidget(SpecializedControlWidgetBase):

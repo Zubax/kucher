@@ -20,9 +20,10 @@ from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QTableView, QLabel, QVBoxLayout, QHBoxLayout, QApplication
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, QVariant
 from PyQt5.QtGui import QFontMetrics, QFont, QPalette, QKeyEvent, QKeySequence
-from view.widgets import WidgetBase
-from view.utils import gui_test, make_button, get_monospace_font
-from view.device_model_representation import BasicDeviceInfo
+
+from kucher.view.widgets import WidgetBase
+from kucher.view.utils import gui_test, make_button, get_monospace_font
+from kucher.view.device_model_representation import BasicDeviceInfo
 
 
 _MAX_LOG_LINES_TO_KEEP = 10000

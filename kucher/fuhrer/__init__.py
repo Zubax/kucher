@@ -16,10 +16,10 @@ import typing
 import asyncio
 import functools
 from logging import getLogger
-import model.device_model
-from model.device_model import DeviceModel, DeviceInfoView, ConnectionNotEstablishedException
-from view.main_window import MainWindow
-import view.device_model_representation
+from kucher.model import device_model
+from kucher.model.device_model import DeviceModel, DeviceInfoView, ConnectionNotEstablishedException
+from kucher.view.main_window import MainWindow
+from kucher.view import device_model_representation
 
 
 _logger = getLogger(__name__)
@@ -57,7 +57,7 @@ class Fuhrer:
         else:
             raise TypeError(f'Invalid argument: {type(device_info_or_error)}')
 
-    async def _on_connection_request(self, port: str) -> view.device_model_representation.BasicDeviceInfo:
+    async def _on_connection_request(self, port: str) -> device_model_representation.BasicDeviceInfo:
         assert not self._device_model.is_connected
 
         def on_progress_report(stage_description: str, progress: float):
@@ -92,18 +92,17 @@ def _return_none_if_not_connected(target: typing.Callable):
     return decorator
 
 
-def _make_view_basic_device_info(di: model.device_model.DeviceInfoView) ->\
-        view.device_model_representation.BasicDeviceInfo:
+def _make_view_basic_device_info(di: device_model.DeviceInfoView) -> device_model_representation.BasicDeviceInfo:
     """
     Decouples the model-specific device info representation from the view-specific device info representation.
     """
-    return view.device_model_representation.BasicDeviceInfo(
+    return device_model_representation.BasicDeviceInfo(
         name=di.name,
         description=di.description,
         build_environment_description=di.build_environment_description,
         runtime_environment_description=di.runtime_environment_description,
         globally_unique_id=di.globally_unique_id,
-        software_version=view.device_model_representation.SoftwareVersion(
+        software_version=device_model_representation.SoftwareVersion(
             major=di.software_version.major,
             minor=di.software_version.minor,
             image_crc=di.software_version.image_crc,
@@ -112,7 +111,7 @@ def _make_view_basic_device_info(di: model.device_model.DeviceInfoView) ->\
             release_build=di.software_version.release_build,
             build_timestamp_utc=di.software_version.build_timestamp_utc,
         ),
-        hardware_version=view.device_model_representation.HardwareVersion(
+        hardware_version=device_model_representation.HardwareVersion(
             major=di.hardware_version.major,
             minor=di.hardware_version.minor,
         ),
