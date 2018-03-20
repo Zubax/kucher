@@ -18,6 +18,7 @@ Get support and ask questions at [forum.zubax.com](https://forum.zubax.com).
 ### Conventions
 
 Follow PEP8 with one exception: the maximum line length shall be 120 characters.
+Find more info on the [Zubax Knowledge Base article](https://kb.zubax.com/x/_oAh).
 
 We are using PyCharm with PEP8 compliance checks enabled.
 Non-conforming contributions should not be accepted.
@@ -31,17 +32,10 @@ Kucher requires Python version 3.6 or newer.
 If your system uses an older version, please refer to the section below to install
 Python 3.6 before continuing.
 
-*setup.py is not yet written*
-
-TODO: PyQt5>=5.9
-
-TODO: pyserial>=3.6
-
-TODO: numpy>=1.14
-
 ```bash
-pip3 install PyQt5 pyserial  # You may need to run this as root depending on your environment
 git clone --recursive https://github.com/Zubax/kucher
+cd kucher
+pip3 install -r requirements.txt  # You may need to run this as root depending on your environment
 ```
 
 ### Running the application
@@ -55,14 +49,13 @@ cd kucher
 
 The following command line options are available:
 
-
 * `--debug` - activates verbose logging; useful for troubleshooting.
+* `--profile` - creates a profile file after the application is closed.
 * `--test` - run unit tests.
     * `-k` - can be used in conjunction with `--test` to run a specific test.
     Refer to the PyTest documentation for more information.
     * Other options can be provided with `--test`; they will be passed directly to
     the PyTest framework.
-
 
 ### Getting the right version of Python
 
@@ -71,7 +64,7 @@ You can check whether you have the right version by running `python3 --version`.
 If a newer Python is needed, and you're running Ubuntu, execute the following commands:
 
 ```bash
-sudo apt-get install -y git-core curl build-essential
+sudo apt-get install -y git-core curl build-essential libsqlite3-dev
 sudo apt-get install -y libbz2-dev libssl-dev libreadline-dev libsqlite3-dev tk-dev libpng-dev libfreetype6-dev
 curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
 ```
@@ -85,8 +78,10 @@ Reload the bash profile configuration
 Then continue:
 
 ```
-pyenv install 3.6.4
+PYTHON_CONFIGURE_OPTS='--enable-shared' pyenv install 3.6.4
 pyenv global 3.6.4
 ```
 
+If there was a warning that `sqlite3` has not been compiled,
+make sure to resolve it first before continuing - sqlite3 is required by Kucher.
 Now run `python3 --version` and ensure that you have v3.6 as default.
