@@ -18,13 +18,13 @@ import sys
 if getattr(sys, 'frozen', False):
     # https://pythonhosted.org/PyInstaller/runtime-information.html
     # noinspection PyUnresolvedReferences, PyProtectedMember
-    SOURCE_ROOT = sys._MEIPASS
+    PACKAGE_ROOT = sys._MEIPASS
 else:
-    SOURCE_ROOT = os.path.dirname(os.path.abspath(__file__))
+    PACKAGE_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_absolute_path(*relative_path_items: str, check_existence=False) -> str:
-    out = os.path.abspath(os.path.join(SOURCE_ROOT, *relative_path_items))
+    out = os.path.abspath(os.path.join(PACKAGE_ROOT, *relative_path_items))
     if check_existence:
         if not os.path.exists(out):
             raise ValueError(f'The specified path does not exist: {out}')

@@ -43,7 +43,7 @@ def main() -> int:
     import datetime
     from PyQt5.QtWidgets import QApplication
     from quamash import QEventLoop
-    from . import THIRDPARTY_PATH_ROOT, data_dir, version
+    from . import THIRDPARTY_PATH_ROOT, data_dir, version, resources
     from .fuhrer import Fuhrer
 
     data_dir.init()
@@ -90,7 +90,7 @@ def main() -> int:
     asyncio.set_event_loop(loop)
 
     # Running the application
-    _logger.info('Starting version %r', version.__version__)
+    _logger.info('Starting version %r; package root: %r', version.__version__, resources.PACKAGE_ROOT)
     with loop:
         ctrl = Fuhrer()
         loop.run_until_complete(ctrl.run())
