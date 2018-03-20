@@ -87,7 +87,7 @@ class SoftwareVersion:
     major: int = 0
     minor: int = 0
 
-    build_timestamp_utc: datetime.datetime = datetime.datetime.fromtimestamp(0)
+    build_timestamp_utc: datetime.datetime = datetime.datetime.utcfromtimestamp(0)
 
     vcs_commit_id: int = 0
     image_crc: int = 0
