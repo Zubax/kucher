@@ -40,13 +40,7 @@ pip3 install -r requirements.txt  # You may need to run this as root depending o
 
 ### Running the application
 
-Regular launch from sources:
-
-```bash
-cd kucher
-./main.py
-```
-
+Just execute `zubax-kucher`.
 The following command line options are available:
 
 * `--debug` - activates verbose logging; useful for troubleshooting.
