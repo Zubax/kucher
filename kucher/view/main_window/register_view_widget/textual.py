@@ -78,8 +78,7 @@ def _display_array_of_scalars(value, dtype: numpy.dtype) -> str:
     text = numpy.array2string(numpy.array(value, dtype=dtype),
                               max_line_width=MAX_LINE_LENGTH,
                               formatter=_get_numpy_formatter(dtype),
-                              separator=', ',
-                              threshold=10000)
+                              separator=', ')
     text = text.strip('[]').replace('\n ', '\n')
     return text
 
