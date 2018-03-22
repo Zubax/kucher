@@ -12,13 +12,15 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-from .base import StatusWidgetBase
 from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit
 from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtCore import Qt
-from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport, get_icon_name_for_task_id, \
-    get_human_friendly_task_name
-from view.utils import lay_out_horizontally, lay_out_vertically, get_monospace_font, get_icon_pixmap
+
+from kucher.view.utils import lay_out_horizontally, lay_out_vertically, get_monospace_font, get_icon_pixmap
+from kucher.view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport, \
+    get_icon_name_for_task_id, get_human_friendly_task_name
+
+from .base import StatusWidgetBase
 
 
 class Widget(StatusWidgetBase):

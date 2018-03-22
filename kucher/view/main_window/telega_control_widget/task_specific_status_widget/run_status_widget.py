@@ -14,14 +14,16 @@
 
 import math
 import typing
-from .base import StatusWidgetBase
 from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QFrame
 from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtCore import Qt
-from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport,\
+
+from kucher.view.utils import lay_out_vertically, lay_out_horizontally
+from kucher.view.widgets.value_display_widget import ValueDisplayWidget
+from kucher.view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport,\
     get_human_friendly_control_mode_name_and_its_icon_name
-from view.utils import lay_out_vertically, lay_out_horizontally
-from view.widgets.value_display_widget import ValueDisplayWidget
+
+from .base import StatusWidgetBase
 
 
 class Widget(StatusWidgetBase):

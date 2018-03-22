@@ -12,10 +12,12 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-from .base import StatusWidgetBase
 from PyQt5.QtWidgets import QWidget, QProgressBar
-from view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport
-from view.utils import lay_out_vertically
+
+from kucher.view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport
+from kucher.view.utils import lay_out_vertically
+
+from .base import StatusWidgetBase
 
 
 class Widget(StatusWidgetBase):
