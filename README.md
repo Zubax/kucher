@@ -1,17 +1,28 @@
 # Kucher
 
-Kucher is a configuration, management, and diagnostic GUI tool for the
-[Telega motor control platform](https://zubax.com/telega).
+**Kucher is a configuration, management, and diagnostic GUI tool for the
+[Telega motor control platform](https://zubax.com/technologies/telega).**
 
 Kucher is an open source product distributed under the terms of the GPLv3 license.
 
-Kucher is cross-platform. It is designed to run on Linux, Windows, and OSX alike.
-
-Get support and ask questions at [forum.zubax.com](https://forum.zubax.com).
+Kucher is cross-platform. It is designed to run at least on GNU/Linux and Windows;
+it is also compatible with some other platforms, such as OS X,
+but is not actively tested against them.
 
 ## Installation
 
+Simply download a version suitable for your OS from
+**[files.zubax.com/products/com.zubax.kucher](https://files.zubax.com/products/com.zubax.kucher)**
+and run it.
+If you don't see a suitable version published there, please open a ticket.
+
 ## Usage
+
+Please refer to the Telega home page at
+**[zubax.com/technologies/telega](https://zubax.com/technologies/telega)**
+for links to documentation and examples.
+
+Get support and ask questions at **[forum.zubax.com](https://forum.zubax.com)**.
 
 ## Development
 
@@ -55,7 +66,8 @@ The following command line options are available:
 
 Kucher requires Python 3.6 or newer.
 You can check whether you have the right version by running `python3 --version`.
-If a newer Python is needed, and you're running Ubuntu, execute the following commands:
+If a newer Python is needed, and you're running Ubuntu or an Ubuntu-based distro such as Mint,
+execute the following commands:
 
 ```bash
 sudo apt-get install -y git-core curl build-essential libsqlite3-dev
@@ -77,5 +89,5 @@ pyenv global 3.6.4
 ```
 
 If there was a warning that `sqlite3` has not been compiled,
-make sure to resolve it first before continuing - sqlite3 is required by Kucher.
+make sure to resolve it first before continuing - `sqlite3` is required by Kucher.
 Now run `python3 --version` and ensure that you have v3.6 as default.
