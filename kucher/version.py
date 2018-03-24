@@ -13,7 +13,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-__version__ = 0, 0, 1
+__version__ = 0, 1, 0
 
 __author__ = "Pavel Kirienko"
 __license__ = "GPLv3"
