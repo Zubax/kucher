@@ -11,20 +11,14 @@ Kucher is cross-platform. It is designed to run at least on GNU/Linux and Window
 it is also compatible with some other platforms, such as OS X,
 but is not actively tested against them.
 
-## Installation
+## Installation and usage
 
-Simply download a version suitable for your OS from
-**[files.zubax.com/products/com.zubax.kucher](https://files.zubax.com/products/com.zubax.kucher)**
-and run it.
-If you don't see a suitable version published there, please open a ticket.
+Kucher installation and setup instructions can be found at the
+[Telega home page](https://zubax.com/technologies/telega).
+If you don't see a version suitable for your OS published there, please open a ticket.
+Links to usage instructions and examples can be found there as well.
 
-## Usage
-
-Please refer to the Telega home page at
-**[zubax.com/technologies/telega](https://zubax.com/technologies/telega)**
-for links to documentation and examples.
-
-Get support and ask questions at **[forum.zubax.com](https://forum.zubax.com)**.
+Get support and ask questions at the [Zubax Forum](https://forum.zubax.com).
 
 ## Development
 
