@@ -155,15 +155,22 @@ class Widget(StatusWidgetBase):
         electrical_power = s.dc.current * s.dc.voltage
         loss_power = abs(electrical_power - mechanical_power)
 
-        eta = electrical_power / mechanical_power
-        if self._energy_conversion_efficiency_estimate is not None:
-            self._energy_conversion_efficiency_estimate += (eta - self._energy_conversion_efficiency_estimate) * 0.1
-        else:
-            self._energy_conversion_efficiency_estimate = min(1.0, max(0.5, eta))
+        try:
+            eta = electrical_power / mechanical_power
+            if self._energy_conversion_efficiency_estimate is not None:
+                self._energy_conversion_efficiency_estimate += \
+                    (eta - self._energy_conversion_efficiency_estimate) * 0.1
+            else:
+                self._energy_conversion_efficiency_estimate = min(1.0, max(0.5, eta))
 
-        self._mechanical_power_display.set(f'{mechanical_power:.0f} W')
-        self._energy_conversion_efficiency_display.set(f'{(100.0 * self._energy_conversion_efficiency_estimate):.0f}%')
-        self._loss_power_display.set(f'{loss_power:.0f} W')
+            self._mechanical_power_display.set(f'{mechanical_power:.0f} W')
+            self._energy_conversion_efficiency_display.set(
+                f'{(100.0 * self._energy_conversion_efficiency_estimate):.0f}%')
+            self._loss_power_display.set(f'{loss_power:.0f} W')
+        except ZeroDivisionError:
+            self._mechanical_power_display.set('N/A')
+            self._energy_conversion_efficiency_display.set('N/A')
+            self._loss_power_display.set('N/A')
 
         self._dq_display.set(tssr.u_dq,
                              tssr.i_dq)
