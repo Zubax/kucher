@@ -151,11 +151,11 @@ class Widget(StatusWidgetBase):
 
         self._torque_display.set(f'{tssr.torque:.2f} N m')
 
-        mechanical_power = tssr.torque * tssr.mechanical_angular_velocity
-        electrical_power = s.dc.current * s.dc.voltage
-        loss_power = abs(electrical_power - mechanical_power)
-
         try:
+            mechanical_power = tssr.torque * tssr.mechanical_angular_velocity
+            electrical_power = s.dc.current * s.dc.voltage
+            loss_power = abs(electrical_power - mechanical_power)
+
             eta = electrical_power / mechanical_power
             if self._energy_conversion_efficiency_estimate is not None:
                 self._energy_conversion_efficiency_estimate += \
