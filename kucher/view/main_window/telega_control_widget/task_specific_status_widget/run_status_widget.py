@@ -31,27 +31,45 @@ class Widget(StatusWidgetBase):
     def __init__(self, parent: QWidget):
         super(Widget, self).__init__(parent)
 
+        self._energy_conversion_efficiency_estimate = None          # Used for filtering before displaying
+
         self._stall_count_display =\
-            self._make_display('Stall count',
+            self._make_display('Stalls',
                                'Number of times the rotor stalled since task activation')
 
         self._estimated_active_power_display =\
-            self._make_display('Active power',
+            self._make_display('P<sub>active</sub>',
                                'For well-balanced systems, the estimated active power equals the DC power')
 
         self._demand_factor_display = \
-            self._make_display('Demand factor',
-                               'Percent of the maximum rated power output')
+            self._make_display('Demand',
+                               'Whole powertrain demand factor')
 
         self._mechanical_rpm_display = \
-            self._make_display('M. RPM',
+            self._make_display('\u03C9<sub>mechanical</sub>',
                                'Mechanical revolutions per minute')
 
         self._current_frequency_display = \
-            self._make_display('Current frq.',
+            self._make_display('f<sub>electrical</sub>',
                                'Frequency of three-phase currents and voltages')
 
         self._dq_display = _DQDisplayWidget(self)
+
+        self._torque_display =\
+            self._make_display('\u03C4',
+                               'Estimated torque at the shaft')
+
+        self._mechanical_power_display =\
+            self._make_display('P<sub>mechanical</sub>',
+                               'Estimated mechanical power delivered to the shaft')
+
+        self._loss_power_display =\
+            self._make_display('P<sub>loss</sub>',
+                               'Estimated power loss, DC power input to motor shaft')
+
+        self._energy_conversion_efficiency_display =\
+            self._make_display('\u03B7<sub>DC-S</sub>',
+                               'Estimated energy conversion efficiency, DC power input to motor shaft')
 
         self._control_mode_display = \
             self._make_display('Ctrl. mode',
@@ -80,20 +98,27 @@ class Widget(StatusWidgetBase):
                     self._current_frequency_display,
                     self._stall_count_display,
                     self._demand_factor_display,
-                ), 1),
+                ), 2),
                 _make_vertical_separator(self),
                 (lay_out_vertically(
                     self._dq_display,
                     self._estimated_active_power_display,
                     (None, 1),
-                ), 1),
+                ), 2),
+                _make_vertical_separator(self),
+                (lay_out_vertically(
+                    self._torque_display,
+                    self._mechanical_power_display,
+                    self._loss_power_display,
+                    self._energy_conversion_efficiency_display,
+                ), 2),
                 _make_vertical_separator(self),
                 (lay_out_vertically(
                     self._control_mode_display,
                     self._reverse_flag_display,
                     self._spinup_flag_display,
                     self._saturation_flag_display,
-                ), 1),
+                ), 3),
             )
         )
 
@@ -106,6 +131,8 @@ class Widget(StatusWidgetBase):
         assert num_reset > 7        # Simple paranoid check that PyQt is working as I expect it to
 
         self._dq_display.reset()
+
+        self._energy_conversion_efficiency_estimate = None
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
         tssr = self._get_task_specific_status_report(TaskSpecificStatusReport.Run, s)
@@ -121,6 +148,22 @@ class Widget(StatusWidgetBase):
             f'{_angular_velocity_to_frequency(tssr.electrical_angular_velocity):.1f} Hz')
 
         self._display_estimated_active_power(tssr)
+
+        self._torque_display.set(f'{tssr.torque:.2f} N m')
+
+        mechanical_power = tssr.torque * tssr.mechanical_angular_velocity
+        electrical_power = s.dc.current * s.dc.voltage
+        loss_power = abs(electrical_power - mechanical_power)
+
+        eta = electrical_power / mechanical_power
+        if self._energy_conversion_efficiency_estimate is not None:
+            self._energy_conversion_efficiency_estimate += (eta - self._energy_conversion_efficiency_estimate) * 0.1
+        else:
+            self._energy_conversion_efficiency_estimate = min(1.0, max(0.5, eta))
+
+        self._mechanical_power_display.set(f'{mechanical_power:.0f} W')
+        self._energy_conversion_efficiency_display.set(f'{(100.0 * self._energy_conversion_efficiency_estimate):.0f}%')
+        self._loss_power_display.set(f'{loss_power:.0f} W')
 
         self._dq_display.set(tssr.u_dq,
                              tssr.i_dq)
@@ -181,8 +224,8 @@ class _DQDisplayWidget(QWidget):
         # 1 Ud Uq
         # 2 Id Iq
         layout = QGridLayout(self)
-        layout.addWidget(QLabel('Udq', self), 0, 0)
-        layout.addWidget(QLabel('Idq', self), 1, 0)
+        layout.addWidget(QLabel('U<sub>DQ</sub>', self), 0, 0)
+        layout.addWidget(QLabel('I<sub>DQ</sub>', self), 1, 0)
         layout.addWidget(self._ud, 0, 1)
         layout.addWidget(self._uq, 0, 2)
         layout.addWidget(self._id, 1, 1)

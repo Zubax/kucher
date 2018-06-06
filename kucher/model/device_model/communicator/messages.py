@@ -158,21 +158,38 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
         'failed_task_id'                / TaskIDFormat,
         'failed_task_exit_code'         / U8,
     ),
-    'run': con.Struct(
-        'stall_count'                   / U32,
-        'demand_factor'                 / F32,
-        # Velocity
-        'electrical_angular_velocity'   / F32,
-        'mechanical_angular_velocity'   / F32,
-        # Rotating system parameters
-        'u_dq'                          / con.Array(2, F32),
-        'i_dq'                          / con.Array(2, F32),
-        # Control mode
-        'mode'                          / ControlModeFormat,
-        # State flags
-        'spinup_in_progress'            / con.Flag,
-        'rotation_reversed'             / con.Flag,
-        'controller_saturated'          / con.Flag,
+    'run': con.Select(
+        # New format starting from firmware v0.2 - added a new field 'torque' and one reserved four bytes long field
+        con.Struct(
+            'stall_count'                   / U32,
+            'demand_factor'                 / F32,
+            # Mechanical parameters
+            'electrical_angular_velocity'   / F32,
+            'mechanical_angular_velocity'   / F32,
+            'torque'                        / F32,
+            # Rotating system parameters
+            'u_dq'                          / con.Array(2, F32),
+            'i_dq'                          / con.Array(2, F32),
+            # Control mode
+            'mode'                          / ControlModeFormat,
+            # State flags
+            'spinup_in_progress'            / con.Flag,
+            'rotation_reversed'             / con.Flag,
+            'controller_saturated'          / con.Flag,
+        ),
+        # An older format used in the firmware v0.1 - this one is shorter, hence it must be at the end of Select()
+        con.Struct(
+            'stall_count'                   / U32,
+            'demand_factor'                 / F32,
+            'electrical_angular_velocity'   / F32,
+            'mechanical_angular_velocity'   / F32,
+            'u_dq'                          / con.Array(2, F32),
+            'i_dq'                          / con.Array(2, F32),
+            'mode'                          / ControlModeFormat,
+            'spinup_in_progress'            / con.Flag,
+            'rotation_reversed'             / con.Flag,
+            'controller_saturated'          / con.Flag,
+        ),
     ),
     'hardware_test': con.Struct(
         'progress'                      / F32,

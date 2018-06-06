@@ -172,9 +172,10 @@ class TaskSpecificStatusReport:
     class Run:
         stall_count:                    int
         demand_factor:                  float
-        # Velocity
+        # Mechanical parameters
         electrical_angular_velocity:    float
         mechanical_angular_velocity:    float
+        torque:                         float
         # Rotating system parameters
         u_dq:                           typing.Tuple[float, float]
         i_dq:                           typing.Tuple[float, float]
@@ -197,6 +198,7 @@ class TaskSpecificStatusReport:
                 demand_factor=fields['demand_factor'],
                 electrical_angular_velocity=fields['electrical_angular_velocity'],
                 mechanical_angular_velocity=fields['mechanical_angular_velocity'],
+                torque=fields.get('torque', 0.0),                                   # Not available until v0.2
                 u_dq=tuplize(fields['u_dq']),
                 i_dq=tuplize(fields['i_dq']),
                 mode=mode,
