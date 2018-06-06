@@ -163,10 +163,17 @@ class Widget(StatusWidgetBase):
             else:
                 self._energy_conversion_efficiency_estimate = min(1.0, max(0.5, eta))
 
-            self._mechanical_power_display.set(f'{mechanical_power:.0f} W')
-            self._energy_conversion_efficiency_display.set(
-                f'{(100.0 * self._energy_conversion_efficiency_estimate):.0f}%')
-            self._loss_power_display.set(f'{loss_power:.0f} W')
+            # Sanity check. The current revision of the firmware tends to report nonsensical torque estimates.
+            # Until that is fixed, this workaround is going to stay here.
+            if 0.7 < eta < 0.95:
+                self._mechanical_power_display.set(f'{mechanical_power:.0f} W')
+                self._energy_conversion_efficiency_display.set(
+                    f'{(100.0 * self._energy_conversion_efficiency_estimate):.0f}%')
+                self._loss_power_display.set(f'{loss_power:.0f} W')
+            else:
+                self._mechanical_power_display.set('N/A')
+                self._energy_conversion_efficiency_display.set('N/A')
+                self._loss_power_display.set('N/A')
         except ZeroDivisionError:
             self._mechanical_power_display.set('N/A')
             self._energy_conversion_efficiency_display.set('N/A')
