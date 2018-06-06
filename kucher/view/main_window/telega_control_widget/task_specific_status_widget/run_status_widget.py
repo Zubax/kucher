@@ -43,7 +43,7 @@ class Widget(StatusWidgetBase):
 
         self._demand_factor_display = \
             self._make_display('Demand',
-                               'Whole powertrain demand factor')
+                               'Total powertrain demand factor')
 
         self._mechanical_rpm_display = \
             self._make_display('\u03C9<sub>mechanical</sub>',
@@ -98,27 +98,27 @@ class Widget(StatusWidgetBase):
                     self._current_frequency_display,
                     self._stall_count_display,
                     self._demand_factor_display,
-                ), 2),
+                ), 4),
                 _make_vertical_separator(self),
                 (lay_out_vertically(
                     self._dq_display,
                     self._estimated_active_power_display,
                     (None, 1),
-                ), 2),
+                ), 4),
                 _make_vertical_separator(self),
                 (lay_out_vertically(
                     self._torque_display,
                     self._mechanical_power_display,
                     self._loss_power_display,
                     self._energy_conversion_efficiency_display,
-                ), 2),
+                ), 3),
                 _make_vertical_separator(self),
                 (lay_out_vertically(
                     self._control_mode_display,
                     self._reverse_flag_display,
                     self._spinup_flag_display,
                     self._saturation_flag_display,
-                ), 3),
+                ), 4),
             )
         )
 
@@ -159,7 +159,7 @@ class Widget(StatusWidgetBase):
             eta = electrical_power / mechanical_power
             if self._energy_conversion_efficiency_estimate is not None:
                 self._energy_conversion_efficiency_estimate += \
-                    (eta - self._energy_conversion_efficiency_estimate) * 0.1
+                    (eta - self._energy_conversion_efficiency_estimate) * 0.2
             else:
                 self._energy_conversion_efficiency_estimate = min(1.0, max(0.5, eta))
 
@@ -186,7 +186,7 @@ class Widget(StatusWidgetBase):
         self._spinup_flag_display.set('Starting' if tssr.spinup_in_progress else 'Started',
                                       icon_name='warning' if tssr.spinup_in_progress else 'ok-strong')
 
-        self._saturation_flag_display.set('Saturated' if tssr.controller_saturated else 'Not saturated',
+        self._saturation_flag_display.set('Saturated' if tssr.controller_saturated else 'Normal',
                                           icon_name='control-saturation' if tssr.controller_saturated else 'ok-strong')
 
     def _display_estimated_active_power(self, tssr: TaskSpecificStatusReport.Run):
