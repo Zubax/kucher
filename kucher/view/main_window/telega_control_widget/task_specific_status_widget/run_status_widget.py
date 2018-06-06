@@ -156,7 +156,7 @@ class Widget(StatusWidgetBase):
             electrical_power = s.dc.current * s.dc.voltage
             loss_power = abs(electrical_power - mechanical_power)
 
-            eta = electrical_power / mechanical_power
+            eta = mechanical_power / electrical_power
             if self._energy_conversion_efficiency_estimate is not None:
                 self._energy_conversion_efficiency_estimate += \
                     (eta - self._energy_conversion_efficiency_estimate) * 0.2
