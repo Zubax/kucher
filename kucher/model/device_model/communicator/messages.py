@@ -256,7 +256,7 @@ DeviceCharacteristicsMessageFormatV1 = con.Struct(
         'phase_current_measurement_error_variance'  / F32,
     ),
     'limits' / con.Struct(
-        'measurement_range' / con.Struct(
+        'absolute_maximum_ratings' / con.Struct(
             'vsi_dc_voltage'        / MathRangeFormat,
         ),
         'safe_operating_area' / con.Struct(

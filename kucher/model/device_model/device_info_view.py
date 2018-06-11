@@ -87,7 +87,7 @@ class Characteristics:
     @_struct_view
     class Limits:
         @_struct_view
-        class MeasurementRange:
+        class AbsoluteMaximumRatings:
             vsi_dc_voltage:    MathRange
 
         @_struct_view
@@ -103,17 +103,17 @@ class Characteristics:
             low_gain:  float
             high_gain: float
 
-        measurement_range:             MeasurementRange
+        absolute_maximum_ratings:      AbsoluteMaximumRatings
         safe_operating_area:           SafeOperatingArea
         phase_current_zero_bias_limit: PhaseCurrentZeroBiasLimit
 
         @staticmethod
         def populate(msg: typing.Mapping):
-            mr = msg['measurement_range']
+            amr = msg['absolute_maximum_ratings']
             soa = msg['safe_operating_area']
             return Characteristics.Limits(
-                measurement_range=Characteristics.Limits.MeasurementRange(
-                    vsi_dc_voltage=MathRange(**mr['vsi_dc_voltage']),
+                absolute_maximum_ratings=Characteristics.Limits.AbsoluteMaximumRatings(
+                    vsi_dc_voltage=MathRange(**amr['vsi_dc_voltage']),
                 ),
                 safe_operating_area=Characteristics.Limits.SafeOperatingArea(
                     vsi_dc_voltage=MathRange(**soa['vsi_dc_voltage']),
@@ -159,7 +159,7 @@ def _unittest_characteristics_populating():
     sample = {
         'capability_flags': {'battery_eliminator_circuit': True,
                              'doubly_redundant_can_bus':   True},
-        'limits':           {'measurement_range':             {'vsi_dc_voltage': {'max': 62.040000915527344,
+        'limits':           {'absolute_maximum_ratings':      {'vsi_dc_voltage': {'max': 62.040000915527344,
                                                                                   'min': 4.0}},
                              'phase_current_zero_bias_limit': {'high_gain': 0.5,
                                                                'low_gain':  2.0},
