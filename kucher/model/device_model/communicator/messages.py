@@ -167,15 +167,15 @@ TaskSpecificStatusReportFormat = con.Switch(con.this.current_task_id, {
             'electrical_angular_velocity'   / F32,
             'mechanical_angular_velocity'   / F32,
             'torque'                        / F32,
-            # Rotating system parameters
+            # Electrical parameters
             'u_dq'                          / con.Array(2, F32),
             'i_dq'                          / con.Array(2, F32),
+            'voltage_utilization_factor'    / F32,
             # Control mode
             'mode'                          / ControlModeFormat,
             # State flags
             'spinup_in_progress'            / con.Flag,
             'rotation_reversed'             / con.Flag,
-            'controller_saturated'          / con.Flag,
         ),
         # An older format used in the firmware v0.1 - this one is shorter, hence it must be at the end of Select()
         con.Struct(

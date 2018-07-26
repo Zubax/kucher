@@ -176,15 +176,15 @@ class TaskSpecificStatusReport:
         electrical_angular_velocity:    float
         mechanical_angular_velocity:    float
         torque:                         float
-        # Rotating system parameters
+        # Electrical parameters
         u_dq:                           typing.Tuple[float, float]
         i_dq:                           typing.Tuple[float, float]
+        voltage_utilization_factor:     float
         # Control mode
         mode:                           ControlMode
         # Flags
         spinup_in_progress:             bool
         rotation_reversed:              bool
-        controller_saturated:           bool
 
         @staticmethod
         def populate(fields: typing.Mapping):
@@ -201,10 +201,10 @@ class TaskSpecificStatusReport:
                 torque=fields.get('torque', 0.0),                                   # Not available until v0.2
                 u_dq=tuplize(fields['u_dq']),
                 i_dq=tuplize(fields['i_dq']),
+                voltage_utilization_factor=fields['voltage_utilization_factor'],
                 mode=mode,
                 spinup_in_progress=fields['spinup_in_progress'],
                 rotation_reversed=fields['rotation_reversed'],
-                controller_saturated=fields['controller_saturated'],
             )
 
     @_struct_view
