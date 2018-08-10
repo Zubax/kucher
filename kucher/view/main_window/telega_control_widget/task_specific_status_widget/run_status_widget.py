@@ -86,7 +86,6 @@ class Widget(StatusWidgetBase):
                                'Whether the motor has started or still starting',
                                True)
 
-        # TODO: VOLTAGE UTILIZATION FACTOR
         self._saturation_flag_display = \
             self._make_display('CSSW',
                                'Control System Saturation Warning',
