@@ -28,10 +28,8 @@ from .model import Model
 from .style_option_modifying_delegate import StyleOptionModifyingDelegate
 from .editor_delegate import EditorDelegate
 
-
 READ_SELECTED_SHORTCUT = 'Ctrl+R'       # Like Reload
 RESET_SELECTED_SHORTCUT = 'Ctrl+D'      # Like Delete
-
 
 _logger = getLogger(__name__)
 
@@ -57,6 +55,14 @@ class RegisterViewWidget(WidgetBase):
                                                            f'immediately. This function is available only if a '
                                                            f'default value is defined. [{RESET_SELECTED_SHORTCUT}]',
                                                   on_clicked=self._do_reset_selected)
+
+        self._reset_all_button = make_button(self, 'Reset all',
+                                             icon_name='clear-symbol',
+                                             tool_tip=f'Reset the all registers to their default '
+                                                      f'values. The restored values will be committed '
+                                                      f'immediately. This function is available only if a '
+                                                      f'default value is defined.',
+                                             on_clicked=self._do_reset_all)
 
         self._read_selected_button = make_button(self, 'Read selected',
                                                  icon_name='process',
@@ -141,6 +147,7 @@ class RegisterViewWidget(WidgetBase):
                     self._read_all_button,
                     self._read_selected_button,
                     self._reset_selected_button,
+                    self._reset_all_button,
                     (None, 1),
                 ),
                 lay_out_horizontally(
@@ -197,6 +204,7 @@ class RegisterViewWidget(WidgetBase):
         self._reset_selected_button.setEnabled(False)
         self._read_selected_button.setEnabled(False)
         self._read_all_button.setEnabled(len(filtered_registers) > 0)
+        self._reset_all_button.setEnabled(len(filtered_registers) > 0)
 
         self._display_status(f'{len(filtered_registers)} registers loaded')
 
@@ -219,6 +227,14 @@ class RegisterViewWidget(WidgetBase):
     def _do_reset_selected(self):
         rv = {}
         for r in self._get_selected_registers():
+            if r.has_default_value:
+                rv[r] = r.default_value
+
+        self._write_specific(rv)
+
+    def _do_reset_all(self):
+        rv = {}
+        for r in self._registers:
             if r.has_default_value:
                 rv[r] = r.default_value
 
