@@ -18,7 +18,7 @@ import itertools
 from logging import getLogger
 from PyQt5.QtCore import Qt, QModelIndex
 from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QComboBox, QAbstractItemView, \
-    QLabel, QAction
+    QLabel, QAction, QGridLayout
 
 from kucher.view.widgets import WidgetBase
 from kucher.view.utils import gui_test, make_button, lay_out_vertically, lay_out_horizontally, show_error, get_icon
@@ -59,11 +59,10 @@ class RegisterViewWidget(WidgetBase):
                                                   on_clicked=self._do_reset_selected)
 
         self._reset_all_button = make_button(self, 'Reset all',
-                                             icon_name='clear-symbol',
+                                             icon_name='skull-crossbones',
                                              tool_tip=f'Reset the all registers to their default '
                                                       f'values. The restored values will be committed '
-                                                      f'immediately. This function is available only if a '
-                                                      f'default value is defined.',
+                                                      f'immediately.',
                                              on_clicked=self._do_reset_all)
 
         self._read_selected_button = make_button(self, 'Read selected',
@@ -91,6 +90,7 @@ class RegisterViewWidget(WidgetBase):
         self._status_display.setWordWrap(True)
 
         self._reset_selected_button.setEnabled(False)
+        self._reset_all_button.setEnabled(False)
         self._read_selected_button.setEnabled(False)
         self._read_all_button.setEnabled(False)
 
@@ -142,25 +142,27 @@ class RegisterViewWidget(WidgetBase):
         header.setSectionResizeMode(QHeaderView.ResizeToContents)
         header.setStretchLastSection(False)  # Horizontal scroll bar doesn't work if this is enabled
 
-        self.setLayout(
-            lay_out_vertically(
-                (self._tree, 1),
-                lay_out_horizontally(
-                    self._read_all_button,
-                    self._read_selected_button,
-                    self._reset_selected_button,
-                    self._reset_all_button,
-                    (None, 1),
-                ),
-                lay_out_horizontally(
-                    self._visibility_selector,
-                    (None, 1),
-                    self._expand_all_button,
-                    self._collapse_all_button,
-                ),
-                self._status_display
-            )
+        buttons_layout = QGridLayout()
+        buttons_layout.addWidget(self._read_selected_button, 0, 0)
+        buttons_layout.addWidget(self._reset_selected_button, 0, 2)
+        buttons_layout.addWidget(self._read_all_button, 1, 0)
+        buttons_layout.addWidget(self._reset_all_button, 1, 2)
+        for col in range(3):
+            buttons_layout.setColumnStretch(col, 1)
+
+        layout = lay_out_vertically(
+            (self._tree, 1),
+            buttons_layout,
+            lay_out_horizontally(
+                self._visibility_selector,
+                (None, 1),
+                self._expand_all_button,
+                self._collapse_all_button,
+            ),
+            self._status_display
         )
+
+        self.setLayout(layout)
 
     def reset(self):
         self.setup([])
