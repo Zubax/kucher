@@ -28,8 +28,10 @@ from .model import Model
 from .style_option_modifying_delegate import StyleOptionModifyingDelegate
 from .editor_delegate import EditorDelegate
 
+
 READ_SELECTED_SHORTCUT = 'Ctrl+R'       # Like Reload
 RESET_SELECTED_SHORTCUT = 'Ctrl+D'      # Like Delete
+
 
 _logger = getLogger(__name__)
 
