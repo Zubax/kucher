@@ -18,4 +18,8 @@ numpy ~= 1.13
 
 pytest >= 3.3
 
+setuptools
+
+wheel
+
 PyInstaller ~= 3.3
