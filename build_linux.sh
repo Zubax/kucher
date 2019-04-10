@@ -1,5 +1,15 @@
 #!/bin/bash
+#
+# Before running this, make sure all PIP dependencies are installed.
+#
 
-pip install -r requirements.txt || exit 1
+sudo apt-get install patchelf -y
 
 pyinstaller --clean --noconfirm pyinstaller.spec || exit 2
+
+# https://github.com/JonathonReinhart/staticx/issues/79
+cd dist
+mv Kucher Kucher.tmp
+staticx --loglevel DEBUG Kucher.tmp Kucher
+
+rm -rf *.tmp
