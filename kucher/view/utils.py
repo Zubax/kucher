@@ -78,13 +78,13 @@ def get_monospace_font(small=False) -> QFont:
 @cached
 def _get_monospace_font_impl(small=False) -> QFont:
     begun = time.monotonic()
-    multiplier = 0.9 if small else 1.0
-
+    multiplier = 0.8 if small else 1.0
+    min_font_size = 7
     preferred = ['Consolas', 'DejaVu Sans Mono', 'Monospace', 'Lucida Console', 'Monaco']
     for name in preferred:
         font = QFont(name)
         if QFontInfo(font).fixedPitch():
-            font.setPointSize(round(QFont().pointSize() * multiplier))
+            font.setPointSize(round(max(min_font_size, QFont().pointSize() * multiplier)))
             _logger.info('Selected monospace font (%.6f seconds): %r', time.monotonic() - begun, font.toString())
             return font
 
