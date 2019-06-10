@@ -79,7 +79,7 @@ def get_monospace_font(small=False) -> QFont:
 def _get_monospace_font_impl(small=False) -> QFont:
     begun = time.monotonic()
     multiplier = 0.8 if small else 1.0
-    min_font_size = 7
+    min_font_size = min(7, QFont().pointSize())
     preferred = ['Consolas', 'DejaVu Sans Mono', 'Monospace', 'Lucida Console', 'Monaco']
     for name in preferred:
         font = QFont(name)
