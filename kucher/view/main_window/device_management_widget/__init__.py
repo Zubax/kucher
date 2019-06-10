@@ -130,6 +130,7 @@ class DeviceManagementWidget(WidgetBase):
 
         self._connection_progress_bar.setValue(int(progress * 100))
         self._connection_progress_bar.setFormat(stage_description)
+        self._connection_progress_bar.setAlignment(Qt.AlignCenter)
 
     # noinspection PyArgumentList,PyUnresolvedReferences
     def _init_overlay_widgets(self):
