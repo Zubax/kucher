@@ -24,7 +24,7 @@ else:
 
 
 def get_absolute_path(*relative_path_items: str, check_existence=False) -> str:
-    out = os.path.abspath(os.path.join(PACKAGE_ROOT, *relative_path_items))
+    out = os.path.abspath(os.path.join(PACKAGE_ROOT, *relative_path_items)).replace('\\','/')
     if check_existence:
         if not os.path.exists(out):
             raise ValueError(f'The specified path does not exist: {out}')
