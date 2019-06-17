@@ -1,7 +1,7 @@
 environment:
 
   clone_script:
-    - cmd: git clone -q --recursive --branch=appveyor-CI https://github.com/Zubax/kucher.git C:\projects\kucher
+    - cmd: "git clone -q --recursive --branch=appveyor-CI https://github.com/Zubax/kucher.git C:\projects\kucher"
 
   matrix:
 
