@@ -19,8 +19,6 @@ install:
   - "pip install pep8"
   - "py -3 -m pip install mypy"
   - "py -3 -m  pip install -r requirements.txt"
-  - "dir quamash /AD /s"
-  - "dir /s"
 
 build: off
 
