@@ -1,0 +1,28 @@
+environment:
+
+  matrix:
+
+    # For Python versions available on Appveyor, see
+    # https://www.appveyor.com/docs/windows-images-software/#python
+    # The list here is complete (excluding Python 2.6, which
+    # isn't covered by this document) at the time of writing.
+    - PYTHON: "C:\\Python36-x64"
+    - PYTHON: "C:\\Python37-x64"
+
+install:
+  - "pip install pep8"
+  - "pip install mypy"
+  - "pip install -r requirements.txt"
+
+build: off
+
+test_script:
+  # Put your test command here.
+  # Note that you must use the environment variable %PYTHON% to refer to
+  # the interpreter you're using - Appveyor does not do anything special
+  # to put the Python version you want to use on PATH.
+  - "python zubax-kucher"
+
+after_test:
+  - "pep8 --max-line-length=120 --exclude libraries"
+  - "mypy zubax-kucher"
