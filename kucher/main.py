@@ -42,8 +42,7 @@ def main() -> int:
     import asyncio
     import datetime
     from PyQt5.QtWidgets import QApplication
-    import quamash
-    # from quamash import QEventLoop
+    from quamash import QEventLoop
     from . import THIRDPARTY_PATH_ROOT, data_dir, version, resources
     from .fuhrer import Fuhrer
 
