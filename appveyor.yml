@@ -12,9 +12,9 @@ environment:
 install:
   - SET PATH=%PYTHON%;%PATH%
   - "python -V"
-  - "python3 pip install pep8"
-  - "python3 pip install mypy"
-  - "python3 pip install -r requirements.txt"
+  - "py -3 pip install pep8"
+  - "py -3 pip install mypy"
+  - "py -3 pip install -r requirements.txt"
 
 build: off
 
