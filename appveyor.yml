@@ -1,8 +1,5 @@
 environment:
 
-  clone_script:
-    - cmd: "git clone -q --recursive --branch=appveyor-CI https://github.com/Zubax/kucher.git C:\projects\kucher"
-
   matrix:
 
     # For Python versions available on Appveyor, see
@@ -15,6 +12,7 @@ environment:
     - PYTHON: "C:\\Python37-x64"
 
 install:
+  - "git submodule update --init --recursive"
   - SET PATH=%PYTHON%;%PATH%
   - "python -V"
   - "pip --version"
