@@ -10,9 +10,10 @@ environment:
     - PYTHON: "C:\\Python37-x64"
 
 install:
-  - "pip install pep8"
-  - "pip install mypy"
-  - "pip install -r requirements.txt"
+  - "python -V"
+  - "pip3 install pep8"
+  - "pip3 install mypy"
+  - "pip3 install -r requirements.txt"
 
 build: off
 
