@@ -14,7 +14,7 @@ install:
   - "python -V"
   - "pip --version"
   - "pip install pep8"
-  - "python pip install mypy"
+  - "py -3 -m pip install mypy"
   - "pip install -r requirements.txt"
 
 build: off
