@@ -6,11 +6,6 @@ stack:
   - python 3.6
   - python 3.7
 
-environement:
-  matrix:
-    - PYTHON: "C:\\Python36"
-    - PYTHON: "C:\\Python37"
-
 install:
   - "git submodule update --init --recursive"
   - cmd: "SET PATH=%PYTHON%;%PATH%"
