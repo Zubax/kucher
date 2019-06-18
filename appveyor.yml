@@ -16,13 +16,19 @@ install:
   - cmd: "py -3 -m  pip install -r requirements.txt"
   - sh: "pip install mypy"
   - sh: "pip install -r requirements.txt"
+  - sh: "apt-get install libxcb-xkb1 libxcb-icccm4 libxcb-image0 libxcb-render-util0"
+  - sh: "sudo apt-get install libxkbcommon-x11-0"
+  - sh: "sudo apt-get install libx11-xcb1"
+  - sh: "sudo apt-get install --reinstall libxcb-xinerama0"
+  - sh: "sudo ln /usr/lib/x86_64-linux-gnu/qt5/plugins/platforms/ /usr/bin/"
+
 
 build: off
 
 test_script:
   - cmd: "echo program will start"
   # - cmd: "start /B py -3 zubax-kucher"
-  - sh: "timeout 30s python3 zubax-kucher"
+  - sh: "LD_LIBRARY_PATH=. QT_DEBUG_PLUGINS=1 ./zubax-kucher"
   - cmd: "echo program started"
   - cmd: "timeout 10"
   - cmd: "echo timeout over"
