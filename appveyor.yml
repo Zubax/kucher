@@ -24,9 +24,9 @@ test_script:
   - cmd: "echo program will start"
   # - cmd: "start /B py -3 zubax-kucher"
   - sh: "export QT_QPA_PLATFORM=offscreen"
-  - sh: "timeout 10 ./zubax-kucher"
+  - sh: "timeout 30 ./zubax-kucher"
   - cmd: "echo program started"
-  - cmd: "timeout 10"
+  - cmd: "timeout 30"
   - cmd: "echo timeout over"
   # - cmd: "taskkill /fi \"windowtitle eq Zubax Kucher\""
 
