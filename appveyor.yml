@@ -16,7 +16,7 @@ install:
   - cmd: "py -3 -m  pip install -r requirements.txt"
   - sh: "pip install mypy"
   - sh: "pip install -r requirements.txt"
-  - sh: "apt-get install libxcb-xkb1 libxcb-icccm4 libxcb-image0 libxcb-render-util0"
+  - sh: "sudo apt-get install libxcb-xkb1 libxcb-icccm4 libxcb-image0 libxcb-render-util0"
   - sh: "sudo apt-get install libxkbcommon-x11-0"
   - sh: "sudo apt-get install libx11-xcb1"
   - sh: "sudo apt-get install --reinstall libxcb-xinerama0"
