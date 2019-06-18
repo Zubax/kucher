@@ -26,7 +26,7 @@ test_script:
   # On Windows
   - "start py -3 zubax-kucher"
   - "timeout 30"
-  - "taskkill /fi "windowtitle eq Zubax Kucher""
+  - "taskkill /fi \"windowtitle eq Zubax Kucher\""
 
 after_test:
   - "pep8 --max-line-length=120 --exclude libraries"
