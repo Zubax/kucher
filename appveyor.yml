@@ -25,7 +25,7 @@ build: off
 test_script:
   # On Windows
   - "echo program will start"
-  - "start py -3 zubax-kucher"
+  - "start /B py -3 zubax-kucher"
   - "echo program started"
   - "timeout 10"
   - "echo timeout over"
