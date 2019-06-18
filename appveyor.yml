@@ -23,11 +23,10 @@ install:
 build: off
 
 test_script:
-  # Put your test command here.
-  # Note that you must use the environment variable %PYTHON% to refer to
-  # the interpreter you're using - Appveyor does not do anything special
-  # to put the Python version you want to use on PATH.
-  - "py -3 zubax-kucher"
+  # On Windows
+  - "start py -3 zubax-kucher"
+  - "timeout 30"
+  - "taskkill /fi "windowtitle eq Zubax Kucher""
 
 after_test:
   - "pep8 --max-line-length=120 --exclude libraries"
