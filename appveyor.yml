@@ -12,7 +12,7 @@ environement:
 
 install:
   - "git submodule update --init --recursive"
-  - cmd: "SET PATH=%PYTHON%;%PATH%""
+  - cmd: "SET PATH=%PYTHON%;%PATH%"
   - "python -V"
   - "pip --version"
   - "pip install pep8"
