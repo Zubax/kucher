@@ -24,8 +24,11 @@ build: off
 
 test_script:
   # On Windows
+  - "echo program will start"
   - "start py -3 zubax-kucher"
-  - "timeout 30"
+  - "echo program started"
+  - "timeout 10"
+  - "echo timeout over"
   - "taskkill /fi \"windowtitle eq Zubax Kucher\""
 
 after_test:
