@@ -26,7 +26,7 @@ test_script:
   - sh: "export QT_QPA_PLATFORM=offscreen"
   - sh: "timeout 30 ./zubax-kucher"
   - cmd: "echo program started"
-  - cmd: "timeout --preserve-status 30"
+  - cmd: "timeout 30"
   - cmd: "echo timeout over"
   # - cmd: "taskkill /fi \"windowtitle eq Zubax Kucher\""
 
