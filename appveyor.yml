@@ -14,6 +14,8 @@ install:
   - "pip install pep8"
   - cmd: "py -3 -m pip install mypy"
   - cmd: "py -3 -m  pip install -r requirements.txt"
+  - sh: "pip install mypy"
+  - sh: "pip install -r requirements.txt"
 
 build: off
 
