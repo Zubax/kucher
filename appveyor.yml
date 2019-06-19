@@ -22,7 +22,7 @@ stack: python %PYTHON%
 
 install:
   - "git submodule update --init --recursive"
-  #- cmd: "SET PATH=%PYTHON%;%PATH%"
+  - cmd: "SET PATH=%PYTHON%;%PATH%"
   - cmd: "SET PATH=C:\\Python3*-x64\\Scripts;%PATH%"
   #- cmd: "SET PYTHONPATH=%PYTHONPATH%;C:\\Python37-x64\\Scripts"
   - "python -V"
