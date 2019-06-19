@@ -1,5 +1,5 @@
 image:
-#- Ubuntu
+- Ubuntu
 - Visual Studio 2017
 
 stack: 
@@ -27,5 +27,5 @@ test_script:
 
 after_test:
   - sh: "pep8 --max-line-length=120 --exclude libraries; exit 0"
-  - cmd: "pep8 --max-line-length=120 --exclude libraries && exit 0"
+  - cmd: "pep8 --max-line-length=120 --exclude libraries || ver > nul"
   - "mypy zubax-kucher"
