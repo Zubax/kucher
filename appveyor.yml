@@ -26,8 +26,8 @@ test_script:
   - sh: "(timeout 20s ./zubax-kucher; exit 0)"
 
 after_test:
-  - sh: "pep8 --max-line-length=120 --exclude libraries; exit 0"
-  - cmd: "pep8 --max-line-length=120 --exclude libraries || ver > nul"
   - cdm: "mypy -V"
   - cdm: "mypy zubax-kucher"
   - sh: "mypy zubax-kucher"
+  - sh: "(pep8 --max-line-length=120 --exclude libraries; exit 0)"
+  - cmd: "pep8 --max-line-length=120 --exclude libraries || ver > nul"
