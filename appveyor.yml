@@ -10,13 +10,13 @@ environment:
       PYTHON: "C:\\Python37-x64"
       PYTHON_ARCH: "64"
 
-    # Ubuntu - python 3.6
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "3.6"
+    # # Ubuntu - python 3.6
+    # - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    #   PYTHON: "3.6"
 
-    # Ubuntu - python 3.7
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "3.7"
+    # # Ubuntu - python 3.7
+    # - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    #   PYTHON: "3.7"
 
 stack: python %PYTHON%
 
@@ -37,7 +37,7 @@ install:
 build: off
 
 test_script:
-  - cmd: "start python zubax-kucher & timeout 20 & taskkill /fi \"windowtitle eq Zubax Kucher\""
+  - cmd: "test.bat"
   - sh: "export QT_QPA_PLATFORM=offscreen"
   - sh: "(timeout 20s ./zubax-kucher; exit 0)"
 
