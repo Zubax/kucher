@@ -22,8 +22,8 @@ stack: python %PYTHON%
 
 install:
   - "git submodule update --init --recursive"
-  - cmd: "SET PATH=%PYTHON%;%PATH%"
-  - cmd: "SET PATH=C:\\Python36-x64\\Scripts;%PATH%"
+  #- cmd: "SET PATH=%PYTHON%;%PATH%"
+  - cmd: "SET PATH=C:\\Python3*-x64\\Scripts;%PATH%"
   #- cmd: "SET PYTHONPATH=%PYTHONPATH%;C:\\Python37-x64\\Scripts"
   - "python -V"
   - "pip --version"
@@ -43,7 +43,7 @@ test_script:
 
 after_test:
   - "mypy -V"
-  - cmd: "mypy zubax-kucher"
+  - cmd: "mypy zubax-kucher || ver > nul"
   - sh: "(mypy zubax-kucher; exit 0)"
   - cmd: "pep8 --max-line-length=120 --exclude libraries || ver > nul"
   - sh: "(pep8 --max-line-length=120 --exclude libraries; exit 0)"
