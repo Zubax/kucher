@@ -22,13 +22,10 @@ build: off
 
 test_script:
   - cmd: "echo program will start"
-  - cmd: "start python zubax-kucher & echo ok & timeout 10 & taskkill /fi \"windowtitle eq Zubax Kucher\""
+  - cmd: "start /B python zubax-kucher & timeout 10 > nul"
+  - cmd: "taskkill /fi \"windowtitle eq Zubax Kucher\""
   - sh: "export QT_QPA_PLATFORM=offscreen"
   - sh: "(timeout 30s ./zubax-kucher; exit 0)"
-  - cmd: "echo program started"
-  - cmd: "timeout 30"
-  - cmd: "echo timeout over"
-  - cmd: "taskkill /fi \"windowtitle eq Zubax Kucher\""
 
 after_test:
   - "pep8 --max-line-length=120 --exclude libraries"
