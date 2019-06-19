@@ -12,11 +12,11 @@ environment:
 
     # Ubuntu - python 3.6
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      stack: python 3.6
-      
+      PYTHON: "3.6"
+
     # Ubuntu - python 3.7
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      stack: python 3.7
+      PYTHON: "3.6"
 
 install:
   - "git submodule update --init --recursive"
@@ -24,8 +24,8 @@ install:
   - "python -V"
   - "pip --version"
   - "pip install pep8"
-  - cmd: "py -3 -m pip install mypy"
-  - cmd: "py -3 -m  pip install -r requirements.txt"
+  - cmd: "python -m pip install mypy"
+  - cmd: "python -m  pip install -r requirements.txt"
   - sh: "pip install mypy"
   - sh: "pip install -r requirements.txt"
 
@@ -33,7 +33,7 @@ install:
 build: off
 
 test_script:
-  - cmd: "start py -3 zubax-kucher & timeout 20 & taskkill /fi \"windowtitle eq Zubax Kucher\""
+  - cmd: "start python zubax-kucher & timeout 20 & taskkill /fi \"windowtitle eq Zubax Kucher\""
   - sh: "export QT_QPA_PLATFORM=offscreen"
   - sh: "(timeout 20s ./zubax-kucher; exit 0)"
 
