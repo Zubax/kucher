@@ -1,5 +1,5 @@
 image:
-#- Ubuntu
+- Ubuntu
 - Visual Studio 2017
 
 stack: 
@@ -10,6 +10,8 @@ install:
   - "git submodule update --init --recursive"
   - cmd: "SET PATH=%PYTHON%;%PATH%"
   - "py -3 -V"
+  - "python -V"
+  - "python3 -V"
   - "pip --version"
   - "pip install pep8"
   - cmd: "py -3 -m pip install mypy"
