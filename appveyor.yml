@@ -1,5 +1,5 @@
 image:
-- Ubuntu
+#- Ubuntu
 - Visual Studio 2017
 
 stack: 
@@ -9,7 +9,7 @@ stack:
 install:
   - "git submodule update --init --recursive"
   - cmd: "SET PATH=%PYTHON%;%PATH%"
-  - "python -V"
+  - "py -3 -V"
   - "pip --version"
   - "pip install pep8"
   - cmd: "py -3 -m pip install mypy"
@@ -28,7 +28,7 @@ test_script:
 after_test:
   - "mypy -V"
   - cmd: "mypy zubax-kucher"
-  - sh: "mypy zubax-kucher"
+  - sh: "(mypy zubax-kucher; exit 0)"
   - cmd: "pep8 --max-line-length=120 --exclude libraries || ver > nul"
   - sh: "(pep8 --max-line-length=120 --exclude libraries; exit 0)"
 
