@@ -16,7 +16,9 @@ environment:
 
     # Ubuntu - python 3.7
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "3.6"
+      PYTHON: "3.7"
+      
+stack: python %PYTHON%
 
 install:
   - "git submodule update --init --recursive"
