@@ -1,5 +1,5 @@
 image:
-- Ubuntu
+#- Ubuntu
 - Visual Studio 2017
 
 stack: 
@@ -22,7 +22,7 @@ build: off
 
 test_script:
   - cmd: "echo program will start"
-  - cmd: "start /B py -3 zubax-kucher"
+  - cmd: "start python zubax-kucher & echo ok & timeout 10 & taskkill /fi "windowtitle eq Zubax Kucher""
   - sh: "export QT_QPA_PLATFORM=offscreen"
   - sh: "(timeout 30s ./zubax-kucher; exit 0)"
   - cmd: "echo program started"
