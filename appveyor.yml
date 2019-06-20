@@ -48,4 +48,4 @@ after_test:
   - sh: "(pep8 --max-line-length=120 --exclude libraries; exit 0)"
   - cmd: "7z a zubax-kucher.zip C:\\kucher\\*"
   - sh: "7z a zubax-kucher.zip /kucher/*"
-  "appveyor PushArtifact zubax-kucher.zip"
+  - "appveyor PushArtifact zubax-kucher.zip"
