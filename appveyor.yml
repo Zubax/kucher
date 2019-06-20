@@ -32,9 +32,9 @@ install:
   - cmd: "python -m  pip install -r requirements.txt"
   - sh: "pip install mypy"
   - sh: "pip install -r requirements.txt"
-  - sh: "sudo apt-get -y install software-properties-common"
   - sh: "sudo add-apt-repository -y ppa:deadsnakes/ppa "
-  - sh: "sudo apt-get -y install python3.6-dev python3.7-dev"
+  - sh: "sudo apt-get update"
+  - sh: "sudo apt-get -y install python3.6-dev"
 
 
 build: off
