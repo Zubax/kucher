@@ -32,7 +32,7 @@ install:
   - cmd: "python -m  pip install -r requirements.txt"
   - sh: "pip install mypy"
   - sh: "pip install -r requirements.txt"
-  - sh: "sudo apt-get -y install python3-dev python-dev"
+  - sh: "sudo apt-get -y install python3.6-dev python3.7-dev"
 
 
 build: off
