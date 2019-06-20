@@ -46,5 +46,5 @@ after_test:
   - sh: "(mypy zubax-kucher; exit 0)"
   - cmd: "pep8 --max-line-length=120 --exclude libraries || ver > nul"
   - sh: "(pep8 --max-line-length=120 --exclude libraries; exit 0)"
-  - cmd: "7z a zubax-kucher.zip kucher\*"
+  - cmd: "7z a zubax-kucher.zip kucher\\*"
   - cmd: "appveyor PushArtifact zubax-kucher.zip"
