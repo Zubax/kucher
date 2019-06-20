@@ -32,6 +32,7 @@ install:
   - cmd: "python -m  pip install -r requirements.txt"
   - sh: "pip install mypy"
   - sh: "pip install -r requirements.txt"
+  - sh: "sudo apt-get install python3-dev"
 
 
 build: off
@@ -46,7 +47,9 @@ after_test:
   - sh: "(mypy zubax-kucher; exit 0)"
   - cmd: "pep8 --max-line-length=120 --exclude libraries || ver > nul"
   - sh: "(pep8 --max-line-length=120 --exclude libraries; exit 0)"
-  - "7z a zubax-kucher.zip kucher/*"
+  - cmd: "7z a zubax-kucher.zip kucher/*"
+  - sh: "7z a zubax-kucher.zip kucher/* &>/dev/null &"
   - "appveyor PushArtifact zubax-kucher.zip"
   - "pyinstaller pyinstaller.spec"
-  - "appveyor PushArtifact kucher/dist/*"
+  - cmd: "appveyor PushArtifact kucher\\dist\\Kucher.exe"
+  - sh: "appveyor PushArtifact kucher/dist/Kucher"
