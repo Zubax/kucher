@@ -37,9 +37,9 @@ install:
 build: off
 
 test_script:
-  - cmd: "test.bat"
+  - cmd: "test_windows.bat"
   - sh: "export QT_QPA_PLATFORM=offscreen"
-  - sh: "(timeout 20s ./zubax-kucher; exit 0)"
+  - sh: "bash test_linux.sh"
 
 after_test:
   - "mypy -V"

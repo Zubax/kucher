@@ -1,6 +1,6 @@
 start /B python zubax-kucher
 echo ok
-timeout 15
+timeout 20
 tasklist /fi "windowtitle eq Zubax Kucher"|find ":" > nul
 echo %errorlevel%
 if errorlevel 1 (
