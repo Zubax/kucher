@@ -8,6 +8,6 @@ if errorlevel 1 (
     echo No error found
     exit 0
 ) else (
-    echo Error in program
+    echo Error found
     exit 1
 )

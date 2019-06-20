@@ -20,6 +20,7 @@ import decimal
 import construct as con
 from .exceptions import CommunicatorException
 
+
 # Convenient type aliases - we only use little-endian byte order!
 U8  = con.Int8ul
 U16 = con.Int16ul
