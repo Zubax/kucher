@@ -27,8 +27,6 @@ U32 = con.Int32ul
 U64 = con.Int64ul
 F32 = con.Float32l
 
-this will not work
-
 # noinspection PyClassHasNoInit
 class OptionalFloatAdapter(con.Adapter):
     """
