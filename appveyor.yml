@@ -42,7 +42,6 @@ test_script:
   - sh: "bash test_linux.sh"
 
 after_test:
-  - "mypy -V"
   - cmd: "mypy zubax-kucher || ver > nul"
   - sh: "(mypy zubax-kucher; exit 0)"
   - cmd: "pep8 --max-line-length=120 --exclude libraries || ver > nul"
