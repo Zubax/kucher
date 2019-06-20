@@ -10,13 +10,13 @@ environment:
       PYTHON: "C:\\Python37-x64"
       PYTHON_ARCH: "64"
 
-    # # Ubuntu & python 3.6
-    # - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-    #   PYTHON: "3.6"
+    # Ubuntu & python 3.6
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      PYTHON: "3.6"
 
-    # # Ubuntu & python 3.7
-    # - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-    #   PYTHON: "3.7"
+    # Ubuntu & python 3.7
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      PYTHON: "3.7"
 
 stack: python %PYTHON%
 
@@ -46,5 +46,6 @@ after_test:
   - sh: "(mypy zubax-kucher; exit 0)"
   - cmd: "pep8 --max-line-length=120 --exclude libraries || ver > nul"
   - sh: "(pep8 --max-line-length=120 --exclude libraries; exit 0)"
-  - cmd: "7z a zubax-kucher.zip kucher\\*"
-  - cmd: "appveyor PushArtifact zubax-kucher.zip"
+  - cmd: "7z a zubax-kucher.zip C:\\kucher\\*"
+  - sh: "7z a zubax-kucher.zip /kucher/*"
+  "appveyor PushArtifact zubax-kucher.zip"
