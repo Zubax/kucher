@@ -1,14 +1,14 @@
 environment:
   matrix:
-    # # Windows & python 3.6
-    # - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    #   PYTHON: "C:\\Python36-x64"
-    #   PYTHON_ARCH: "64"
+    # Windows & python 3.6
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      PYTHON: "C:\\Python36-x64"
+      PYTHON_ARCH: "64"
 
-    # # Windows & python 3.7
-    # - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    #   PYTHON: "C:\\Python37-x64"
-    #   PYTHON_ARCH: "64"
+    # Windows & python 3.7
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      PYTHON: "C:\\Python37-x64"
+      PYTHON_ARCH: "64"
 
     # Ubuntu & python 3.6
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
@@ -35,6 +35,7 @@ install:
   - sh: "sudo add-apt-repository -y ppa:deadsnakes/ppa "
   - sh: "sudo apt-get update"
   - sh: "sudo apt-get -y install python3.6-dev"
+  - sh: "sudo apt-get -y install python3.7-dev"
 
 
 build: off
@@ -54,4 +55,4 @@ after_test:
   - "appveyor PushArtifact zubax-kucher.zip"
   - "pyinstaller pyinstaller.spec"
   - cmd: "appveyor PushArtifact dist\\Kucher.exe"
-  - sh: "appveyor PushArtifact kucher/dist/Kucher"
+  - sh: "appveyor PushArtifact dist/Kucher"
