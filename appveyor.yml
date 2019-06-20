@@ -1,14 +1,14 @@
 environment:
   matrix:
-    # Windows & python 3.6
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      PYTHON: "C:\\Python36-x64"
-      PYTHON_ARCH: "64"
+    # # Windows & python 3.6
+    # - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    #   PYTHON: "C:\\Python36-x64"
+    #   PYTHON_ARCH: "64"
 
-    # Windows & python 3.7
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      PYTHON: "C:\\Python37-x64"
-      PYTHON_ARCH: "64"
+    # # Windows & python 3.7
+    # - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    #   PYTHON: "C:\\Python37-x64"
+    #   PYTHON_ARCH: "64"
 
     # Ubuntu & python 3.6
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
@@ -32,7 +32,7 @@ install:
   - cmd: "python -m  pip install -r requirements.txt"
   - sh: "pip install mypy"
   - sh: "pip install -r requirements.txt"
-  - sh: "sudo apt-get -y install python3-dev"
+  - sh: "sudo apt-get -y install python3-dev python-dev"
 
 
 build: off
