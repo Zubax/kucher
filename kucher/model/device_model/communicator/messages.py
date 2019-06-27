@@ -20,13 +20,13 @@ import decimal
 import construct as con
 from .exceptions import CommunicatorException
 
-
 # Convenient type aliases - we only use little-endian byte order!
 U8  = con.Int8ul
 U16 = con.Int16ul
 U32 = con.Int32ul
 U64 = con.Int64ul
 F32 = con.Float32l
+
 
 # noinspection PyClassHasNoInit
 class OptionalFloatAdapter(con.Adapter):
