@@ -11,18 +11,3 @@ pyserial ~= 3.4
 
 # https://packages.ubuntu.com/bionic/python3-numpy
 numpy ~= 1.13
-
-#
-# Development-only dependencies (not required to run the application)
-#
-
-# General build dependencies
-setuptools
-wheel
-
-# Test dependencies
-pytest >= 3.3
-
-# Packaging tools
-PyInstaller ~= 3.3
-staticx ~= 0.7  # Manual patching required, see https://github.com/JonathonReinhart/staticx/issues/79

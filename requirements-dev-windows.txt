@@ -1,0 +1,15 @@
+#
+# Development-only dependencies (not required to run the application)
+#
+
+# General build dependencies
+setuptools
+wheel
+pycodestyle
+mypy
+
+# Test dependencies
+pytest >= 3.3
+
+# Packaging tools
+PyInstaller ~= 3.3
