@@ -52,11 +52,14 @@ The following command line options are available:
 
 * `--debug` - activates verbose logging; useful for troubleshooting.
 * `--profile` - creates a profile file after the application is closed.
-* `--test` - run unit tests.
-    * `-k` - can be used in conjunction with `--test` to run a specific test.
-    Refer to the PyTest documentation for more information.
-    * Other options can be provided with `--test`; they will be passed directly to
-    the PyTest framework.
+
+### Running the unit tests
+
+From the root directory:
+
+```bash
+PYTHONPATH=kucher pytest  # TODO: fix imports to make "PYTHONPATH=kucher" unnecessary
+```
 
 ### Getting the right version of Python
 
