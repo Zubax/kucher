@@ -43,7 +43,7 @@ def main() -> int:
     import datetime
     from PyQt5.QtWidgets import QApplication
     from quamash import QEventLoop
-    from . import THIRDPARTY_PATH_ROOT, data_dir, version, resources
+    from . import data_dir, version, resources
     from .fuhrer import Fuhrer
 
     data_dir.init()
@@ -69,20 +69,6 @@ def main() -> int:
         prof = profile.Profile()
         atexit.register(save_profile)
         prof.enable()
-
-    if '--test' in sys.argv:
-        if not os.environ.get('PYTHONASYNCIODEBUG'):
-            raise RuntimeError('PYTHONASYNCIODEBUG should be set while unit testing')
-
-        import pytest
-        args = sys.argv[:]
-        args.remove('--test')
-        args.append('--ignore=' + THIRDPARTY_PATH_ROOT)
-        args.append('--capture=no')
-        args.append('--fulltrace')
-        args.append('-vv')
-        args.append('.')
-        return pytest.main(args)
 
     # Configuring the event loop
     app = QApplication(sys.argv)
