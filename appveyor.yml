@@ -45,10 +45,6 @@ test_script:
   - sh: "bash test_linux.sh"
 
 after_test:
-  - cmd: "mypy zubax-kucher"
-  - sh: "mypy zubax-kucher"
-  - cmd: "pycodestyle zubax-kucher"
-  - sh: "pycodestyle zubax-kucher"
   - cmd: "zip a zubax-kucher.zip *"
   - sh: "zip a zubax-kucher.zip * &>/dev/null &"
   - "appveyor PushArtifact zubax-kucher.zip"

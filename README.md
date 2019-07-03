@@ -55,11 +55,19 @@ The following command line options are available:
 
 ### Running the unit tests
 
-From the root directory:
+From the root directory, on Linux:
 
 ```bash
 PYTHONPATH=kucher pytest  # TODO: fix imports to make "PYTHONPATH=kucher" unnecessary
 ```
+
+On Windows:
+
+```bash
+set PYTHONPATH=kucher
+pytest
+```
+
 
 ### Getting the right version of Python
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+PYTHONPATH=kucher pytest
 
 timeout 20s ./zubax-kucher
 exit_status=$?
@@ -8,3 +9,7 @@ else
     echo error found
     exit 1
 fi
+
+bash build_linux.sh
+pycodestyle zubax-kucher
+mypy zubax-kucher

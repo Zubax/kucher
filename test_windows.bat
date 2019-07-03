@@ -1,3 +1,6 @@
+set PYTHONPATH=kucher
+pytest
+
 start /B python zubax-kucher
 timeout 20
 tasklist /fi "windowtitle eq Zubax Kucher"|find ":" > nul
@@ -8,3 +11,6 @@ if errorlevel 1 (
     echo Error found
     exit 1
 )
+
+pycodestyle zubax-kucher
+mypy zubax-kucher
