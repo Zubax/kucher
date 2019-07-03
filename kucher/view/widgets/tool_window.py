@@ -28,8 +28,8 @@ class ToolWindow(QDockWidget):
     # noinspection PyArgumentList
     def __init__(self,
                  parent:            QWidget,
-                 title:             typing.Optional[str]=None,
-                 icon_name:         typing.Optional[str]=None):
+                 title:             typing.Optional[str] = None,
+                 icon_name:         typing.Optional[str] = None):
         super(QDockWidget, self).__init__(parent)
         self.setAttribute(Qt.WA_DeleteOnClose)                  # This is required to stop background timers!
 

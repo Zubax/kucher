@@ -85,7 +85,7 @@ class Widget(StatusWidgetBase):
 
         self._error_description_display.setText('(elaboration not available)')
 
-    def _make_display(self, tool_tip: str=''):
+    def _make_display(self, tool_tip: str = ''):
         o = QLineEdit(self)
         o.setReadOnly(True)
         o.setFont(get_monospace_font())

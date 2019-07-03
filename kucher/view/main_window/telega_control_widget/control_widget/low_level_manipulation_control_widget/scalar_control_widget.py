@@ -93,17 +93,17 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
         self._frequency_gradient_control.value_change_event.connect(self._on_any_control_changed)
 
         self.setLayout(
-                lay_out_horizontally(
-                    self._volt_per_hertz_control.spinbox,
-                    self._frequency_gradient_control.spinbox,
-                    self._target_frequency_control.spinbox,
-                    make_button(self,
-                                icon_name='clear-symbol',
-                                tool_tip='Reset the target frequency to zero',
-                                on_clicked=self._on_target_frequency_clear_button_clicked),
-                    self._target_frequency_control.slider,
-                    self._send_button,
-                )
+            lay_out_horizontally(
+                self._volt_per_hertz_control.spinbox,
+                self._frequency_gradient_control.spinbox,
+                self._target_frequency_control.spinbox,
+                make_button(self,
+                            icon_name='clear-symbol',
+                            tool_tip='Reset the target frequency to zero',
+                            on_clicked=self._on_target_frequency_clear_button_clicked),
+                self._target_frequency_control.slider,
+                self._send_button,
+            )
         )
 
     def get_widget_name_and_icon_name(self):

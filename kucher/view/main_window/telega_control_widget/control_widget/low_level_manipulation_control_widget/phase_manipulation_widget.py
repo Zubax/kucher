@@ -89,7 +89,7 @@ class Widget(LowLevelManipulationControlSubWidgetBase):
             ))
 
         self.setLayout(
-                lay_out_horizontally(*(top_layout_items + [self._sync_checkbox, self._send_button]))
+            lay_out_horizontally(*(top_layout_items + [self._sync_checkbox, self._send_button]))
         )
 
     def get_widget_name_and_icon_name(self):
