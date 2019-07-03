@@ -9,7 +9,6 @@ wheel
 # Test dependencies
 pytest >= 3.3
 pycodestyle
-mypy
 
 # Packaging tools
 PyInstaller ~= 3.3
