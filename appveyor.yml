@@ -45,9 +45,9 @@ test_script:
   - sh: "bash test_linux.sh"
 
 after_test:
-  - cmd: "zip a zubax-kucher.zip *"
-  - sh: "zip a zubax-kucher.zip * &>/dev/null &"
-  - "appveyor PushArtifact zubax-kucher.zip"
+  - cmd: "7z a zubax-kucher.7z *"
+  - sh: "7z a zubax-kucher.7z * &>/dev/null &"
+  - "appveyor PushArtifact zubax-kucher.7z"
   - "pyinstaller pyinstaller.spec"
   - cmd: "appveyor PushArtifact dist\\Kucher.exe"
   - sh: "appveyor PushArtifact dist/Kucher"
