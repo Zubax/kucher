@@ -51,6 +51,7 @@ after_test:
   - cmd: "7z a zubax-kucher.7z *"
   - sh: "7z a zubax-kucher.7z * &>/dev/null &"
   - "appveyor PushArtifact zubax-kucher.7z"
-  - "pyinstaller pyinstaller.spec"
+  - sh: "bash build_linux.sh"
+  - cmd: "build_windows.bat"
   - cmd: "appveyor PushArtifact dist\\Kucher.exe"
   - sh: "appveyor PushArtifact dist/Kucher"
