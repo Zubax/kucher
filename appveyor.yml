@@ -54,4 +54,4 @@ after_test:
   - sh: "bash build_linux.sh"
   - cmd: "build_windows.bat"
   - cmd: "appveyor PushArtifact dist\\Kucher.exe"
-  - sh: "appveyor PushArtifact dist/Kucher"
+  - sh: "appveyor PushArtifact Kucher"
