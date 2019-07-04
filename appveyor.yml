@@ -41,6 +41,9 @@ build: off
 
 test_script:
   - cmd: "test_windows.bat"
+  # Plugins related to software display are missing on Linux. Appveyor can't handle display so we disable it. See:
+  # https://doc.qt.io/qt-5/embedded-linux.html
+  # https://github.com/ariya/phantomjs/issues/14376
   - sh: "export QT_QPA_PLATFORM=offscreen"
   - sh: "bash test_linux.sh"
 
