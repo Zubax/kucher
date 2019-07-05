@@ -7,6 +7,8 @@ sudo apt-get install patchelf -y
 
 pyinstaller --clean --noconfirm pyinstaller.spec || exit 2
 
+pip install backports.lzma
+
 # https://github.com/JonathonReinhart/staticx/issues/79
 cd dist
 mv Kucher Kucher.tmp
