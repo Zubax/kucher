@@ -20,3 +20,4 @@ mv Kucher Kucher.tmp
 staticx --loglevel DEBUG Kucher.tmp Kucher
 
 rm -rf *.tmp
+cd ..

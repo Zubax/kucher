@@ -49,7 +49,7 @@ test_script:
 
 after_test:
   - cmd: "7z a zubax-kucher.7z *"
-  - sh: "7z a zubax-kucher.7z * &>/dev/null &"
+  - sh: "7z a zubax-kucher.7z *"
   - "appveyor PushArtifact zubax-kucher.7z"
   - sh: "bash build_linux.sh"
   - cmd: "build_windows.bat"
