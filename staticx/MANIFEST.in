@@ -1,0 +1,4 @@
+graft bootloader
+graft libtar
+graft libxz
+include SConstruct

@@ -1,0 +1,28 @@
+Import('env')
+
+env.Append(
+    CPPPATH = ['compat'],
+    CPPDEFINES = {
+        'PACKAGE_VERSION': '\\"1.2.20\\"',
+    }
+)
+
+# We don't want libtar DEBUG
+if 'DEBUG' in env['CPPDEFINES']:
+    del env['CPPDEFINES']['DEBUG']
+
+libtar = env.StaticLibrary(
+    target = 'tar',
+    source = [
+        'block.c',
+        'decode.c',
+        'extract.c',
+        'handle.c',
+        'output.c',
+        'util.c',
+        'compat/strlcpy.c',
+        'compat/strmode.c',
+    ]
+)
+
+Return('libtar')

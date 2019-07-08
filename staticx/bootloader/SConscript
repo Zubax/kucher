@@ -1,0 +1,34 @@
+import sys
+
+Import('env')
+
+projdir = env.Dir('.').srcnode().dir
+sys.path.append(projdir)
+from dynversion import get_dynamic_version
+
+
+env.Append(
+    CCFLAGS = ['-static'],
+    LINKFLAGS = ['-static'],
+    CPPDEFINES = dict(
+        STATICX_VERSION = '\\"{}\\"'.format(get_dynamic_version()),
+    ),
+)
+
+bootloader = env.Program(
+    target = 'bootloader',
+    source = [
+        'error.c',
+        'elfutil.c',
+        'extract.c',
+        'main.c',
+        'mmap.c',
+        'util.c',
+    ],
+    LIBS = [
+        'tar',
+        'xz',
+    ],
+)
+
+Return('bootloader')
