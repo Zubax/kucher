@@ -22,6 +22,7 @@ from kucher.view.device_model_representation import GeneralStatusView, TaskSpeci
 
 from .base import StatusWidgetBase
 
+import yaml
 
 class Widget(StatusWidgetBase):
     # noinspection PyArgumentList
@@ -83,7 +84,16 @@ class Widget(StatusWidgetBase):
         self._error_code_hex.setText(f'0x{tssr.failed_task_exit_code:02X}')
         self._error_code_bin.setText(f'0b{tssr.failed_task_exit_code:08b}')
 
-        self._error_description_display.setText('(elaboration not available)')
+        file_name = 'kucher/view/main_window/telega_control_widget/task_specific_status_widget/error_codes.yml'
+        with open(file_name, 'r') as f:
+            error_codes = yaml.safe_load(f)
+
+        error_description = 'unknown error'
+        for c, d in error_codes[str(tssr.failed_task_id).split('.')[-1]].items():
+            if c == tssr.failed_task_exit_code:
+                error_description = d
+
+        self._error_description_display.setText(error_description)
 
     def _make_display(self, tool_tip: str=''):
         o = QLineEdit(self)

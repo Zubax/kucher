@@ -1,0 +1,46 @@
+IDLE:
+  1: 'hardware fault'
+  2: 'hardware test failed'
+  3: 'hardware fault'
+  128: 'some other parameters are invalid'
+  160: 'observer parameters are invalid'
+  192: 'motor model parameters are invalid'
+
+BEEP:
+  1: 'hardware fault'
+
+RUN:
+  1: 'too many stalls'
+  2: 'hardware fault'
+  4: 'DC voltage is out of range'
+  6: 'DC voltage is out of range'
+
+HARDWARE_TESTS:
+  1: 'hardware fault'
+  2: 'DC voltage error'
+  3: 'phase current zero bias error A'
+  4: 'phase current zero bias error B'
+  5: 'phase current error A'
+  6: 'phase current error B'
+  7: 'phase current error C'
+  8: 'phase voltage error A'
+  9: 'phase voltage error B'
+  10: 'phase voltage error C'
+
+MOTOR_IDENTIFICATION:
+  3: 'resistance subtask failed'
+  4: 'inductance subtask failed'
+  5: 'flux linkage subtask failed'
+  248: 'DC voltage is out of range'
+  249: 'LVPS malfunction'
+  250: 'hardware overload'
+  251: 'hardware fault'
+  252: 'sequence not applicable'
+  253: 'hardware test failed'
+  254: 'invalid sequence'
+  255: 'invalid parameters'
+
+LOW_LEVEL_MANIPULATION:
+  253: 'invalid sub-task'
+  254: 'hardware fault'
+  255: 'LVPS malfunction'
