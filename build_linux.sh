@@ -10,12 +10,12 @@ sudo apt-get install -y liblzma-dev
 pip install backports.lzma
 
 pyinstaller --clean --noconfirm pyinstaller.spec || exit 2
-cd staticx
+cd kucher/libraries/staticx
 scons
 python setup.py install
 
 # https://github.com/JonathonReinhart/staticx/issues/79
-cd ../dist
+cd ../../../dist
 mv Kucher Kucher.tmp
 staticx --loglevel DEBUG Kucher.tmp Kucher
 
