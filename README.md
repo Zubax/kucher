@@ -98,3 +98,10 @@ pyenv global 3.6.4
 If there was a warning that `sqlite3` has not been compiled,
 make sure to resolve it first before continuing - `sqlite3` is required by Kucher.
 Now run `python3 --version` and ensure that you have v3.6 as default.
+
+### CI artifacts
+
+The CI builds redistributable release binaries automatically.
+Follow the CI status link from the [commits page](https://github.com/Zubax/kucher/commits/master)
+to find the binaries for a particular commit.
+The Linux binaries can be shipped directly; the Windows binaries must be signed first.
