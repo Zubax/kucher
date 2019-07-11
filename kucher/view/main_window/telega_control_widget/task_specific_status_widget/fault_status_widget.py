@@ -12,6 +12,9 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import os
+import yaml
+
 from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit
 from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtCore import Qt
@@ -22,7 +25,6 @@ from kucher.view.device_model_representation import GeneralStatusView, TaskSpeci
 
 from .base import StatusWidgetBase
 
-import yaml
 
 class Widget(StatusWidgetBase):
     # noinspection PyArgumentList
@@ -84,15 +86,13 @@ class Widget(StatusWidgetBase):
         self._error_code_hex.setText(f'0x{tssr.failed_task_exit_code:02X}')
         self._error_code_bin.setText(f'0b{tssr.failed_task_exit_code:08b}')
 
-        file_name = 'kucher/view/main_window/telega_control_widget/task_specific_status_widget/error_codes.yml'
+        dir_name = os.path.dirname(__file__)
+        file_name = os.path.join(dir_name, 'error_codes.yml')
         with open(file_name, 'r') as f:
             error_codes = yaml.safe_load(f)
 
-        error_description = 'unknown error'
-        for c, d in error_codes[str(tssr.failed_task_id).split('.')[-1]].items():
-            if c == tssr.failed_task_exit_code:
-                error_description = d
-
+        failed_task_name = str(tssr.failed_task_id).split('.')[-1]
+        error_description = error_codes[failed_task_name].get(tssr.failed_task_exit_code, 'unknown error')
         self._error_description_display.setText(error_description)
 
     def _make_display(self, tool_tip: str=''):
