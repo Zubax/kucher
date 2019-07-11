@@ -59,6 +59,7 @@ class RunControlWidget(SpecializedControlWidgetBase):
         self._setpoint_control.status_tip = self._setpoint_control.tool_tip
         self._setpoint_control.value_change_event.connect(self._on_setpoint_changed)
         self._setpoint_control.spinbox.setKeyboardTracking(False)
+
         self._mode_selector = QComboBox(self)
         self._mode_selector.setEditable(False)
         self._mode_selector.currentIndexChanged.connect(lambda *_: self._on_control_mode_changed())
