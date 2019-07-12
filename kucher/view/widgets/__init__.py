@@ -28,7 +28,7 @@ class WidgetBase(QWidget):
     def __init__(self, parent: typing.Optional[QWidget]):
         super(WidgetBase, self).__init__(parent)
 
-    def flash(self, message: str, *format_args, duration: typing.Optional[float]=None):
+    def flash(self, message: str, *format_args, duration: typing.Optional[float] = None):
         """
         Shows the specified message in the status bar of the parent window.
         """

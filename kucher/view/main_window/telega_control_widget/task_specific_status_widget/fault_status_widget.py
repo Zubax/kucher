@@ -95,7 +95,7 @@ class Widget(StatusWidgetBase):
         error_description = error_codes[failed_task_name].get(tssr.failed_task_exit_code, 'unknown error')
         self._error_description_display.setText(error_description)
 
-    def _make_display(self, tool_tip: str=''):
+    def _make_display(self, tool_tip: str = ''):
         o = QLineEdit(self)
         o.setReadOnly(True)
         o.setFont(get_monospace_font())

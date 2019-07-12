@@ -26,7 +26,7 @@ class GroupBoxWidget(QGroupBox):
     def __init__(self,
                  parent:        QWidget,
                  title:         str,
-                 icon_name:     typing.Optional[str]=None):
+                 icon_name:     typing.Optional[str] = None):
         super(GroupBoxWidget, self).__init__(title, parent)
 
         # Changing icons is very expensive, so we store last set icon in order to avoid re-setting it

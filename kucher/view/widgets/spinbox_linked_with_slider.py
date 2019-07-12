@@ -68,10 +68,10 @@ class SpinboxLinkedWithSlider:
     # noinspection PyUnresolvedReferences
     def __init__(self,
                  parent:                QWidget,
-                 minimum:               float=0.0,
-                 maximum:               float=100.0,
-                 step:                  float=1.0,
-                 slider_orientation:    SliderOrientation=SliderOrientation.VERTICAL):
+                 minimum:               float = 0.0,
+                 maximum:               float = 100.0,
+                 step:                  float = 1.0,
+                 slider_orientation:    SliderOrientation = SliderOrientation.VERTICAL):
         self._events_suppression_depth = 0
 
         # Instantiating the widgets
@@ -222,10 +222,10 @@ class SpinboxLinkedWithSlider:
         self.maximum = maximum
 
     def update_atomically(self,
-                          minimum:  typing.Optional[float]=None,
-                          maximum:  typing.Optional[float]=None,
-                          step:     typing.Optional[float]=None,
-                          value:    typing.Optional[float]=None):
+                          minimum:  typing.Optional[float] = None,
+                          maximum:  typing.Optional[float] = None,
+                          step:     typing.Optional[float] = None,
+                          value:    typing.Optional[float] = None):
         """
         This function updates all of the parameters, and invokes the change event only once at the end, provided
         that the new value is different from the old value.

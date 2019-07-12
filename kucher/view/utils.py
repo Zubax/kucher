@@ -57,7 +57,7 @@ def get_icon(name: str) -> QIcon:
 
 
 @cached
-def get_icon_pixmap(icon_name: str, width: int, height: int=None) -> QPixmap:
+def get_icon_pixmap(icon_name: str, width: int, height: int = None) -> QPixmap:
     """
     Caching wrapper around get_icon(...).pixmap(...).
     Every generated pixmap is cached permanently.
@@ -107,12 +107,12 @@ def is_small_screen() -> bool:
 
 
 def make_button(parent: QWidget,
-                text: str='',
-                icon_name: typing.Optional[str]=None,
-                tool_tip: typing.Optional[str]=None,
-                checkable: bool=False,
-                checked: bool=False,
-                on_clicked: typing.Callable[[], None]=None) -> QPushButton:
+                text: str = '',
+                icon_name: typing.Optional[str] = None,
+                tool_tip: typing.Optional[str] = None,
+                checkable: bool = False,
+                checked: bool = False,
+                on_clicked: typing.Callable[[], None] = None) -> QPushButton:
     b = QPushButton(text, parent)
     b.setFocusPolicy(Qt.NoFocus)
     if icon_name:

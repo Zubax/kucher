@@ -4,26 +4,11 @@
 #
 
 # https://packages.ubuntu.com/bionic/python3-pyqt5
-PyQt5 ~= 5.9
+# https://github.com/pyinstaller/pyinstaller/issues/4293
+PyQt5 == 5.12.2
 
 # https://packages.ubuntu.com/bionic/python3-serial
 pyserial ~= 3.4
 
 # https://packages.ubuntu.com/bionic/python3-numpy
 numpy ~= 1.13
-
-#
-# Development-only dependencies (not required to run the application)
-#
-
-# General build dependencies
-setuptools
-wheel
-
-# Test dependencies
-pytest >= 3.3
-
-# Packaging tools
-PyInstaller ~= 3.3
-patchelf-wrapper~=1.0
-staticx ~= 0.7  # Manual patching required, see https://github.com/JonathonReinhart/staticx/issues/79

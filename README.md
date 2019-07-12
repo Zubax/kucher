@@ -52,11 +52,22 @@ The following command line options are available:
 
 * `--debug` - activates verbose logging; useful for troubleshooting.
 * `--profile` - creates a profile file after the application is closed.
-* `--test` - run unit tests.
-    * `-k` - can be used in conjunction with `--test` to run a specific test.
-    Refer to the PyTest documentation for more information.
-    * Other options can be provided with `--test`; they will be passed directly to
-    the PyTest framework.
+
+### Running the unit tests
+
+From the root directory, on Linux:
+
+```bash
+PYTHONPATH=kucher pytest  # TODO: fix imports to make "PYTHONPATH=kucher" unnecessary
+```
+
+On Windows:
+
+```bash
+set PYTHONPATH=kucher
+pytest
+```
+
 
 ### Getting the right version of Python
 
@@ -87,3 +98,10 @@ pyenv global 3.6.4
 If there was a warning that `sqlite3` has not been compiled,
 make sure to resolve it first before continuing - `sqlite3` is required by Kucher.
 Now run `python3 --version` and ensure that you have v3.6 as default.
+
+### CI artifacts
+
+The CI builds redistributable release binaries automatically.
+Follow the CI status link from the [commits page](https://github.com/Zubax/kucher/commits/master)
+to find the binaries for a particular commit.
+The Linux binaries can be shipped directly; the Windows binaries must be signed first.

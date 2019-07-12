@@ -204,7 +204,7 @@ class Widget(StatusWidgetBase):
 
         self._estimated_active_power_display.set(f'{active_power:.0f} W')
 
-    def _make_display(self, title: str, tooltip: str, with_comment: bool=False) -> ValueDisplayWidget:
+    def _make_display(self, title: str, tooltip: str, with_comment: bool = False) -> ValueDisplayWidget:
         return ValueDisplayWidget(self,
                                   title=title,
                                   with_comment=with_comment,
@@ -216,7 +216,7 @@ class _DQDisplayWidget(QWidget):
     def __init__(self, parent: QWidget):
         super(_DQDisplayWidget, self).__init__(parent)
 
-        def make_label(text: str='') -> QLabel:
+        def make_label(text: str = '') -> QLabel:
             w = QLabel(text, self)
             w.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
             font = QFont()

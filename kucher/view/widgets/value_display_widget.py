@@ -39,9 +39,9 @@ class ValueDisplayWidget(WidgetBase):
     def __init__(self,
                  parent: QWidget,
                  title: str,
-                 placeholder_text: typing.Optional[str]=None,
-                 with_comment: bool=False,
-                 tooltip: typing.Optional[str]=None):
+                 placeholder_text: typing.Optional[str] = None,
+                 with_comment: bool = False,
+                 tooltip: typing.Optional[str] = None):
         super(ValueDisplayWidget, self).__init__(parent)
 
         self._placeholder_text = str(placeholder_text or '')
@@ -84,9 +84,9 @@ class ValueDisplayWidget(WidgetBase):
 
     def set(self,
             text:       str,
-            style:     'typing.Optional[ValueDisplayWidget.Style]'=None,
-            comment:    typing.Optional[str]=None,
-            icon_name:  typing.Optional[str]=None):
+            style:     'typing.Optional[ValueDisplayWidget.Style]' = None,
+            comment:    typing.Optional[str] = None,
+            icon_name:  typing.Optional[str] = None):
         # TODO: handle style
         style = style or self.Style.NORMAL
 

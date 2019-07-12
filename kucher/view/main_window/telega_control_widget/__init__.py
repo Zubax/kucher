@@ -130,8 +130,8 @@ class TelegaControlWidget(WidgetBase):
 
 
 def _make_monitored_quantity(value: float,
-                             too_low: bool=False,
-                             too_high: bool=False) -> MonitoredQuantity:
+                             too_low: bool = False,
+                             too_high: bool = False) -> MonitoredQuantity:
     mq = MonitoredQuantity(value)
 
     if too_low:

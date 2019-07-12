@@ -102,9 +102,9 @@ class ToolWindowManager:
                  factory:                   typing.Union[typing.Type[QWidget],
                                                          typing.Callable[[ToolWindow], QWidget]],
                  title:                     str,
-                 icon_name:                 typing.Optional[str]=None,
-                 allow_multiple_instances:  bool=False,
-                 shown_by_default:          bool=False):
+                 icon_name:                 typing.Optional[str] = None,
+                 allow_multiple_instances:  bool = False,
+                 shown_by_default:          bool = False):
         """
         Adds the specified tool WIDGET (not window) to the set of known tools.
         If requested, it can be instantiated automatically at the time of application startup.
@@ -176,8 +176,8 @@ class ToolWindowManager:
                                                         location=location))
 
     def select_widgets(self,
-                       widget_type:         typing.Type[_WidgetTypeVar]=QWidget,
-                       current_location:    typing.Optional[ToolWindowLocation]=None) -> typing.List[_WidgetTypeVar]:
+                       widget_type:         typing.Type[_WidgetTypeVar] = QWidget,
+                       current_location:    typing.Optional[ToolWindowLocation] = None) -> typing.List[_WidgetTypeVar]:
         """
         Returns a list of references to the root widgets of all existing tool windows which are instances of the
         specified type. This can be used to broadcast events and such.
