@@ -1,9 +1,6 @@
 [submodule "kucher/libraries/popcop"]
 	path = kucher/libraries/popcop
 	url = https://github.com/Zubax/popcop
-[submodule "kucher/libraries/pyqtgraph"]
-	path = kucher/libraries/pyqtgraph
-	url = https://github.com/pyqtgraph/pyqtgraph-core
 [submodule "kucher/libraries/construct"]
 	path = kucher/libraries/construct
 	url = https://github.com/construct/construct
@@ -15,4 +12,4 @@
 	url = https://github.com/harvimt/quamash
 [submodule "kucher/libraries/staticx"]
 	path = kucher/libraries/staticx
-	url = https://github.com/Zubax/staticx.git
+	url = https://github.com/Zubax/staticx
