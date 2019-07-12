@@ -1,0 +1,57 @@
+environment:
+  matrix:
+    # Windows & python 3.6
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      PYTHON: "C:\\Python36-x64"
+      PYTHON_ARCH: "64"
+
+    # Windows & python 3.7
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      PYTHON: "C:\\Python37-x64"
+      PYTHON_ARCH: "64"
+
+    # Ubuntu & python 3.6
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      PYTHON: "3.6"
+
+    # Ubuntu & python 3.7
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      PYTHON: "3.7"
+
+stack: python %PYTHON%
+
+install:
+  - "git submodule update --init --recursive"
+  - cmd: "SET PATH=%PYTHON%;%PATH%"
+  - cmd: "SET PATH=C:\\Python36-x64\\Scripts;%PATH%"
+  - cmd: "SET PATH=C:\\Python37-x64\\Scripts;%PATH%"
+  - "python -V"
+  - "pip --version"
+  - cmd: "python -m  pip install -r requirements.txt"
+  - cmd: "python -m  pip install -r requirements-dev-windows.txt"
+  - sh: "pip install -r requirements.txt"
+  - sh: "pip install -r requirements-dev-linux.txt"
+  - sh: "sudo add-apt-repository -y ppa:deadsnakes/ppa "
+  - sh: "sudo apt-get update"
+  - sh: "sudo apt-get -y install python3.6-dev"
+  - sh: "sudo apt-get -y install python3.7-dev"
+
+
+build: off
+
+test_script:
+  - cmd: "test_windows.bat"
+  # Plugins related to software display are missing on Linux. Appveyor can't handle display so we disable it. See:
+  # https://doc.qt.io/qt-5/embedded-linux.html
+  # https://github.com/ariya/phantomjs/issues/14376
+  - sh: "export QT_QPA_PLATFORM=offscreen"
+  - sh: "bash test_linux.sh"
+
+after_test:
+  - cmd: "7z a zubax-kucher.7z *"
+  - sh: "7z a zubax-kucher.7z *"
+  - "appveyor PushArtifact zubax-kucher.7z"
+  - sh: "bash build_linux.sh"
+  - cmd: "build_windows.bat"
+  - cmd: "appveyor PushArtifact dist\\Kucher.exe"
+  - sh: "appveyor PushArtifact dist/Kucher"

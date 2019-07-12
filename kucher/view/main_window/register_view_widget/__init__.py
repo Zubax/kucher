@@ -108,7 +108,7 @@ class RegisterViewWidget(WidgetBase):
         def add_action(callback: typing.Callable[[], None],
                        icon_name: str,
                        name: str,
-                       shortcut: typing.Optional[str]=None):
+                       shortcut: typing.Optional[str] = None):
             action = QAction(get_icon(icon_name), name, self)
             # noinspection PyUnresolvedReferences
             action.triggered.connect(callback)

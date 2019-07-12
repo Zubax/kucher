@@ -64,7 +64,7 @@ class Register:
                  flags:                         Flags,
                  update_timestamp_device_time:  Decimal,
                  set_get_callback:              SetGetCallback,
-                 update_timestamp_monotonic:    float=None):
+                 update_timestamp_monotonic:    float = None):
         self._name = str(name)
         self._cached_value = value
         self._default_value = default_value

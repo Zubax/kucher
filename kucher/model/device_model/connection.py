@@ -122,10 +122,10 @@ class Connection:
                                                     MessageType,
                                                     popcop.standard.MessageBase,
                                                     typing.Type[popcop.standard.MessageBase]],
-                      timeout: typing.Optional[typing.Union[float, int]]=None,
+                      timeout: typing.Optional[typing.Union[float, int]] = None,
                       predicate: typing.Optional[typing.Callable[[typing.Union[Message,
                                                                                popcop.standard.MessageBase]],
-                                                                 bool]]=None) ->\
+                                                                 bool]] = None) ->\
             typing.Union[Message, popcop.standard.MessageBase]:
         try:
             return await self._com.request(message_or_type,
@@ -276,7 +276,7 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
     begun_at = time.monotonic()
     progress = 0.0
 
-    def report(stage: str, progress_increment: float=0.01):
+    def report(stage: str, progress_increment: float = 0.01):
         nonlocal progress
         assert progress_increment > 0
         progress = min(1.0, progress + progress_increment)

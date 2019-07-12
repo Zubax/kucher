@@ -26,8 +26,8 @@ class StyleOptionModifyingDelegate(QStyledItemDelegate):
     def __init__(self,
                  parent: QObject,
                  *,
-                 decoration_position: int=None,
-                 decoration_alignment: int=None):
+                 decoration_position: int = None,
+                 decoration_alignment: int = None):
         super(StyleOptionModifyingDelegate, self).__init__(parent)
         self._decoration_position = decoration_position
         self._decoration_alignment = decoration_alignment

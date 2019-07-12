@@ -118,7 +118,7 @@ class Model(QAbstractItemModel):
         for r in self._registers:
             r.update_event.connect_weak(self, Model._on_register_update)
 
-    def iter_indices(self, root: QModelIndex=None) -> typing.Generator[QModelIndex, None, None]:
+    def iter_indices(self, root: QModelIndex = None) -> typing.Generator[QModelIndex, None, None]:
         """
         Iterates over all indexes in this model starting from :param root:. Returns a generator of QModelIndex.
         """
@@ -137,7 +137,7 @@ class Model(QAbstractItemModel):
 
     async def read(self,
                    registers: typing.Iterable[Register],
-                   progress_callback: typing.Optional[typing.Callable[[Register, int, int], None]]=None):
+                   progress_callback: typing.Optional[typing.Callable[[Register, int, int], None]] = None):
         """
         :param registers: which ones to read
         :param progress_callback: (register: Register, current_register_index: int, total_registers: int) -> None
@@ -180,7 +180,7 @@ class Model(QAbstractItemModel):
 
     async def write(self,
                     register_value_mapping: typing.Dict[Register, typing.Any],
-                    progress_callback: typing.Optional[typing.Callable[[Register, int, int], None]]=None):
+                    progress_callback: typing.Optional[typing.Callable[[Register, int, int], None]] = None):
         """
         :param register_value_mapping: keys are registers, values are what to assign
         :param progress_callback: (register: Register, current_register_index: int, total_registers: int) -> None
@@ -229,7 +229,7 @@ class Model(QAbstractItemModel):
     def get_font() -> QFont:
         return get_monospace_font(small=True)
 
-    def index(self, row: int, column: int, parent: QModelIndex=None) -> QModelIndex:
+    def index(self, row: int, column: int, parent: QModelIndex = None) -> QModelIndex:
         if column >= self.columnCount(parent):
             return QModelIndex()
 
@@ -251,7 +251,7 @@ class Model(QAbstractItemModel):
         else:
             return QModelIndex()
 
-    def rowCount(self, parent: QModelIndex=None) -> int:
+    def rowCount(self, parent: QModelIndex = None) -> int:
         # Only zero-column items have children, this is per the Qt's conventions.
         # http://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html
         if parent is not None and parent.column() > 0:
@@ -259,7 +259,7 @@ class Model(QAbstractItemModel):
 
         return len(self._resolve_parent_node(parent).children)
 
-    def columnCount(self, parent: QModelIndex=None) -> int:
+    def columnCount(self, parent: QModelIndex = None) -> int:
         return len(self._COLUMNS)
 
     def _data_display(self, index: QModelIndex) -> str:
@@ -373,7 +373,7 @@ class Model(QAbstractItemModel):
 
         return QVariant()
 
-    def data(self, index: QModelIndex, role: int=None):
+    def data(self, index: QModelIndex, role: int = None):
         """
         This function is a major performance bottleneck. Look at the results of profiling, you'll see that it is
         invoked hundreds of times for every minor data change. Therefore, it is heavily optimized.
@@ -382,7 +382,7 @@ class Model(QAbstractItemModel):
         """
         return self._data_role_dispatch[role](index)
 
-    def setData(self, index: QModelIndex, value, role: int=None) -> bool:
+    def setData(self, index: QModelIndex, value, role: int = None) -> bool:
         # As per http://doc.qt.io/qt-5/model-view-programming.html
         if not index.isValid() or role != Qt.EditRole:
             return False
@@ -424,7 +424,7 @@ class Model(QAbstractItemModel):
 
         return out
 
-    def headerData(self, section: int, orientation: int, role: int=None):
+    def headerData(self, section: int, orientation: int, role: int = None):
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self._COLUMNS[section]
@@ -508,7 +508,7 @@ class _Node:
     state:    State = State.DEFAULT
     message:  str = ''
 
-    def set_state(self, state: '_Node.State', message: str=''):
+    def set_state(self, state: '_Node.State', message: str = ''):
         self.message = message
         self.state = self.State(state)
 

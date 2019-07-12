@@ -211,8 +211,8 @@ class Communicator:
 
     async def request(self,
                       message_or_type: typing.Union[Message, MessageType, StandardMessageBase, StandardMessageType],
-                      timeout: typing.Optional[typing.Union[float, int]]=None,
-                      predicate: typing.Optional[typing.Callable[[AnyMessage], bool]]=None) ->\
+                      timeout: typing.Optional[typing.Union[float, int]] = None,
+                      predicate: typing.Optional[typing.Callable[[AnyMessage], bool]] = None) ->\
             typing.Optional[AnyMessage]:
         """
         Sends a message, then awaits for a matching response.

@@ -28,7 +28,7 @@ class MonitoredQuantity:
 
     def __init__(self,
                  value: typing.Union[int, float],
-                 alert: 'typing.Optional[MonitoredQuantity.Alert]'=None):
+                 alert: 'typing.Optional[MonitoredQuantity.Alert]' = None):
         self.value = float(value) if value is not None else None
         self.alert = alert or self.Alert.NONE
 
@@ -54,9 +54,9 @@ class MonitoredQuantityPresenter:
     def __init__(self,
                  display_target:    ValueDisplayWidget,
                  format_string:     str,
-                 params_default:    DisplayParameters=None,
-                 params_when_low:   DisplayParameters=None,
-                 params_when_high:  DisplayParameters=None):
+                 params_default:    DisplayParameters = None,
+                 params_when_low:   DisplayParameters = None,
+                 params_when_high:  DisplayParameters = None):
         self._display_target = display_target
         self._format_string = format_string
         self._params = {

@@ -23,8 +23,8 @@ class ValueDisplayGroupWidget(GroupBoxWidget):
     def __init__(self,
                  parent:        QWidget,
                  title:         str,
-                 icon_name:     typing.Optional[str]=None,
-                 with_comments: bool=False):
+                 icon_name:     typing.Optional[str] = None,
+                 with_comments: bool = False):
         super(ValueDisplayGroupWidget, self).__init__(parent, title, icon_name)
 
         self._with_comments = with_comments
@@ -35,8 +35,8 @@ class ValueDisplayGroupWidget(GroupBoxWidget):
     # noinspection PyArgumentList
     def create_value_display(self,
                              title:            str,
-                             placeholder_text: typing.Optional[str]=None,
-                             tooltip:          typing.Optional[str]=None) -> ValueDisplayWidget:
+                             placeholder_text: typing.Optional[str] = None,
+                             tooltip:          typing.Optional[str] = None) -> ValueDisplayWidget:
         inferior = ValueDisplayWidget(self,
                                       title,
                                       placeholder_text=placeholder_text,

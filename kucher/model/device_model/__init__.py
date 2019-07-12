@@ -119,9 +119,10 @@ class DeviceModel:
         """
         return self._conn.registers if self.is_connected else {}
 
-    async def connect(self,
-                      port_name: str,
-                      on_progress_report: typing.Optional[typing.Callable[[str, float], None]]=None) -> DeviceInfoView:
+    async def connect(
+            self,
+            port_name: str,
+            on_progress_report: typing.Optional[typing.Callable[[str, float], None]] = None) -> DeviceInfoView:
         await self.disconnect()
         assert not self._conn
 
@@ -143,7 +144,7 @@ class DeviceModel:
 
         return self._conn.device_info
 
-    async def disconnect(self, reason: str=None):
+    async def disconnect(self, reason: str = None):
         _logger.info('Explicit disconnect request; reason: %r', reason)
         if self._conn:
             # noinspection PyTypeChecker
