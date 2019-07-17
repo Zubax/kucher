@@ -105,3 +105,32 @@ The CI builds redistributable release binaries automatically.
 Follow the CI status link from the [commits page](https://github.com/Zubax/kucher/commits/master)
 to find the binaries for a particular commit.
 The Linux binaries can be shipped directly; the Windows binaries must be signed first.
+
+### Signing Windows executables
+
+Requirements:
+* Windows 10
+* An unsigned executable file named `Kucher.exe`
+* Certum cryptographic card (USB dongle), with a valid certificate installed
+* Signtool: available in [Windows development Kit](https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk)
+
+1 - Connect the USB dongle to the PC. Launch "Start.exe", click "Install Code Signing" and follow the instructions. 
+Reboot the system if required.
+
+2 - Launch proCertum CardManager. Click "Options" and tick the box "EV Code Signing - replace CSP with minidriver library".
+Click "Ok" and reboot the system.
+
+3 - Make sure that signtool is included in the [Windows PATH variable](https://www.architectryan.com/2018/03/17/add-to-the-path-on-windows-10/).
+Its path usually is
+`C:\Program Files (x86)\Windows Kits\10\App Certification Kit`.
+
+4 - Open command prompt and use this command the executable's directory:
+```bash
+signtool sign /n "Open Source Developer, Pavel Kirienko" /t http://time.certum.pl /fd sha256 /v Kucher.exe
+```
+Enter the card's PIN when asked. The executable should now be signed.
+
+5 - To verify the file, use:
+```bash
+signtool verify /pa Kucher.exe
+```
