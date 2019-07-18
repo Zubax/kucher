@@ -114,7 +114,7 @@ Requirements:
 * Certum cryptographic card (USB dongle), with a valid certificate installed
 * Signtool: available in [Windows development Kit](https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk)
 
-1 - Connect the USB dongle to the PC. Launch "Start.exe", click "Install Code Signing" and follow the instructions. 
+1 - Connect the USB dongle to the PC. Open it, launch "Start.exe", click "Install Code Signing" and follow the instructions. 
 Reboot the system if required.
 
 2 - Launch proCertum CardManager. Click "Options" and tick the box "EV Code Signing - replace CSP with minidriver library".
