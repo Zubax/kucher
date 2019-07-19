@@ -96,8 +96,8 @@ class Widget(StatusWidgetBase):
         failed_task_name = str(tssr.failed_task_id).split('.')[-1]
 
         error = error_codes[failed_task_name].get(tssr.failed_task_exit_code, 'unknown error')
-        error_description = error.get('description','unknown error') if type(error) is dict else error
-        error_comment = error.get('comment','') if type(error) is dict else ''
+        error_description = error.get('description', 'unknown error') if type(error) is dict else error
+        error_comment = error.get('comment', '') if type(error) is dict else ''
 
         self._error_description_display.setText(error_description)
         self._error_comment_display.setText(error_comment)
