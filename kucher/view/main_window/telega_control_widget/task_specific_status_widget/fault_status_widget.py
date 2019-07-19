@@ -22,6 +22,7 @@ from PyQt5.QtCore import Qt
 from kucher.view.utils import lay_out_horizontally, lay_out_vertically, get_monospace_font, get_icon_pixmap
 from kucher.view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport, \
     get_icon_name_for_task_id, get_human_friendly_task_name
+from kucher.resources import get_absolute_path
 
 from .base import StatusWidgetBase
 
@@ -88,8 +89,8 @@ class Widget(StatusWidgetBase):
         self._error_code_hex.setText(f'0x{tssr.failed_task_exit_code:02X}')
         self._error_code_bin.setText(f'0b{tssr.failed_task_exit_code:08b}')
 
-        dir_name = os.path.dirname(__file__)
-        file_name = os.path.join(dir_name, 'error_codes.yml')
+        file_name = get_absolute_path('view', 'main_window', 'telega_control_widget', 'task_specific_status_widget',
+                                      f'error_codes.yml', check_existence=True)
         with open(file_name, 'r') as f:
             error_codes = yaml.safe_load(f)
 
