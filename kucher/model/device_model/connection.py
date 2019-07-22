@@ -145,24 +145,29 @@ class Connection:
         await self.disconnect()
 
     async def _status_monitoring_task_entry_point(self):
+        request_errors = 0
         while True:
             await asyncio.sleep(self._general_status_update_period, loop=self._event_loop)
 
             response = await self._com.request(MessageType.GENERAL_STATUS,
                                                timeout=STATUS_REQUEST_TIMEOUT)
             if not response:
-                raise ConnectionLostException('General status request has timed out')
+                request_errors += 1
+                if request_errors >= 3:
+                    request_errors = 0
+                    raise ConnectionLostException('General status request has timed out')
 
-            assert isinstance(response, Message)
-            assert response.type == MessageType.GENERAL_STATUS
+                    assert isinstance(response, Message)
+                    assert response.type == MessageType.GENERAL_STATUS
 
-            prev = self._last_general_status_with_timestamp[1]
-            new = GeneralStatusView.populate(response.fields)
-            if prev.timestamp > new.timestamp:
-                raise ConnectionLostException('Device has been restarted, connection lost')
-
-            self._last_general_status_with_timestamp = response.timestamp, new
-            self._on_general_status_update(*self._last_general_status_with_timestamp)
+                    if prev.timestamp > new.timestamp:
+                        raise ConnectionLostException('Device has been restarted, connection lost')
+            else:
+                prev = self._last_general_status_with_timestamp[1]
+                new = GeneralStatusView.populate(response.fields)
+                request_errors = 0
+                self._last_general_status_with_timestamp = response.timestamp, new
+                self._on_general_status_update(*self._last_general_status_with_timestamp)
 
     async def _receiver_task_entry_point(self):
         while True:
