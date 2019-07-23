@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QTextEdit
 from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtCore import Qt
 
-from kucher.view.utils import lay_out_horizontally, lay_out_vertically, get_monospace_font, get_icon_pixmap
+from kucher.view.utils import lay_out_horizontally, lay_out_vertically, get_icon_pixmap
 from kucher.view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport, \
     get_icon_name_for_task_id, get_human_friendly_task_name
 from kucher.resources import get_absolute_path
@@ -97,7 +97,7 @@ class Widget(StatusWidgetBase):
         failed_task_name = str(tssr.failed_task_id).split('.')[-1]
 
         error = error_codes[failed_task_name].get(tssr.failed_task_exit_code, 'unknown error')
-        error_description = error.get('description', 'unknown error') if type(error) is dict else error
+        error_description = error.get('description', 'unknown error') if isinstance(error, dict) else error
         error_comment = error.get('comment', '') if type(error) is dict else ''
 
         self._error_description_display.setText(error_description)
@@ -106,7 +106,6 @@ class Widget(StatusWidgetBase):
     def _make_line_display(self, tool_tip: str = ''):
         o = QLineEdit(self)
         o.setReadOnly(True)
-        o.setFont(get_monospace_font())
         o.setAlignment(Qt.AlignCenter)
         o.setToolTip(tool_tip)
         return o
@@ -115,12 +114,6 @@ class Widget(StatusWidgetBase):
         o = QTextEdit(self)
         o.setReadOnly(True)
         o.setLineWrapMode(True)
-
-        font = get_monospace_font()
-        font.setItalic(True)
-        o.setFont(font)
-
-        o.setStyleSheet("border: 0px;")
         o.setMaximumHeight(60)
         o.setToolTip(tool_tip)
         return o
