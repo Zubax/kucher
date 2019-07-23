@@ -155,7 +155,7 @@ class Connection:
                 request_errors += 1
                 if request_errors >= 3:
                     request_errors = 0
-                    raise ConnectionLostException('General status request has timed out')
+                    raise ConnectionLostException('Three general status requests have timed out')
 
                     assert isinstance(response, Message)
                     assert response.type == MessageType.GENERAL_STATUS
