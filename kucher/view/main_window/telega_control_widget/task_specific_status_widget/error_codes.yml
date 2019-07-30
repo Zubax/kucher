@@ -1,0 +1,110 @@
+IDLE:
+  1: 
+    description: 'hardware fault'
+    comment: 'May appear in the following cases: overcurrent, overheating of the power stage or low-voltage power 
+              supply (LVPS) failure. Send a zero setpoint to reset the error.'
+  2: 
+    description: 'hardware test failed'
+    comment: 'The last run of the task "Hardware Test" has been unsuccessful. Rerun the test to resolve.'
+  3: 
+    description: 'hardware fault'
+    comment: 'May appear in the following cases: overcurrent, overheating of the power stage or low-voltage power 
+              supply (LVPS) failure. Send a zero setpoint to reset the error.'
+  128: 
+    description: 'some other parameters are invalid'
+  160: 
+    description: 'observer parameters are invalid'
+  192:
+    description: 'motor model parameters are invalid'
+    comment: 'Check the motor parameters and perform the motor identification procedure.'
+
+BEEP:
+  1: 
+    description: 'hardware fault'
+
+RUN:
+  1: 
+    description: 'too many stalls'
+    comment: 'The motor could not be started. Check if the rotor is blocked. If not, check the motor spinup 
+    parameters.'
+  2: 
+    description: 'hardware fault'
+    comment: 'May appear in the following cases: overcurrent, overheating of the power stage or low-voltage power 
+              supply (LVPS) failure. Send a zero setpoint to reset the error.'
+  4: 
+    description: 'DC voltage is out of range'
+    comment: 'Check the the power supply voltage. Check if the voltage is within the allowed range.'
+  6: 
+    description: 'DC voltage is out of range'
+    comment: 'Check the the power supply voltage. Check if the voltage is within the allowed range.'
+
+HARDWARE_TESTS:
+  1: 
+    description: 'hardware fault'
+    comment: 'May appear in the following cases: overcurrent, overheating of the power stage or low-voltage power 
+              supply (LVPS) failure. Send a zero setpoint to reset the error.'
+  2: 
+    description: 'DC voltage error'
+    comment: 'Check the the power supply voltage. Check if the voltage is within the allowed range.'
+  3: 
+    description: 'phase current zero bias error A'
+    comment: 'The current measurement circuits of the phase A are malfunctioning.'
+  4: 
+    description: 'phase current zero bias error B'
+    comment: 'The current measurement circuits of the phase B are malfunctioning.'
+  5: 
+    description: 'phase current error A'
+    comment: 'Phase A is malfunctioning.'
+  6: 
+    description: 'phase current error B'
+    comment: 'Phase B is malfunctioning.'
+  7: 
+    description: 'phase current error C'
+    comment: 'Phase C is malfunctioning.'
+  8: 
+    description: 'phase voltage error A'
+    comment: 'Phase A is malfunctioning.'
+  9: 
+    description: 'phase voltage error B'
+    comment: 'Phase B is malfunctioning.'
+  10: 
+    description: 'phase voltage error C'
+    comment: 'Phase C is malfunctioning.'
+
+MOTOR_IDENTIFICATION:
+  3: 
+    description: 'resistance subtask failed'
+  4: 
+    description: 'inductance subtask failed'
+  5: 
+    description: 'flux linkage subtask failed'
+  248:
+    description:  'DC voltage is out of range'
+  249: 
+    description: 'LVPS malfunction'
+    comment: 'Low-voltage power supply malfunction during motor identification'
+  250: 
+    description: 'hardware overload'
+  251: 
+    description: 'hardware fault'
+  252: 
+    description: 'sequence not applicable'
+    comment: 'Check if the parameters m.resistance, m.induct_quad, and m.induct_direct are valid.'
+  253: 
+    description: 'hardware test failed'
+    comment: 'The last run of the Hardware Test task has been unsuccessful. Rerun the test to resolve.'
+  254: 
+    description: 'invalid sequence'
+  255: 
+    description: 'invalid parameters'
+
+LOW_LEVEL_MANIPULATION:
+  253: 
+    description: 'invalid sub-task'
+  254: 
+    description: 'hardware fault'
+    comment: 'May appear in the following cases: overcurrent, overheating of the power stage or low-voltage power 
+              supply (LVPS) failure. Send a zero setpoint to reset the error.'
+  255: 
+    description: 'LVPS malfunction'
+    comment: 'Low-voltage power supply malfunction'
