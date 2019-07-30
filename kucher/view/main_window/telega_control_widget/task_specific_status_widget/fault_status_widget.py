@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QTextEdit
 from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtCore import Qt
 
-from kucher.view.utils import lay_out_horizontally, lay_out_vertically, get_icon_pixmap
+from kucher.view.utils import lay_out_horizontally, lay_out_vertically, get_monospace_font, get_icon_pixmap
 from kucher.view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport, \
     get_icon_name_for_task_id, get_human_friendly_task_name
 from kucher.resources import get_absolute_path
@@ -106,6 +106,7 @@ class Widget(StatusWidgetBase):
     def _make_line_display(self, tool_tip: str = ''):
         o = QLineEdit(self)
         o.setReadOnly(True)
+        o.setFont(get_monospace_font())
         o.setAlignment(Qt.AlignCenter)
         o.setToolTip(tool_tip)
         return o
