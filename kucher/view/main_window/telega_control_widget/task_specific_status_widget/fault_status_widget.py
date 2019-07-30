@@ -43,7 +43,7 @@ class Widget(StatusWidgetBase):
         self._error_code_hex = self._make_line_display('Same exit code in hexadecimal')
         self._error_code_bin = self._make_line_display('Same exit code in binary, for extra convenience')
 
-        self._error_description_display = self._make_line_display()
+        self._error_description_display = self._make_line_display('Error description', False)
         self._error_comment_display = self._make_text_display()
 
         self.setLayout(
@@ -98,15 +98,16 @@ class Widget(StatusWidgetBase):
 
         error = error_codes[failed_task_name].get(tssr.failed_task_exit_code, 'unknown error')
         error_description = error.get('description', 'unknown error') if isinstance(error, dict) else error
-        error_comment = error.get('comment', '') if type(error) is dict else ''
+        error_comment = error.get('comment', '') if isinstance(error, dict) else ''
 
         self._error_description_display.setText(error_description)
         self._error_comment_display.setText(error_comment)
 
-    def _make_line_display(self, tool_tip: str = ''):
+    def _make_line_display(self, tool_tip: str = '', is_monospace: bool = True):
         o = QLineEdit(self)
         o.setReadOnly(True)
-        o.setFont(get_monospace_font())
+        if is_monospace:
+            o.setFont(get_monospace_font())
         o.setAlignment(Qt.AlignCenter)
         o.setToolTip(tool_tip)
         return o
