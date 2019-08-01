@@ -12,3 +12,6 @@ pyserial ~= 3.4
 
 # https://packages.ubuntu.com/bionic/python3-numpy
 numpy ~= 1.13
+
+# https://packages.ubuntu.com/bionic/python3-yaml
+pyyaml ~= 5.1
