@@ -27,6 +27,7 @@ from kucher.view.device_model_representation import Register
 from .model import Model
 from .style_option_modifying_delegate import StyleOptionModifyingDelegate
 from .editor_delegate import EditorDelegate
+from .dialog_export import ExportDialogWindow, ImportDialogWindow
 
 
 READ_SELECTED_SHORTCUT = 'Ctrl+R'       # Like Reload
@@ -76,6 +77,17 @@ class RegisterViewWidget(WidgetBase):
                                             tool_tip='Read all registers from the device',
                                             on_clicked=self._do_read_all)
 
+        # TODO: change icons
+        self._export_button = make_button(self, 'Export',
+                                          icon_name='info',
+                                          tool_tip='Export registers values',
+                                          on_clicked=self._do_export)
+
+        self._import_button = make_button(self, 'Import',
+                                          icon_name='info',
+                                          tool_tip='Import registers values',
+                                          on_clicked=self._do_import)
+
         self._expand_all_button = make_button(self, '',
                                               icon_name='expand-arrow',
                                               tool_tip='Expand all namespaces',
@@ -93,6 +105,8 @@ class RegisterViewWidget(WidgetBase):
         self._reset_all_button.setEnabled(False)
         self._read_selected_button.setEnabled(False)
         self._read_all_button.setEnabled(False)
+        self._export_button.setEnabled(False)
+        self._import_button.setEnabled(False)
 
         self._tree = QTreeView(self)
         self._tree.setVerticalScrollMode(QTreeView.ScrollPerPixel)
@@ -147,6 +161,9 @@ class RegisterViewWidget(WidgetBase):
         buttons_layout.addWidget(self._reset_selected_button, 0, 2)
         buttons_layout.addWidget(self._read_all_button, 1, 0)
         buttons_layout.addWidget(self._reset_all_button, 1, 2)
+        buttons_layout.addWidget(self._import_button, 2, 0)
+        buttons_layout.addWidget(self._export_button, 2, 2)
+
         for col in range(3):
             buttons_layout.setColumnStretch(col, 1)
 
@@ -209,6 +226,8 @@ class RegisterViewWidget(WidgetBase):
         self._read_selected_button.setEnabled(False)
         self._read_all_button.setEnabled(len(filtered_registers) > 0)
         self._reset_all_button.setEnabled(len(filtered_registers) > 0)
+        self._export_button.setEnabled(len(filtered_registers) > 0)
+        self._import_button.setEnabled(len(filtered_registers) > 0)
 
         self._display_status(f'{len(filtered_registers)} registers loaded')
 
@@ -246,6 +265,12 @@ class RegisterViewWidget(WidgetBase):
 
     def _do_read_all(self):
         self._read_specific(self._tree.model().registers)
+
+    def _do_import(self):
+        ImportDialogWindow(self, self._registers)
+
+    def _do_export(self):
+        ExportDialogWindow(self._registers)
 
     def _read_specific(self, registers: typing.List[Register]):
         total_registers_read = None
