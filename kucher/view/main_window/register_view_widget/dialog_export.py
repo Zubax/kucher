@@ -108,9 +108,9 @@ class ImportDialogWindow(QWidget):
 
         except Exception as ex:
             show_error('Import failed',
-            f'Cannot import {self.fileName}',
-            f'Reason: {str(ex)}',
-            self.parent)
+                       f'Cannot import {self.fileName}',
+                       f'Reason: {str(ex)}',
+                       self.parent)
             _logger.exception(f'Could not write registers: {ex!r}')
             self._file.close()
             return
