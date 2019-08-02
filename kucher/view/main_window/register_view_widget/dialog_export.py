@@ -55,7 +55,7 @@ class ExportDialogWindow(QWidget):
                     except Exception as ex:
                         _logger.exception(f'Register {reg.name} could not be read')
 
-            yaml.dump(register_yaml, _file, tags=False, default_flow_style=False)
+            yaml.dump(register_yaml, _file)
             _file.close()
 
         asyncio.get_event_loop().create_task(executor())
@@ -124,7 +124,7 @@ class ImportDialogWindow(QWidget):
                     await self._writeRegisters()
                     break
                 except Exception as ex:
-                    _logger.exception(f'Registers could not be loaded (attempt {_attempt}/3')
+                    _logger.exception(f'Registers could not be loaded (attempt {_attempt + 1}/3')
 
         asyncio.get_event_loop().create_task(executor())
 
