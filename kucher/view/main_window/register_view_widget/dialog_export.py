@@ -89,21 +89,22 @@ class ImportDialogWindow(QWidget):
                     if not reg_check.mutable:
                         show_error('Import failed',
                                    f'Cannot import {self.fileName}',
-                                   'One or several parameter cannot be modified on this device',
+                                   f'This parameter cannot be modified on this device:\n{reg_check.name}',
                                    self.parent)
                         self._file.close()
-                        _logger.exception('Import failed : One or several parameter cannot be modified on this device')
+                        _logger.exception(f'Import failed : This parameter cannot be modified on this '
+                                          f'device: {reg_check.name}')
                         return
 
                     elif reg_check.has_min_and_max_values and reg_check.type_id != Register.ValueType.BOOLEAN:
                         if not (reg_check.min_value <= self.imported_registers[reg_check.name] <= reg_check.max_value):
                             show_error('Import failed',
                                        f'Cannot import {self.fileName}',
-                                       'One or several parameter values are outside permitted range',
+                                       f'This parameter value is outside permitted range:\n{reg_check.name}',
                                        self.parent)
                             self._file.close()
-                            _logger.exception('Import failed : One or several parameter values'
-                                              ' are outside permitted range')
+                            _logger.exception('Import failed :This parameter value is outside '
+                                              f'permitted range: {reg_check.name}')
                             return
 
         except Exception as ex:

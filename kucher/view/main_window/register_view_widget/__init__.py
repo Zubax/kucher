@@ -77,15 +77,14 @@ class RegisterViewWidget(WidgetBase):
                                             tool_tip='Read all registers from the device',
                                             on_clicked=self._do_read_all)
 
-        # TODO: change icons
         self._export_button = make_button(self, 'Export',
-                                          icon_name='info',
-                                          tool_tip='Export registers values',
+                                          icon_name='export',
+                                          tool_tip='Export configuration parameters',
                                           on_clicked=self._do_export)
 
         self._import_button = make_button(self, 'Import',
-                                          icon_name='info',
-                                          tool_tip='Import registers values',
+                                          icon_name='import',
+                                          tool_tip='Import configuration parameters',
                                           on_clicked=self._do_import)
 
         self._expand_all_button = make_button(self, '',
