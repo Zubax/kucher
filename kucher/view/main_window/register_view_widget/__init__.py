@@ -27,7 +27,7 @@ from kucher.view.device_model_representation import Register
 from .model import Model
 from .style_option_modifying_delegate import StyleOptionModifyingDelegate
 from .editor_delegate import EditorDelegate
-from .dialog_export import ExportDialogWindow, ImportDialogWindow
+from .import_export_dialog import export_registers, import_registers
 
 
 READ_SELECTED_SHORTCUT = 'Ctrl+R'       # Like Reload
@@ -266,10 +266,10 @@ class RegisterViewWidget(WidgetBase):
         self._read_specific(self._tree.model().registers)
 
     def _do_import(self):
-        ImportDialogWindow(self, self._registers)
+        import_registers(parent=self, registers=self._registers)
 
     def _do_export(self):
-        ExportDialogWindow(self._registers)
+        export_registers(parent=self, registers=self._registers)
 
     def _read_specific(self, registers: typing.List[Register]):
         total_registers_read = None
