@@ -17,6 +17,7 @@ import yaml
 import asyncio
 import math
 import itertools
+import enum
 
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QFileDialog, QTableWidget, QTableWidgetItem, QDialog, QLabel, \
@@ -27,6 +28,15 @@ from kucher.view.device_model_representation import Register
 from kucher.view.utils import show_error, lay_out_horizontally, lay_out_vertically, get_monospace_font
 
 _logger = getLogger(__name__)
+
+
+class ErrorCodes(enum.Enum):
+    NOT_MUTABLE = enum.auto()
+    INCORRECT_TYPE = enum.auto()
+    INCORRECT_DIMENSION = enum.auto()
+    OUTSIDE_RANGE = enum.auto()
+    UNKNOWN = enum.auto()
+    NO_ERROR = enum.auto()
 
 
 def export_registers(parent, registers):
@@ -42,38 +52,38 @@ def export_registers(parent, registers):
         return
     try:
         _file = open(file_name, 'w+')
-
     except Exception as ex:
         show_error('Export failed',
-                   f'Cannot export {file_name}',
-                   f'Error: {ex}',
+                   f'Cannot open {file_name}',
+                   f'Error: {str(ex)}',
                    parent)
-        _logger.exception(f'File {file_name} could not be exported: {ex!r}')
+        _logger.exception(f'File {file_name} could not be open: {str(ex)}')
         return
 
     async def executor():
-        register_yaml = {}
-        for reg in registers:
-            if reg.mutable and reg.persistent:
-                try:
-                    register_yaml[reg.name] = await reg.read_through()
-                except Exception as ex:
-                    show_error('Export failed',
-                               f'Cannot export {file_name}',
-                               f'This parameter cannot be read:\n{reg.name}',
-                               parent)
-                    _logger.exception(f'Register {reg} could not be read')
-                    return
+        try:
+            register_yaml = {}
+            for reg in registers:
+                if reg.mutable and reg.persistent:
+                    try:
+                        register_yaml[reg.name] = await reg.read_through()
+                    except Exception as ex:
+                        show_error('Export failed',
+                                   f'Parameter {reg.name} cannot be read.',
+                                   str(ex),
+                                   parent)
+                        _logger.exception(f'Register {reg} could not be read')
+                        return
 
-        yaml.dump(register_yaml, _file)
-        _file.close()
+            yaml.dump(register_yaml, _file)
+            display_sucess_message('Export successful',
+                                   f'Parameters have been successfully exported to:\n{file_name}',
+                                   '',
+                                   parent)
+        finally:
+            _file.close()
 
     asyncio.get_event_loop().create_task(executor())
-
-    display_sucess_message('Export successful',
-                           f'Parameters have been successfully exported to:\n{file_name}',
-                           '',
-                           parent)
 
 
 def import_registers(parent, registers):
@@ -104,157 +114,151 @@ def import_registers(parent, registers):
         return
     try:
         file = open(file_name, 'r')
-    except IOError:
+        imported_registers = yaml.load(file, Loader=yaml.Loader)
+        file.close()
+
+    except IOError as ex:
         _logger.exception(f'File {file_name} could not be open')
+        show_error('Export failed',
+                   f'Cannot open {file_name}',
+                   f'Error: {str(ex)}',
+                   parent)
         return
 
-    imported_registers = yaml.load(file, Loader=yaml.Loader)
+    except Exception as ex:
+        file.close()
+        _logger.exception(f'File {file_name} could not be parsed')
+        show_error('Export failed',
+                   f'Cannot read {file_name}',
+                   f'Error: {str(ex)}',
+                   parent)
+        return
 
     if imported_registers:
-        check_passed = check_registers(parent, file_name, file, registers, imported_registers)
-        if check_passed:
+        error_code, detail = check_registers(registers, imported_registers)
+        if error_code == ErrorCodes.NO_ERROR:
             write_registers(parent, file_name, registers, imported_registers)
-    else:
-        write_registers(parent, file_name, registers, imported_registers)
+        else:
+            show_error_box(error_code, detail, file_name, parent)
 
 
-def check_registers(parent, file_name, file, registers, imported_registers, ):
-    print("checking...")
+def check_registers(registers, imported_registers):
     try:
         for reg_check in registers:
             if reg_check.name in imported_registers:
                 if not (reg_check.mutable and reg_check.persistent):
-                    show_error('Import failed',
-                               f'Cannot import {file_name}',
-                               f'This parameter cannot be modified on this device:\n{reg_check.name}',
-                               parent)
-                    file.close()
                     _logger.exception(f'Import failed: this parameter cannot be modified on this device: {reg_check}')
-                    return False
+                    return ErrorCodes.NOT_MUTABLE, reg_check.name
 
                 elif not check_type(reg_check, imported_registers[reg_check.name]):
-                    show_error('Import failed',
-                               f'Cannot import {file_name}',
-                               f'This parameter type is incorrect:\n{reg_check.name}',
-                               parent)
-                    file.close()
                     _logger.exception(f'Import failed: this parameter type is incorrect {reg_check}')
-                    return False
+                    return ErrorCodes.INCORRECT_TYPE, reg_check.name
 
-                if len(imported_registers[reg_check.name]) != len(reg_check.cached_value):
-                    show_error('Import failed',
-                               f'Cannot import {file_name}',
-                               f'This parameter dimension is incorrect:\n{reg_check.name}',
-                               parent)
-                    file.close()
+                elif len(imported_registers[reg_check.name]) != len(reg_check.cached_value):
                     _logger.exception(f'Import failed: this parameter dimension is incorrect {reg_check}')
-                    return False
+                    return ErrorCodes.INCORRECT_DIMENSION, reg_check.name
 
                 elif reg_check.has_min_and_max_values and reg_check.type_id != Register.ValueType.BOOLEAN:
                     if not (reg_check.min_value <= imported_registers[reg_check.name] <= reg_check.max_value):
-                        show_error('Import failed',
-                                   f'Cannot import {file_name}',
-                                   f'This parameter value is outside permitted range:\n{reg_check.name}',
-                                   parent)
-                        file.close()
                         _logger.exception('Import failed: this parameter value is outside '
                                           f'permitted range: {reg_check}')
-                        return False
+                        return ErrorCodes.OUTSIDE_RANGE, reg_check.name
 
     except Exception as ex:
+        _logger.exception(f'Could not write registers: {str(ex)}')
+        return ErrorCodes.UNKNOWN, str(ex)
+
+    return ErrorCodes.NO_ERROR, ''
+
+
+def show_error_box(error_code, detail, file_name, parent):
+    if error_code == ErrorCodes.NOT_MUTABLE:
         show_error('Import failed',
                    f'Cannot import {file_name}',
-                   f'Reason: {str(ex)}',
+                   f'This parameter cannot be modified on this device:\n{detail}',
                    parent)
-        _logger.exception(f'Could not write registers: {ex!r}')
-        file.close()
-        return False
-    return True
-
-    file.close()
+    elif error_code == ErrorCodes.INCORRECT_TYPE:
+        show_error('Import failed',
+                   f'Cannot import {file_name}',
+                   f'This parameter type is incorrect:\n{detail}',
+                   parent)
+    elif error_code == ErrorCodes.INCORRECT_DIMENSION:
+        show_error('Import failed',
+                   f'Cannot import {file_name}',
+                   f'This parameter dimension is incorrect:\n{detail}',
+                   parent)
+    elif error_code == ErrorCodes.OUTSIDE_RANGE:
+        show_error('Import failed',
+                   f'Cannot import {file_name}',
+                   f'This parameter value is outside permitted range:\n{detail}',
+                   parent)
+    else:
+        show_error('Import failed',
+                   f'Cannot import {file_name}',
+                   f'Reason: {detail}',
+                   parent)
 
 
 def write_registers(parent, file_name, registers, imported_registers):
     async def executor():
         unwritten_registers = []
-        changed_registers_number = 0
-        if imported_registers:
-            for reg in imported_registers:
-                for _attempt in range(3):
-                    try:
-                        old_reg = next((r for r in registers if r.name == reg))
-                        new_value = imported_registers[reg]
-                        old_value = await old_reg.read_through()
-                        equal = is_equal(old_reg.type_id, old_value, imported_registers[reg])
+        for reg in imported_registers:
+            _attempt = 0
+            while True:
+                try:
+                    old_reg = next((r for r in registers if r.name == reg))
+                    await old_reg.write_through(imported_registers[reg])
+                    break
 
-                        if not equal:
-                            await old_reg.write_through(new_value)
-                            changed_registers_number += 1
+                except Exception as ex:
+                    _attempt += 1
+                    _logger.exception(f'Register {reg} could not be loaded (attempt {_attempt}/3)')
+                    if _attempt == 3:
+                        try:
+                            old_reg = next((r for r in registers if r.name == reg))
+                            old_value = await old_reg.read_through()
+                        except Exception:
+                            old_value = ['(unknown)']
+
+                        unwritten_registers.append([reg, old_value, imported_registers[reg]])
                         break
 
-                    except Exception as ex:
-                        if _attempt == 2:
-                            try:
-                                old_reg = next((r for r in registers if r.name == reg))
-                                old_value = await old_reg.read_through()
-                            except Exception as ex:
-                                old_value = ['(unknown)']
-
-                            unwritten_registers.append([reg, old_value, imported_registers[reg]])
-                        _logger.exception(f'Register {reg} could not be loaded (attempt {_attempt + 1}/3)')
-
-            if unwritten_registers:
-                display_warning_message(parent, unwritten_registers)
-
-        total_registers_number = sum(1 for b in registers if b.mutable and b.persistent)
+        if unwritten_registers:
+            display_warning_message(parent, unwritten_registers)
 
         display_sucess_message('Import successful',
                                f'{file_name} have been successfully imported',
-                               f'{changed_registers_number} registers have been edited, '
-                               f'{total_registers_number - changed_registers_number} were left unchanged',
+                               '',
                                parent)
 
     asyncio.get_event_loop().create_task(executor())
 
 
 def check_type(old_reg, new_value):
-    # iterates over 'new_value' and check if all of its elements are the same type as 'old_reg' value
-    _type_float = True
-    _type_int = True
-    _type_bool = True
-    for e in new_value:
-        _type_float = _type_float and isinstance(e, float) and (old_reg.type_id in (ValueType.F32,
-                                                                                    ValueType.F64))
-        _type_int = _type_int and isinstance(e, int) and (old_reg.type_id in (ValueType.I64,
-                                                                              ValueType.I32,
-                                                                              ValueType.I16,
-                                                                              ValueType.I8,
-                                                                              ValueType.U64,
-                                                                              ValueType.U32,
-                                                                              ValueType.U16,
-                                                                              ValueType.U8))
-        _type_bool = _type_bool and isinstance(e, bool) and old_reg.type_id == ValueType.BOOLEAN
-    return _type_float or _type_int or _type_bool
+    # Check if all elements of new_value are the same type as 'old_reg' value
+    _int_types = (ValueType.I64,
+                  ValueType.I32,
+                  ValueType.I16,
+                  ValueType.I8,
+                  ValueType.U64,
+                  ValueType.U32,
+                  ValueType.U16,
+                  ValueType.U8)
 
+    _float_types = (ValueType.F32,
+                    ValueType.F64)
 
-def is_equal(old_type, old_value, new_value):
-    if old_type in (ValueType.F32, ValueType.F64):
-        # Absolute tolerance equals the epsilon as per IEEE754
-        absolute_tolerance = {
-            ValueType.F32: 1e-6,
-            ValueType.F64: 1e-15,
-        }[old_type]
+    # >>> isinstance(True, int)
+    # True
+    if all(map(lambda _type: isinstance(_type, bool), new_value)):
+        return old_reg.type_id == ValueType.BOOLEAN
 
-        # Relative tolerance is roughly the epsilon multiplied by 10...100
-        relative_tolerance = {
-            ValueType.F32: 1e-5,
-            ValueType.F64: 1e-13,
-        }[old_type]
-
-        return all(map(lambda args: math.isclose(*args, rel_tol=relative_tolerance, abs_tol=absolute_tolerance),
-                       itertools.zip_longest(old_value, new_value)))
     else:
-        return new_value == old_value
+        _type_float = all(map(lambda _type: isinstance(_type, float), new_value)) and (old_reg.type_id in _float_types)
+        # allow the user to enter an int if expected value is float
+        _type_int = all(map(lambda _type: isinstance(_type, int), new_value)) and \
+            (old_reg.type_id in _float_types + _int_types)
+        return _type_float or _type_int
 
 
 def display_sucess_message(title, text, informative_text, parent):
