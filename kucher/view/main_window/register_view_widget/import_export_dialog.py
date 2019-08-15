@@ -23,9 +23,6 @@ import typing
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QFileDialog, QTableWidget, QTableWidgetItem, QDialog, QLabel, \
     QPushButton, QHeaderView, QMessageBox
-
-from PyQt5 import QtGui
-# from PyQt5.QtGui import QCloseEvent
 from popcop.standard.register import ValueType
 
 from kucher.view.device_model_representation import Register
