@@ -18,10 +18,14 @@ import asyncio
 import math
 import itertools
 import enum
+import typing
 
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QFileDialog, QTableWidget, QTableWidgetItem, QDialog, QLabel, \
     QPushButton, QHeaderView, QMessageBox
+
+from PyQt5 import QtGui
+# from PyQt5.QtGui import QCloseEvent
 from popcop.standard.register import ValueType
 
 from kucher.view.device_model_representation import Register
@@ -30,13 +34,22 @@ from kucher.view.utils import show_error, lay_out_horizontally, lay_out_vertical
 _logger = getLogger(__name__)
 
 
-class ErrorCodes(enum.Enum):
+class CheckResult(enum.Enum):
     NOT_MUTABLE = enum.auto()
     INCORRECT_TYPE = enum.auto()
     INCORRECT_DIMENSION = enum.auto()
     OUTSIDE_RANGE = enum.auto()
     UNKNOWN = enum.auto()
     NO_ERROR = enum.auto()
+
+
+CHECK_RESULT_MAPPING: typing.Dict[CheckResult, str] = {
+    CheckResult.NOT_MUTABLE:         'This parameter cannot be modified on this device: ',
+    CheckResult.INCORRECT_TYPE:      'This parameter type is incorrect: ',
+    CheckResult.INCORRECT_DIMENSION: 'This parameter dimension is incorrect: ',
+    CheckResult.OUTSIDE_RANGE:       'This parameter value is outside permitted range: ',
+    CheckResult.UNKNOWN:             'Reason: ',
+}
 
 
 def export_registers(parent, registers):
@@ -113,13 +126,12 @@ def import_registers(parent, registers):
     if not file_name:
         return
     try:
-        file = open(file_name, 'r')
-        imported_registers = yaml.load(file, Loader=yaml.Loader)
-        file.close()
-
+        with open(file_name, 'r') as file:
+            imported_registers = yaml.load(file, Loader=yaml.Loader)
+            file.close()
     except IOError as ex:
         _logger.exception(f'File {file_name} could not be open')
-        show_error('Export failed',
+        show_error('Import failed',
                    f'Cannot open {file_name}',
                    f'Error: {str(ex)}',
                    parent)
@@ -128,18 +140,18 @@ def import_registers(parent, registers):
     except Exception as ex:
         file.close()
         _logger.exception(f'File {file_name} could not be parsed')
-        show_error('Export failed',
+        show_error('Import failed',
                    f'Cannot read {file_name}',
                    f'Error: {str(ex)}',
                    parent)
         return
 
     if imported_registers:
-        error_code, detail = check_registers(registers, imported_registers)
-        if error_code == ErrorCodes.NO_ERROR:
+        result, detail = check_registers(registers, imported_registers)
+        if result == CheckResult.NO_ERROR:
             write_registers(parent, file_name, registers, imported_registers)
         else:
-            show_error_box(error_code, detail, file_name, parent)
+            show_error_box(result, detail, file_name, parent)
 
 
 def check_registers(registers, imported_registers):
@@ -148,55 +160,34 @@ def check_registers(registers, imported_registers):
             if reg_check.name in imported_registers:
                 if not (reg_check.mutable and reg_check.persistent):
                     _logger.exception(f'Import failed: this parameter cannot be modified on this device: {reg_check}')
-                    return ErrorCodes.NOT_MUTABLE, reg_check.name
+                    return CheckResult.NOT_MUTABLE, reg_check.name
 
                 elif not check_type(reg_check, imported_registers[reg_check.name]):
                     _logger.exception(f'Import failed: this parameter type is incorrect {reg_check}')
-                    return ErrorCodes.INCORRECT_TYPE, reg_check.name
+                    return CheckResult.INCORRECT_TYPE, reg_check.name
 
                 elif len(imported_registers[reg_check.name]) != len(reg_check.cached_value):
                     _logger.exception(f'Import failed: this parameter dimension is incorrect {reg_check}')
-                    return ErrorCodes.INCORRECT_DIMENSION, reg_check.name
+                    return CheckResult.INCORRECT_DIMENSION, reg_check.name
 
                 elif reg_check.has_min_and_max_values and reg_check.type_id != Register.ValueType.BOOLEAN:
                     if not (reg_check.min_value <= imported_registers[reg_check.name] <= reg_check.max_value):
                         _logger.exception('Import failed: this parameter value is outside '
                                           f'permitted range: {reg_check}')
-                        return ErrorCodes.OUTSIDE_RANGE, reg_check.name
+                        return CheckResult.OUTSIDE_RANGE, reg_check.name
 
     except Exception as ex:
         _logger.exception(f'Could not write registers: {str(ex)}')
-        return ErrorCodes.UNKNOWN, str(ex)
+        return CheckResult.UNKNOWN, str(ex)
 
-    return ErrorCodes.NO_ERROR, ''
+    return CheckResult.NO_ERROR, ''
 
 
-def show_error_box(error_code, detail, file_name, parent):
-    if error_code == ErrorCodes.NOT_MUTABLE:
-        show_error('Import failed',
-                   f'Cannot import {file_name}',
-                   f'This parameter cannot be modified on this device:\n{detail}',
-                   parent)
-    elif error_code == ErrorCodes.INCORRECT_TYPE:
-        show_error('Import failed',
-                   f'Cannot import {file_name}',
-                   f'This parameter type is incorrect:\n{detail}',
-                   parent)
-    elif error_code == ErrorCodes.INCORRECT_DIMENSION:
-        show_error('Import failed',
-                   f'Cannot import {file_name}',
-                   f'This parameter dimension is incorrect:\n{detail}',
-                   parent)
-    elif error_code == ErrorCodes.OUTSIDE_RANGE:
-        show_error('Import failed',
-                   f'Cannot import {file_name}',
-                   f'This parameter value is outside permitted range:\n{detail}',
-                   parent)
-    else:
-        show_error('Import failed',
-                   f'Cannot import {file_name}',
-                   f'Reason: {detail}',
-                   parent)
+def show_error_box(result, detail, file_name, parent):
+    show_error('Import failed',
+               f'Cannot import {file_name}',
+               CHECK_RESULT_MAPPING[result] + detail,
+               parent)
 
 
 def write_registers(parent, file_name, registers, imported_registers):
@@ -213,10 +204,10 @@ def write_registers(parent, file_name, registers, imported_registers):
                 except Exception as ex:
                     _attempt += 1
                     _logger.exception(f'Register {reg} could not be loaded (attempt {_attempt}/3)')
-                    if _attempt == 3:
+                    if _attempt >= 3:
                         try:
                             old_reg = next((r for r in registers if r.name == reg))
-                            old_value = await old_reg.read_through()
+                            old_value = old_reg.cached_value
                         except Exception:
                             old_value = ['(unknown)']
 
