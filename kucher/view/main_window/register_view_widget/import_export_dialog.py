@@ -88,7 +88,6 @@ def export_registers(parent, registers):
             yaml.dump(register_yaml, _file)
             display_sucess_message('Export successful',
                                    f'Parameters have been successfully exported to:\n{file_name}',
-                                   '',
                                    parent)
         finally:
             _file.close()
@@ -156,21 +155,20 @@ def check_registers(registers, imported_registers):
         for reg_check in registers:
             if reg_check.name in imported_registers:
                 if not (reg_check.mutable and reg_check.persistent):
-                    _logger.exception(f'Import failed: this parameter cannot be modified on this device: {reg_check}')
+                    _logger.error(f'Import failed: this parameter cannot be modified on this device: {reg_check}')
                     return CheckResult.NOT_MUTABLE, reg_check.name
 
                 elif not check_type(reg_check, imported_registers[reg_check.name]):
-                    _logger.exception(f'Import failed: this parameter type is incorrect {reg_check}')
+                    _logger.error(f'Import failed: this parameter type is incorrect {reg_check}')
                     return CheckResult.INCORRECT_TYPE, reg_check.name
 
                 elif len(imported_registers[reg_check.name]) != len(reg_check.cached_value):
-                    _logger.exception(f'Import failed: this parameter dimension is incorrect {reg_check}')
+                    _logger.error(f'Import failed: this parameter dimension is incorrect {reg_check}')
                     return CheckResult.INCORRECT_DIMENSION, reg_check.name
 
                 elif reg_check.has_min_and_max_values and reg_check.type_id != Register.ValueType.BOOLEAN:
                     if not (reg_check.min_value <= imported_registers[reg_check.name] <= reg_check.max_value):
-                        _logger.exception('Import failed: this parameter value is outside '
-                                          f'permitted range: {reg_check}')
+                        _logger.error(f'Import failed: this parameter value is outside permitted range {reg_check}')
                         return CheckResult.OUTSIDE_RANGE, reg_check.name
 
     except Exception as ex:
@@ -212,12 +210,15 @@ def write_registers(parent, file_name, registers, imported_registers):
                         break
 
         if unwritten_registers:
-            display_warning_message(parent, unwritten_registers)
+            display_warning_message('Import successful',
+                                    f'{file_name} have been successfully imported.',
+                                    parent,
+                                    unwritten_registers)
 
-        display_sucess_message('Import successful',
-                               f'{file_name} have been successfully imported',
-                               '',
-                               parent)
+        else:
+            display_sucess_message('Import successful',
+                                   f'{file_name} have been successfully imported.',
+                                   parent)
 
     asyncio.get_event_loop().create_task(executor())
 
@@ -249,19 +250,17 @@ def check_type(old_reg, new_value):
         return _type_float or _type_int
 
 
-def display_sucess_message(title, text, informative_text, parent):
+def display_sucess_message(title, text, parent):
     mbox = QMessageBox(parent)
     mbox.setWindowTitle(title)
     mbox.setText(text)
-    mbox.setInformativeText(informative_text)
     mbox.setStandardButtons(QMessageBox.Ok)
     mbox.show()
 
 
-def display_warning_message(parent, unwritten_registers):
+def display_warning_message(title, text, parent, unwritten_registers):
     _warning = QDialog(parent)
-    _warning.setGeometry(10, 10, 1000, 400)
-    _warning.setWindowTitle('Unwritable parameters')
+    _warning.setWindowTitle(title)
 
     _tableWidget = QTableWidget(_warning)
     _tableWidget.setFont(get_monospace_font())
@@ -293,10 +292,11 @@ def display_warning_message(parent, unwritten_registers):
 
     _warning.setLayout(
         lay_out_vertically(
+            lay_out_horizontally(QLabel(text, _warning)),
             lay_out_horizontally(QLabel('Some configuration parameters could not be written:', _warning)),
             lay_out_horizontally(_tableWidget),
             lay_out_horizontally(_btn_ok),
         )
     )
 
-    _warning.exec()
+    _warning.show()
