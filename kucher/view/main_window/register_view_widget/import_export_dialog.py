@@ -9,7 +9,7 @@
 # You should have received a copy of the GNU General Public License along with Kucher.
 # If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Pavel Kirienko <pavel.kirienko@zubax.com>
+# Author: Loic Gilbert <loic.gilbert@zubax.com>
 #
 
 import os
@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import QWidget, QFileDialog, QTableWidget, QTableWidgetItem
     QPushButton, QHeaderView, QMessageBox
 from popcop.standard.register import ValueType
 
+from kucher.view.widgets import WidgetBase
 from kucher.view.device_model_representation import Register
 from kucher.view.utils import show_error, lay_out_horizontally, lay_out_vertically, get_monospace_font
 
@@ -49,9 +50,9 @@ CHECK_RESULT_MAPPING: typing.Dict[CheckResult, str] = {
 }
 
 
-def export_registers(parent, registers):
+def export_registers(parent: WidgetBase, registers: list):
     """
-    Store all mutable and persistent registers in a .yml file
+    Stores all mutable and persistent registers in a .yml file.
     """
     dialog_box = QWidget()
     dialog_box.setGeometry(10, 10, 1000, 700)
@@ -75,29 +76,27 @@ def export_registers(parent, registers):
             register_yaml = {}
             for reg in registers:
                 if reg.mutable and reg.persistent:
-                    try:
-                        register_yaml[reg.name] = await reg.read_through()
-                    except Exception as ex:
-                        show_error('Export failed',
-                                   f'Parameter {reg.name} cannot be read.',
-                                   str(ex),
-                                   parent)
-                        _logger.exception(f'Register {reg} could not be read')
-                        return
+                    register_yaml[reg.name] = await reg.read_through()
 
             yaml.dump(register_yaml, _file)
             display_sucess_message('Export successful',
                                    f'Parameters have been successfully exported to:\n{file_name}',
                                    parent)
+        except Exception as ex:
+            show_error('Export failed',
+                       f'Parameters cannot be read.',
+                       str(ex),
+                       parent)
+            _logger.exception(f'Registers could not be read')
         finally:
             _file.close()
 
     asyncio.get_event_loop().create_task(executor())
 
 
-def import_registers(parent, registers):
+def import_registers(parent: WidgetBase, registers: list):
     """
-    Import registers values from a .yml (or .yaml) file.
+    Imports registers values from a .yml (or .yaml) file.
     The file must match the following pattern:
 
     full_register_name:
@@ -124,7 +123,6 @@ def import_registers(parent, registers):
     try:
         with open(file_name, 'r') as file:
             imported_registers = yaml.load(file, Loader=yaml.Loader)
-            file.close()
     except IOError as ex:
         _logger.exception(f'File {file_name} could not be open')
         show_error('Import failed',
@@ -134,7 +132,6 @@ def import_registers(parent, registers):
         return
 
     except Exception as ex:
-        file.close()
         _logger.exception(f'File {file_name} could not be parsed')
         show_error('Import failed',
                    f'Cannot read {file_name}',
@@ -150,7 +147,7 @@ def import_registers(parent, registers):
             show_error_box(result, detail, file_name, parent)
 
 
-def check_registers(registers, imported_registers):
+def check_registers(registers: list, imported_registers: dict) -> CheckResult:
     try:
         for reg_check in registers:
             if reg_check.name in imported_registers:
@@ -178,14 +175,14 @@ def check_registers(registers, imported_registers):
     return CheckResult.NO_ERROR, ''
 
 
-def show_error_box(result, detail, file_name, parent):
+def show_error_box(result: CheckResult, detail: str, file_name: str, parent: WidgetBase):
     show_error('Import failed',
                f'Cannot import {file_name}',
                CHECK_RESULT_MAPPING[result] + detail,
                parent)
 
 
-def write_registers(parent, file_name, registers, imported_registers):
+def write_registers(parent: WidgetBase, file_name: str, registers: list, imported_registers: dict):
     async def executor():
         unwritten_registers = []
         for reg in imported_registers:
@@ -223,8 +220,10 @@ def write_registers(parent, file_name, registers, imported_registers):
     asyncio.get_event_loop().create_task(executor())
 
 
-def check_type(old_reg, new_value):
-    # Check if all elements of new_value are the same type as 'old_reg' value
+def check_type(old_reg: Register, new_value: list) -> bool:
+    """
+    Checks if all elements of new_value are the same type as old_reg value.
+    """
     _int_types = (ValueType.I64,
                   ValueType.I32,
                   ValueType.I16,
@@ -241,7 +240,6 @@ def check_type(old_reg, new_value):
     # True
     if all(map(lambda _type: isinstance(_type, bool), new_value)):
         return old_reg.type_id == ValueType.BOOLEAN
-
     else:
         _type_float = all(map(lambda _type: isinstance(_type, float), new_value)) and (old_reg.type_id in _float_types)
         # allow the user to enter an int if expected value is float
@@ -250,7 +248,7 @@ def check_type(old_reg, new_value):
         return _type_float or _type_int
 
 
-def display_sucess_message(title, text, parent):
+def display_sucess_message(title: str, text: str, parent: WidgetBase):
     mbox = QMessageBox(parent)
     mbox.setWindowTitle(title)
     mbox.setText(text)
@@ -258,7 +256,7 @@ def display_sucess_message(title, text, parent):
     mbox.show()
 
 
-def display_warning_message(title, text, parent, unwritten_registers):
+def display_warning_message(title: str, text: str, parent: WidgetBase, unwritten_registers: list):
     _warning = QDialog(parent)
     _warning.setWindowTitle(title)
 
