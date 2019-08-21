@@ -11,7 +11,9 @@ PyQt5 == 5.12.2
 pyserial ~= 3.4
 
 # https://packages.ubuntu.com/bionic/python3-numpy
-numpy ~= 1.13
+# Last version of numpy has problems with some modules when using pyinstaller
+# https://stackoverflow.com/questions/57264427/in-pyinstaller-why-wont-numpy-random-common-load-as-a-module
+numpy == 1.16.2
 
 # https://packages.ubuntu.com/bionic/python3-yaml
 pyyaml ~= 5.1
