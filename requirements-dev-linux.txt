@@ -13,4 +13,3 @@ pycodestyle
 # Packaging tools
 PyInstaller ~= 3.3
 patchelf-wrapper~=1.0
-staticx ~= 0.7  # Manual patching required, see https://github.com/JonathonReinhart/staticx/issues/79
