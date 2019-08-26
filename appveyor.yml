@@ -25,6 +25,7 @@ install:
   - cmd: "SET PATH=%PYTHON%;%PATH%"
   - cmd: "SET PATH=C:\\Python36-x64\\Scripts;%PATH%"
   - cmd: "SET PATH=C:\\Python37-x64\\Scripts;%PATH%"
+  - sh: "lsb_release -a"
   - "python -V"
   - "pip --version"
   - cmd: "python -m  pip install -r requirements.txt"

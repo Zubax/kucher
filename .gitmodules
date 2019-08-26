@@ -10,6 +10,3 @@
 [submodule "kucher/libraries/quamash"]
 	path = kucher/libraries/quamash
 	url = https://github.com/harvimt/quamash
-[submodule "kucher/libraries/staticx"]
-	path = kucher/libraries/staticx
-	url = https://github.com/Zubax/staticx
