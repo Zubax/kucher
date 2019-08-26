@@ -299,7 +299,7 @@ class SpinboxLinkedWithSlider:
 def _unittest_spinbox_linked_with_slider():
     import time
     from PyQt5.QtWidgets import QApplication, QMainWindow, QLayout
-    from view.utils import lay_out_horizontally, lay_out_vertically
+    from kucher.view.utils import lay_out_horizontally, lay_out_vertically
 
     app = QApplication([])
 

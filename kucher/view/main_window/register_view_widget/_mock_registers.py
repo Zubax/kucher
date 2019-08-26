@@ -13,7 +13,7 @@
 #
 
 import asyncio
-from view.device_model_representation import Register
+from kucher.view.device_model_representation import Register
 
 
 def get_mock_registers():
