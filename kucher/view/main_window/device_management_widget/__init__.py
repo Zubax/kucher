@@ -369,7 +369,7 @@ def _unittest_connection_management_widget():
         await asyncio.sleep(0.5)
         widget.on_connection_initialization_progress_report('Success!', 1.0)
 
-        from view.device_model_representation import SoftwareVersion, HardwareVersion
+        from kucher.view.device_model_representation import SoftwareVersion, HardwareVersion
         out = BasicDeviceInfo(name='com.zubax.whatever',
                               description='Joo Janta 200 Super-Chromatic Peril Sensitive Sunglasses',
                               globally_unique_id=b'0123456789abcdef',
