@@ -1,4 +1,4 @@
 #!/bin/bash
-PYTHONPATH=kucher pytest
+pytest
 
 pycodestyle
