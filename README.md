@@ -58,13 +58,12 @@ The following command line options are available:
 From the root directory, on Linux:
 
 ```bash
-PYTHONPATH=kucher pytest  # TODO: fix imports to make "PYTHONPATH=kucher" unnecessary
+pytest
 ```
 
 On Windows:
 
 ```bash
-set PYTHONPATH=kucher
 pytest
 ```
 
