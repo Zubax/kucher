@@ -79,6 +79,6 @@ def main() -> int:
     _logger.info('Starting version %r; package root: %r', version.__version__, resources.PACKAGE_ROOT)
     with loop:
         ctrl = Fuhrer()
-        loop.run_until_complete(ctrl.run())
+        asyncio.run(ctrl.run())
 
     return 0
