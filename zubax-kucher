@@ -12,11 +12,12 @@
 #
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
-
+import asyncio
 import sys
 import multiprocessing
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     from kucher import main
-    sys.exit(main())
+    result = main()
+    sys.exit(result)

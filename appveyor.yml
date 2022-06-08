@@ -1,22 +1,13 @@
 environment:
   matrix:
-    # Windows & python 3.6
+    # Windows & python 3.10
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      PYTHON: "C:\\Python36-x64"
+      PYTHON: "C:\\Python310-x64"
       PYTHON_ARCH: "64"
 
-    # Windows & python 3.7
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      PYTHON: "C:\\Python37-x64"
-      PYTHON_ARCH: "64"
-
-    # Ubuntu & python 3.6
+    # Ubuntu & python 3.10
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "3.6"
-
-    # Ubuntu & python 3.7
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "3.7"
+      PYTHON: "3.10"
 
 stack: python %PYTHON%
 
@@ -34,8 +25,7 @@ install:
   - sh: "pip install -r requirements-dev-linux.txt"
   - sh: "sudo add-apt-repository -y ppa:deadsnakes/ppa "
   - sh: "sudo apt-get update"
-  - sh: "sudo apt-get -y install python3.6-dev"
-  - sh: "sudo apt-get -y install python3.7-dev"
+  - sh: "sudo apt-get -y install python3.10-dev"
 
 
 build: off

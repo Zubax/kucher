@@ -18,6 +18,7 @@ import popcop
 import typing
 import decimal
 import construct as con
+from construct import GreedyRange, Slicing
 from .exceptions import CommunicatorException
 
 # Convenient type aliases - we only use little-endian byte order!
@@ -336,7 +337,7 @@ TaskStatisticsEntryFormatV1 = con.Struct(
 # noinspection PyUnresolvedReferences
 TaskStatisticsMessageFormatV1 = con.Struct(
     'timestamp' / TimeAdapter(U64),
-    'entries' / TaskStatisticsEntryFormatV1[7:8],
+    'entries' / Slicing(GreedyRange(TaskStatisticsEntryFormatV1), 1, 7, 8),
     con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
 )
 
