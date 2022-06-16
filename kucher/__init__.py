@@ -34,6 +34,7 @@ THIRDPARTY_PATH = [
     os.path.join(THIRDPARTY_PATH_ROOT, 'popcop', 'python'),
     os.path.join(THIRDPARTY_PATH_ROOT, 'construct'),
     os.path.join(THIRDPARTY_PATH_ROOT, 'quamash'),
+    os.path.join(THIRDPARTY_PATH_ROOT, 'qasync'),
 ]
 
 # 'dataclasses' module is included in Python libraries since version 3.7. For Python versions below, the dataclass

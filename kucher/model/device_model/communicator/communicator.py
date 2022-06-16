@@ -60,8 +60,8 @@ class Communicator:
                                                                   frame_timeout=FRAME_TIMEOUT)
         self._codec: Codec = None
 
-        self._log_queue = asyncio.Queue(loop=event_loop)
-        self._message_queue = asyncio.Queue(loop=event_loop)
+        self._log_queue = asyncio.Queue()
+        self._message_queue = asyncio.Queue()
 
         self._pending_requests: typing.Set[typing.Tuple[typing.Callable, asyncio.Future]] = set()
 
@@ -238,7 +238,7 @@ class Communicator:
         entry = super_predicate, future
         try:
             self._pending_requests.add(entry)
-            return await asyncio.wait_for(future, timeout, loop=self._event_loop)
+            return await asyncio.wait_for(future, timeout)
         except asyncio.TimeoutError:
             return None
         finally:
@@ -270,8 +270,7 @@ class Communicator:
 
     async def close(self):
         await asyncio.gather(self._event_loop.run_in_executor(None, self._thread_handle.join),
-                             self._event_loop.run_in_executor(None, self._ch.close),
-                             loop=self._event_loop)
+                             self._event_loop.run_in_executor(None, self._ch.close))
         # This is required to un-block the waiting coroutines, if any.
         self._message_queue.put_nowait(None)
         self._log_queue.put_nowait(None)
@@ -350,7 +349,7 @@ async def _async_unittest_communicator_loopback():
 
     async def closer():
         assert com.is_open
-        await asyncio.sleep(5, loop=loop)
+        await asyncio.sleep(5)
         assert com.is_open
         await com.close()
         assert not com.is_open
@@ -369,15 +368,14 @@ async def _async_unittest_communicator_loopback():
 
         # Testing idempotency again
         await com.close()
-        await asyncio.sleep(1, loop=loop)
+        await asyncio.sleep(1)
         await com.close()
 
     assert com.is_open
     await asyncio.gather(sender(),
                          receiver(),
                          log_reader(),
-                         closer(),
-                         loop=loop)
+                         closer())
 
 
 def _unittest_communicator_loopback():
@@ -401,13 +399,13 @@ async def _async_unittest_communicator_disconnect_detection():
     # noinspection PyProtectedMember
     async def closer():
         assert com.is_open
-        await asyncio.sleep(1, loop=loop)
+        await asyncio.sleep(1)
         assert com.is_open
 
         com._ch.close()         # Simulate failure of the serial connection
 
         assert not com.is_open
-        await asyncio.sleep(1, loop=loop)
+        await asyncio.sleep(1)
 
         with raises(CommunicationChannelClosedException):
             await com.send(popcop.standard.NodeInfoMessage())
@@ -423,14 +421,13 @@ async def _async_unittest_communicator_disconnect_detection():
 
         # And again, because why not
         await com.close()
-        await asyncio.sleep(1, loop=loop)
+        await asyncio.sleep(1)
         await com.close()
 
     assert com.is_open
     await asyncio.gather(receiver(),
                          log_reader(),
-                         closer(),
-                         loop=loop)
+                         closer())
 
 
 def _unittest_communicator_disconnect_detection():

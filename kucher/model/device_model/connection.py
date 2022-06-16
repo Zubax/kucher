@@ -147,7 +147,7 @@ class Connection:
     async def _status_monitoring_task_entry_point(self):
         request_errors = 0
         while True:
-            await asyncio.sleep(self._general_status_update_period, loop=self._event_loop)
+            await asyncio.sleep(self._general_status_update_period)
 
             response = await self._com.request(MessageType.GENERAL_STATUS,
                                                timeout=STATUS_REQUEST_TIMEOUT)
@@ -453,7 +453,7 @@ def _unittest_connection():
         assert num_status_reports == 0
         assert num_connection_loss_notifications == 0
 
-        await asyncio.sleep(con._general_status_update_period * 2 + 0.4, loop=loop)
+        await asyncio.sleep(con._general_status_update_period * 2 + 0.4)
 
         assert num_status_reports == 2
         assert num_connection_loss_notifications == 0
@@ -466,7 +466,7 @@ def _unittest_connection():
         # Simulate failure of the underlying port
         con._com._ch.close()
 
-        await asyncio.sleep(1, loop=loop)
+        await asyncio.sleep(1)
 
         assert num_status_reports == 2
         assert num_connection_loss_notifications == 1

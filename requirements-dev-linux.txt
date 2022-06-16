@@ -11,5 +11,5 @@ pytest >= 3.3
 pycodestyle
 
 # Packaging tools
-PyInstaller ~= 3.3
+PyInstaller ~= 5.1
 patchelf-wrapper~=1.0

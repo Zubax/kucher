@@ -27,7 +27,6 @@ logging.basicConfig(stream=sys.stderr,
                     level=LOGGING_LEVEL,
                     format='%(asctime)s pid=%(process)-5d %(levelname)s: %(name)s: %(message)s')
 
-logging.getLogger('quamash').setLevel(logging.INFO)
 
 _logger = logging.getLogger(__name__.replace('__', ''))
 
@@ -42,7 +41,7 @@ def main() -> int:
     import asyncio
     import datetime
     from PyQt5.QtWidgets import QApplication
-    from quamash import QEventLoop
+    from qasync import QEventLoop
     from . import data_dir, version, resources
     from .fuhrer import Fuhrer
 
