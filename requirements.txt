@@ -5,7 +5,7 @@
 
 # https://packages.ubuntu.com/bionic/python3-pyqt5
 # https://github.com/pyinstaller/pyinstaller/issues/4293
-PyQt5==5.15.6
+PyQt5==5.*
 construct==2.10.68
 
 # https://packages.ubuntu.com/bionic/python3-serial
@@ -14,7 +14,7 @@ pyserial==3.5
 # https://packages.ubuntu.com/bionic/python3-numpy
 # Last version of numpy has problems with some modules when using pyinstaller
 # https://stackoverflow.com/questions/57264427/in-pyinstaller-why-wont-numpy-random-common-load-as-a-module
-numpy==1.22.4
+numpy==1.*
 
 # https://packages.ubuntu.com/bionic/python3-yaml
-PyYAML==5.4.1
+PyYAML==5.*
