@@ -1,4 +1,6 @@
-build_cloud: DESKTOP-OQ1KEC4
+build_cloud:
+  - DESKTOP-OQ1KEC4
+  - server
 image:
   - Windows
   - Ubuntu
