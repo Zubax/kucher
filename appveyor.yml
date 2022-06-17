@@ -1,12 +1,13 @@
-build_cloud:
-  - DESKTOP-OQ1KEC4
-  - server
-image:
-  - Windows
-  - Ubuntu
 environment:
   matrix:
-    - TOXENV: py310
+    # Windows & python 3.10
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      PYTHON: "C:\\Python310-x64"
+      PYTHON_ARCH: "64"
+
+    # Ubuntu & python 3.10
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      PYTHON: "3.10"
 
 stack: python %PYTHON%
 build: false
