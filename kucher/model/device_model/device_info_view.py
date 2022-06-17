@@ -16,9 +16,14 @@ from popcop.standard import NodeInfoMessage
 import dataclasses
 import typing
 import datetime
+from functools import partial
 
 _struct_view = dataclasses.dataclass(frozen=True)
 
+
+def forward(_type, x):
+    """Remove _io parameter from the object"""
+    return _type(**{k: v for k, v in {**x}.items() if k != "_io"})
 
 @_struct_view
 class SoftwareVersion:
@@ -64,7 +69,7 @@ class HardwareVersion:
 class MathRange:
     min: float
     max: float
-    _io: object
+    # _io: object
 
 
 @_struct_view
@@ -80,7 +85,7 @@ class Characteristics:
         class HBR:
             high: float
             low:  float
-            _io:  object
+            # _io:  object
 
         resistance_per_phase:                     typing.Tuple[HBR, HBR, HBR]
         gate_ton_toff_imbalance:                  float
@@ -115,14 +120,14 @@ class Characteristics:
             soa = msg['safe_operating_area']
             return Characteristics.Limits(
                 absolute_maximum_ratings=Characteristics.Limits.AbsoluteMaximumRatings(
-                    vsi_dc_voltage=MathRange(**amr['vsi_dc_voltage']),
+                    vsi_dc_voltage=forward(MathRange, amr['vsi_dc_voltage']),
                 ),
                 safe_operating_area=Characteristics.Limits.SafeOperatingArea(
-                    vsi_dc_voltage=MathRange(**soa['vsi_dc_voltage']),
-                    vsi_dc_current=MathRange(**soa['vsi_dc_current']),
-                    vsi_phase_current=MathRange(**soa['vsi_phase_current']),
-                    cpu_temperature=MathRange(**soa['cpu_temperature']),
-                    vsi_temperature=MathRange(**soa['vsi_temperature']),
+                    vsi_dc_voltage=forward(MathRange, soa['vsi_dc_voltage']),
+                    vsi_dc_current=forward(MathRange, soa['vsi_dc_current']),
+                    vsi_phase_current=forward(MathRange, soa['vsi_phase_current']),
+                    cpu_temperature=forward(MathRange, soa['cpu_temperature']),
+                    vsi_temperature=forward(MathRange, soa['vsi_temperature']),
                 ),
                 phase_current_zero_bias_limit=Characteristics.Limits.PhaseCurrentZeroBiasLimit(
                     low_gain=msg['phase_current_zero_bias_limit']['low_gain'],
@@ -142,7 +147,7 @@ class Characteristics:
         )
 
         vsi_model = Characteristics.VSIModel(
-            resistance_per_phase=tuple(map(lambda x: Characteristics.VSIModel.HBR(**x),
+            resistance_per_phase=tuple(map(partial(forward, Characteristics.VSIModel.HBR),
                                            msg['vsi_model']['resistance_per_phase'])),
             gate_ton_toff_imbalance=msg['vsi_model']['gate_ton_toff_imbalance'],
             phase_current_measurement_error_variance=msg['vsi_model']['phase_current_measurement_error_variance'],
