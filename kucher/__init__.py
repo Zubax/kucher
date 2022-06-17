@@ -33,7 +33,6 @@ THIRDPARTY_PATH = [
     os.path.join(THIRDPARTY_PATH_ROOT),
     os.path.join(THIRDPARTY_PATH_ROOT, 'popcop', 'python'),
     os.path.join(THIRDPARTY_PATH_ROOT, 'construct'),
-    os.path.join(THIRDPARTY_PATH_ROOT, 'quamash'),
     os.path.join(THIRDPARTY_PATH_ROOT, 'qasync'),
 ]
 
