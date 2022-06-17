@@ -1,7 +1,7 @@
 environment:
   matrix:
     # Windows & python 3.10
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       PYTHON: "C:\\Python310-x64"
       PYTHON_ARCH: "64"
 
@@ -35,7 +35,7 @@ test_script:
   # https://doc.qt.io/qt-5/embedded-linux.html
   # https://github.com/ariya/phantomjs/issues/14376
   - sh: "export QT_QPA_PLATFORM=offscreen"
-  - sh: "bash test_linux.sh"
+  - sh: ". test_linux.sh"
 
 after_test:
   - cmd: "7z a zubax-kucher.7z *"
