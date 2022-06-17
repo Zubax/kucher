@@ -64,6 +64,7 @@ class HardwareVersion:
 class MathRange:
     min: float
     max: float
+    _io: object
 
 
 @_struct_view
@@ -79,6 +80,7 @@ class Characteristics:
         class HBR:
             high: float
             low:  float
+            _io:  object
 
         resistance_per_phase:                     typing.Tuple[HBR, HBR, HBR]
         gate_ton_toff_imbalance:                  float

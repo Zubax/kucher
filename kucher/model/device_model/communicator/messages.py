@@ -18,6 +18,7 @@ import popcop
 import typing
 import decimal
 import construct as con
+from construct import GreedyRange, Slicing
 from .exceptions import CommunicatorException
 
 # Convenient type aliases - we only use little-endian byte order!
@@ -34,10 +35,10 @@ class OptionalFloatAdapter(con.Adapter):
     Floats can be optional; if no value is provided, they may be set to NaN.
     This adapter replaces NaN with None and vice versa.
     """
-    def _encode(self, obj, context):
+    def _encode(self, obj, context, path):
         return float('nan') if obj is None else float(obj)
 
-    def _decode(self, obj, context):
+    def _decode(self, obj, context, path):
         return None if math.isnan(obj) else float(obj)
 
 
@@ -48,10 +49,10 @@ class TimeAdapter(con.Adapter):
     """
     MULTIPLIER = decimal.Decimal('1e9')
 
-    def _encode(self, obj, context):
+    def _encode(self, obj, context, path):
         return int(obj * self.MULTIPLIER)
 
-    def _decode(self, obj, context):
+    def _decode(self, obj, context, path):
         return decimal.Decimal(obj) / self.MULTIPLIER
 
 
@@ -336,7 +337,7 @@ TaskStatisticsEntryFormatV1 = con.Struct(
 # noinspection PyUnresolvedReferences
 TaskStatisticsMessageFormatV1 = con.Struct(
     'timestamp' / TimeAdapter(U64),
-    'entries' / TaskStatisticsEntryFormatV1[7:8],
+    'entries' / Slicing(GreedyRange(TaskStatisticsEntryFormatV1), 1, 7, 8),
     con.Terminated      # Every message format should be terminated! This enables format mismatch detection.
 )
 
