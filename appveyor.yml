@@ -35,4 +35,5 @@ test_script:
   # https://doc.qt.io/qt-5/embedded-linux.html
   # https://github.com/ariya/phantomjs/issues/14376
   - sh: "export QT_QPA_PLATFORM=offscreen"
-  - sh: ". test_linux.sh"
+  - sh: "pytest"
+  - sh: "black kucher/fuhrer kucher/model kucher/view kucher/*.py --check"
