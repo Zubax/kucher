@@ -14,7 +14,12 @@
 
 from PyQt5.QtWidgets import QWidget, QPushButton, QComboBox, QLabel
 
-from kucher.view.device_model_representation import Commander, GeneralStatusView, TaskID, MotorIdentificationMode
+from kucher.view.device_model_representation import (
+    Commander,
+    GeneralStatusView,
+    TaskID,
+    MotorIdentificationMode,
+)
 from kucher.view.utils import get_icon, lay_out_vertically, lay_out_horizontally
 
 from .base import SpecializedControlWidgetBase
@@ -22,41 +27,46 @@ from .base import SpecializedControlWidgetBase
 
 class MotorIdentificationControlWidget(SpecializedControlWidgetBase):
     # noinspection PyUnresolvedReferences
-    def __init__(self,
-                 parent:    QWidget,
-                 commander: Commander):
+    def __init__(self, parent: QWidget, commander: Commander):
         super(MotorIdentificationControlWidget, self).__init__(parent)
 
         self._commander = commander
 
-        self._mode_map = {
-            _humanize(mid): mid for mid in MotorIdentificationMode
-        }
+        self._mode_map = {_humanize(mid): mid for mid in MotorIdentificationMode}
 
         self._mode_selector = QComboBox(self)
         self._mode_selector.setEditable(False)
         # noinspection PyTypeChecker
-        self._mode_selector.addItems(map(_humanize,
-                                         sorted(MotorIdentificationMode,
-                                                key=lambda x: x != MotorIdentificationMode.R_L_PHI)))
+        self._mode_selector.addItems(
+            map(
+                _humanize,
+                sorted(
+                    MotorIdentificationMode,
+                    key=lambda x: x != MotorIdentificationMode.R_L_PHI,
+                ),
+            )
+        )
 
-        go_button = QPushButton(get_icon('play'), 'Launch', self)
+        go_button = QPushButton(get_icon("play"), "Launch", self)
         go_button.clicked.connect(self._execute)
 
         self.setLayout(
             lay_out_vertically(
                 lay_out_horizontally(
-                    QLabel('Select parameters to estimate:', self),
+                    QLabel("Select parameters to estimate:", self),
                     self._mode_selector,
                     (None, 1),
                 ),
                 lay_out_horizontally(
-                    QLabel('Then click', self),
+                    QLabel("Then click", self),
                     go_button,
-                    QLabel('and wait. The process will take a few minutes to complete.', self),
+                    QLabel(
+                        "and wait. The process will take a few minutes to complete.",
+                        self,
+                    ),
                     (None, 1),
                 ),
-                (None, 1)
+                (None, 1),
             )
         )
 
@@ -64,11 +74,13 @@ class MotorIdentificationControlWidget(SpecializedControlWidgetBase):
         self.setEnabled(False)
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        if s.current_task_id in (TaskID.RUN,
-                                 TaskID.BEEP,
-                                 TaskID.HARDWARE_TEST,
-                                 TaskID.LOW_LEVEL_MANIPULATION,
-                                 TaskID.MOTOR_IDENTIFICATION):
+        if s.current_task_id in (
+            TaskID.RUN,
+            TaskID.BEEP,
+            TaskID.HARDWARE_TEST,
+            TaskID.LOW_LEVEL_MANIPULATION,
+            TaskID.MOTOR_IDENTIFICATION,
+        ):
             self.setEnabled(False)
         else:
             self.setEnabled(True)
@@ -82,9 +94,9 @@ class MotorIdentificationControlWidget(SpecializedControlWidgetBase):
 def _humanize(mid: MotorIdentificationMode) -> str:
     try:
         return {
-            MotorIdentificationMode.R_L:        'Resistance, Inductance',
-            MotorIdentificationMode.PHI:        'Flux linkage',
-            MotorIdentificationMode.R_L_PHI:    'Resistance, Inductance, Flux linkage',
+            MotorIdentificationMode.R_L: "Resistance, Inductance",
+            MotorIdentificationMode.PHI: "Flux linkage",
+            MotorIdentificationMode.R_L_PHI: "Resistance, Inductance, Flux linkage",
         }[mid]
     except KeyError:
-        return str(mid).upper().split('.')[-1].replace('_', ' ')
+        return str(mid).upper().split(".")[-1].replace("_", " ")

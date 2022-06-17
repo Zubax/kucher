@@ -19,8 +19,14 @@ from logging import getLogger
 from .communicator import MessageType, Message
 from .connection import connect, Connection, ConnectionNotEstablishedException
 from .device_info_view import DeviceInfoView
-from .general_status_view import GeneralStatusView, TaskID, TaskSpecificStatusReport,\
-    ControlMode, MotorIdentificationMode, LowLevelManipulationMode
+from .general_status_view import (
+    GeneralStatusView,
+    TaskID,
+    TaskSpecificStatusReport,
+    ControlMode,
+    MotorIdentificationMode,
+    LowLevelManipulationMode,
+)
 from .task_statistics_view import TaskStatisticsView
 from .commander import Commander
 from .register import Register
@@ -120,19 +126,22 @@ class DeviceModel:
         return self._conn.registers if self.is_connected else {}
 
     async def connect(
-            self,
-            port_name: str,
-            on_progress_report: typing.Optional[typing.Callable[[str, float], None]] = None) -> DeviceInfoView:
+        self,
+        port_name: str,
+        on_progress_report: typing.Optional[typing.Callable[[str, float], None]] = None,
+    ) -> DeviceInfoView:
         await self.disconnect()
         assert not self._conn
 
-        self._conn = await connect(event_loop=self._event_loop,
-                                   port_name=port_name,
-                                   on_connection_loss=self._on_connection_loss,
-                                   on_general_status_update=self._evt_device_status_update,
-                                   on_log_line=self._evt_log_line,
-                                   on_progress_report=on_progress_report,
-                                   general_status_update_period=DEFAULT_GENERAL_STATUS_UPDATE_PERIOD)
+        self._conn = await connect(
+            event_loop=self._event_loop,
+            port_name=port_name,
+            on_connection_loss=self._on_connection_loss,
+            on_general_status_update=self._evt_device_status_update,
+            on_log_line=self._evt_log_line,
+            on_progress_report=on_progress_report,
+            general_status_update_period=DEFAULT_GENERAL_STATUS_UPDATE_PERIOD,
+        )
 
         # Connect all registers to the consolidated event handler
         for r in self._conn.registers.values():
@@ -145,10 +154,10 @@ class DeviceModel:
         return self._conn.device_info
 
     async def disconnect(self, reason: str = None):
-        _logger.info('Explicit disconnect request; reason: %r', reason)
+        _logger.info("Explicit disconnect request; reason: %r", reason)
         if self._conn:
             # noinspection PyTypeChecker
-            self._evt_connection_status_change(reason or 'Explicit disconnection')
+            self._evt_connection_status_change(reason or "Explicit disconnection")
             try:
                 await self._conn.disconnect()
             finally:
@@ -164,7 +173,9 @@ class DeviceModel:
             return self._conn.device_info
 
     @property
-    def last_general_status_with_timestamp(self) -> typing.Optional[typing.Tuple[float, GeneralStatusView]]:
+    def last_general_status_with_timestamp(
+        self,
+    ) -> typing.Optional[typing.Tuple[float, GeneralStatusView]]:
         if self._conn:
             return self._conn.last_general_status_with_timestamp
 
@@ -174,10 +185,10 @@ class DeviceModel:
         if out is not None:
             return TaskStatisticsView.populate(out.fields)
         else:
-            raise RequestTimedOutException('Task statistics request has timed out')
+            raise RequestTimedOutException("Task statistics request has timed out")
 
     def _on_connection_loss(self, reason: typing.Union[str, Exception]):
-        _logger.info('Connection instance reported connection loss; reason: %r', reason)
+        _logger.info("Connection instance reported connection loss; reason: %r", reason)
         # The Connection instance will terminate itself, so we don't have to do anything, just clear the reference
         self._conn = None
         # noinspection PyTypeChecker
@@ -185,8 +196,10 @@ class DeviceModel:
 
     def _ensure_connected(self):
         if not self.is_connected:
-            raise ConnectionNotEstablishedException('The requested operation could not be performed because '
-                                                    'the device connection is not established')
+            raise ConnectionNotEstablishedException(
+                "The requested operation could not be performed because "
+                "the device connection is not established"
+            )
 
 
 def _unittest_device_model_connection():
@@ -195,14 +208,18 @@ def _unittest_device_model_connection():
     import glob
     import asyncio
 
-    port_glob = os.environ.get('KUCHER_TEST_PORT', None)
+    port_glob = os.environ.get("KUCHER_TEST_PORT", None)
     if not port_glob:
-        pytest.skip('Skipping because the environment variable KUCHER_TEST_PORT is not set. '
-                    'In order to test the device connection, set that variable to a name or a glob of a serial port. '
-                    'If a glob is used, it must evaluate to exactly one port, otherwise the test will fail.')
+        pytest.skip(
+            "Skipping because the environment variable KUCHER_TEST_PORT is not set. "
+            "In order to test the device connection, set that variable to a name or a glob of a serial port. "
+            "If a glob is used, it must evaluate to exactly one port, otherwise the test will fail."
+        )
 
     port = glob.glob(port_glob)
-    assert len(port) == 1, f'The glob was supposed to resolve to exactly one port; got {len(port)} ports.'
+    assert (
+        len(port) == 1
+    ), f"The glob was supposed to resolve to exactly one port; got {len(port)} ports."
     port = port[0]
 
     loop = asyncio.get_event_loop()
@@ -216,12 +233,12 @@ def _unittest_device_model_connection():
         def on_connection_status_changed(info):
             nonlocal num_connection_change_notifications
             num_connection_change_notifications += 1
-            print(f'Connection status changed! Info:\n{info}')
+            print(f"Connection status changed! Info:\n{info}")
 
         def on_status_report(ts, rep):
             nonlocal num_status_reports
             num_status_reports += 1
-            print(f'Status report at {ts}:\n{rep}')
+            print(f"Status report at {ts}:\n{rep}")
 
         dm.connection_status_change_event.connect(on_connection_status_changed)
         dm.device_status_update_event.connect(on_status_report)
@@ -230,13 +247,13 @@ def _unittest_device_model_connection():
         assert num_status_reports == 0
         assert num_connection_change_notifications == 0
 
-        await dm.connect(port, lambda *args: print('Progress report:', *args))
+        await dm.connect(port, lambda *args: print("Progress report:", *args))
 
         assert dm.is_connected
         assert num_status_reports == 1
         assert num_connection_change_notifications == 1
 
-        print('Task statistics:')
+        print("Task statistics:")
         print(await dm.get_task_statistics())
 
         await dm.disconnect()

@@ -14,7 +14,13 @@
 
 import os
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QApplication
+from PyQt5.QtWidgets import (
+    QWidget,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QApplication,
+)
 from PyQt5.QtGui import QKeyEvent, QKeySequence
 from PyQt5.QtCore import Qt
 
@@ -35,9 +41,13 @@ class LittleBobbyTablesWidget(WidgetBase):
         self._table.setColumnCount(1)
         self._table.horizontalHeader().hide()
         self._table.setFont(get_monospace_font())
-        self._table.horizontalHeader().setSectionResizeMode(self._table.horizontalHeader().ResizeToContents)
+        self._table.horizontalHeader().setSectionResizeMode(
+            self._table.horizontalHeader().ResizeToContents
+        )
         self._table.horizontalHeader().setStretchLastSection(True)
-        self._table.verticalHeader().setSectionResizeMode(self._table.verticalHeader().ResizeToContents)
+        self._table.verticalHeader().setSectionResizeMode(
+            self._table.verticalHeader().ResizeToContents
+        )
 
         lay_on_macduff = QVBoxLayout()
         lay_on_macduff.addWidget(self._table)
@@ -48,25 +58,27 @@ class LittleBobbyTablesWidget(WidgetBase):
         self.clear()
 
         sw_ver = device_info.software_version
-        sw_string = f'{sw_ver.major}.{sw_ver.minor}.{sw_ver.vcs_commit_id:08x}.{sw_ver.image_crc:16x}'
+        sw_string = f"{sw_ver.major}.{sw_ver.minor}.{sw_ver.vcs_commit_id:08x}.{sw_ver.image_crc:16x}"
         if sw_ver.dirty_build:
-            sw_string += '-dirty'
+            sw_string += "-dirty"
 
         if not sw_ver.release_build:
-            sw_string += '-debug'
+            sw_string += "-debug"
 
         hw_ver = device_info.hardware_version
 
-        self._assign_many([
-            ('Device name',         device_info.name),
-            ('Device description',  device_info.description),
-            ('Software version',    sw_string),
-            ('Software build time', sw_ver.build_timestamp_utc.isoformat()),
-            ('Hardware version',    f'{hw_ver.major}.{hw_ver.minor}'),
-            ('Unique ID',           device_info.globally_unique_id.hex()),
-            ('Runtime environment', device_info.runtime_environment_description),
-            ('Build environment',   device_info.build_environment_description),
-        ])
+        self._assign_many(
+            [
+                ("Device name", device_info.name),
+                ("Device description", device_info.description),
+                ("Software version", sw_string),
+                ("Software build time", sw_ver.build_timestamp_utc.isoformat()),
+                ("Hardware version", f"{hw_ver.major}.{hw_ver.minor}"),
+                ("Unique ID", device_info.globally_unique_id.hex()),
+                ("Runtime environment", device_info.runtime_environment_description),
+                ("Build environment", device_info.build_environment_description),
+            ]
+        )
 
     def clear(self):
         self._table.setRowCount(0)
@@ -89,8 +101,12 @@ class LittleBobbyTablesWidget(WidgetBase):
     # noinspection PyArgumentList
     def keyPressEvent(self, event: QKeyEvent):
         if event.matches(QKeySequence.Copy):
-            selected_rows = [x.row() for x in self._table.selectionModel().selectedIndexes()]
-            _logger.info('Copying the following rows to the clipboard: %r', selected_rows)
+            selected_rows = [
+                x.row() for x in self._table.selectionModel().selectedIndexes()
+            ]
+            _logger.info(
+                "Copying the following rows to the clipboard: %r", selected_rows
+            )
 
             if len(selected_rows) == 1:
                 out_strings = [self._table.item(selected_rows[0], 0).text()]
@@ -99,7 +115,7 @@ class LittleBobbyTablesWidget(WidgetBase):
                 for row in selected_rows:
                     header = self._table.verticalHeaderItem(row).text()
                     data = self._table.item(row, 0).text()
-                    out_strings.append(f'{header}\t{data}')
+                    out_strings.append(f"{header}\t{data}")
 
             if out_strings:
                 QApplication.clipboard().setText(os.linesep.join(out_strings))

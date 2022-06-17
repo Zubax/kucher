@@ -15,7 +15,12 @@
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QLabel
 
-from kucher.model.device_model import Commander, LowLevelManipulationMode, GeneralStatusView, TaskID
+from kucher.model.device_model import (
+    Commander,
+    LowLevelManipulationMode,
+    GeneralStatusView,
+    TaskID,
+)
 from kucher.view.utils import lay_out_vertically, lay_out_horizontally, make_button
 
 from .base import LowLevelManipulationControlSubWidgetBase
@@ -25,38 +30,39 @@ _logger = getLogger(__name__)
 
 
 class Widget(LowLevelManipulationControlSubWidgetBase):
-    def __init__(self,
-                 parent:            QWidget,
-                 commander:         Commander):
+    def __init__(self, parent: QWidget, commander: Commander):
         super(Widget, self).__init__(parent)
         self._commander = commander
         self.setLayout(
             lay_out_vertically(
                 lay_out_horizontally(
-                    QLabel('Calibrate the VSI hardware', self),
-                    make_button(self,
-                                text='Calibrate',
-                                icon_name='scales',
-                                on_clicked=self._execute),
-                    (None, 1)
+                    QLabel("Calibrate the VSI hardware", self),
+                    make_button(
+                        self,
+                        text="Calibrate",
+                        icon_name="scales",
+                        on_clicked=self._execute,
+                    ),
+                    (None, 1),
                 ),
-                (None, 1)
+                (None, 1),
             )
         )
 
     def get_widget_name_and_icon_name(self):
-        return 'Calibration', 'scales'
+        return "Calibration", "scales"
 
     def stop(self):
         pass
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        if s.current_task_id in (TaskID.IDLE,
-                                 TaskID.FAULT):
+        if s.current_task_id in (TaskID.IDLE, TaskID.FAULT):
             self.setEnabled(True)
         else:
             self.setEnabled(False)
 
     def _execute(self):
-        _logger.info('Requesting calibration')
-        self._launch_async(self._commander.low_level_manipulate(LowLevelManipulationMode.CALIBRATION))
+        _logger.info("Requesting calibration")
+        self._launch_async(
+            self._commander.low_level_manipulate(LowLevelManipulationMode.CALIBRATION)
+        )

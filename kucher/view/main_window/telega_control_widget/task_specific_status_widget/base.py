@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import QWidget
 from kucher.view.device_model_representation import GeneralStatusView
 
 
-_TSSRType = typing.TypeVar('TSSR')
+_TSSRType = typing.TypeVar("TSSR")
 
 
 class StatusWidgetBase(QWidget):
@@ -33,9 +33,13 @@ class StatusWidgetBase(QWidget):
         raise NotImplementedError
 
     @staticmethod
-    def _get_task_specific_status_report(expected_type: typing.Type[_TSSRType], s: GeneralStatusView) -> _TSSRType:
+    def _get_task_specific_status_report(
+        expected_type: typing.Type[_TSSRType], s: GeneralStatusView
+    ) -> _TSSRType:
         if isinstance(s.task_specific_status_report, expected_type):
             return s.task_specific_status_report
         else:
-            raise TypeError(f'task_specific_status_report was expected to be {expected_type!r}, '
-                            f'got {type(s.task_specific_status_report)!r}')
+            raise TypeError(
+                f"task_specific_status_report was expected to be {expected_type!r}, "
+                f"got {type(s.task_specific_status_report)!r}"
+            )

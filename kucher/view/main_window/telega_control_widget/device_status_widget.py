@@ -19,27 +19,38 @@ from decimal import Decimal
 from PyQt5.QtWidgets import QWidget
 
 from kucher.view.widgets.value_display_group_widget import ValueDisplayGroupWidget
-from kucher.view.device_model_representation import TaskID, get_icon_name_for_task_id, get_human_friendly_task_name
+from kucher.view.device_model_representation import (
+    TaskID,
+    get_icon_name_for_task_id,
+    get_human_friendly_task_name,
+)
 
 
 class DeviceStatusWidget(ValueDisplayGroupWidget):
     def __init__(self, parent: QWidget):
-        super(DeviceStatusWidget, self).__init__(parent, 'Device status', 'question-mark')
-        self.setToolTip('Use the Task Statistics view for more information')
+        super(DeviceStatusWidget, self).__init__(
+            parent, "Device status", "question-mark"
+        )
+        self.setToolTip("Use the Task Statistics view for more information")
 
-        self._task_display = self.create_value_display('Current task', 'N/A')
+        self._task_display = self.create_value_display("Current task", "N/A")
 
-        self._monotonic_time_display = self.create_value_display('Mono clock', 'N/A',
-                                                                 'Steady monotonic clock measuring time since boot')
+        self._monotonic_time_display = self.create_value_display(
+            "Mono clock", "N/A", "Steady monotonic clock measuring time since boot"
+        )
 
-        self.create_value_display('')   # Reserved/placeholder, needed for better alignment
-        self.create_value_display('')   # Reserved/placeholder, needed for better alignment
+        self.create_value_display(
+            ""
+        )  # Reserved/placeholder, needed for better alignment
+        self.create_value_display(
+            ""
+        )  # Reserved/placeholder, needed for better alignment
 
-    def set(self,
-            current_task_id: TaskID,
-            monotonic_device_time: Decimal):
-        self._task_display.set(get_human_friendly_task_name(current_task_id, short=True))
-        self._task_display.setToolTip(str(current_task_id).split('.')[-1])
+    def set(self, current_task_id: TaskID, monotonic_device_time: Decimal):
+        self._task_display.set(
+            get_human_friendly_task_name(current_task_id, short=True)
+        )
+        self._task_display.setToolTip(str(current_task_id).split(".")[-1])
         self._task_display.setStatusTip(self._task_display.toolTip())
 
         self._monotonic_time_display.set(_duration_to_string(monotonic_device_time))
@@ -48,7 +59,7 @@ class DeviceStatusWidget(ValueDisplayGroupWidget):
 
     def reset(self):
         super(DeviceStatusWidget, self).reset()
-        self.set_icon('question-mark')
+        self.set_icon("question-mark")
 
 
 def _duration_to_string(dur: typing.Union[Decimal, float]) -> str:
@@ -58,11 +69,15 @@ def _duration_to_string(dur: typing.Union[Decimal, float]) -> str:
     else:
         dur = int(round(dur, 0))
 
-    return str(datetime.timedelta(seconds=float(dur))).replace(' days,', 'd').replace(' day,', 'd')
+    return (
+        str(datetime.timedelta(seconds=float(dur)))
+        .replace(" days,", "d")
+        .replace(" day,", "d")
+    )
 
 
 def _unittest_duration_to_string():
-    assert _duration_to_string(0) == '0:00:00'
-    assert _duration_to_string(3600) == '1:00:00'
-    assert _duration_to_string(86400) == '1d 0:00:00'
-    assert _duration_to_string(2 * 86400 + 3600 + 60 + 7.123) == '2d 1:01:07'
+    assert _duration_to_string(0) == "0:00:00"
+    assert _duration_to_string(3600) == "1:00:00"
+    assert _duration_to_string(86400) == "1d 0:00:00"
+    assert _duration_to_string(2 * 86400 + 3600 + 60 + 7.123) == "2d 1:01:07"

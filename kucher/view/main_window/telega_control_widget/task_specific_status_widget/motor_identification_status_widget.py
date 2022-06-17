@@ -14,7 +14,10 @@
 
 from PyQt5.QtWidgets import QWidget, QProgressBar
 
-from kucher.view.device_model_representation import GeneralStatusView, TaskSpecificStatusReport
+from kucher.view.device_model_representation import (
+    GeneralStatusView,
+    TaskSpecificStatusReport,
+)
 from kucher.view.utils import lay_out_vertically
 
 from .base import StatusWidgetBase
@@ -29,13 +32,13 @@ class Widget(StatusWidgetBase):
         self._progress_bar.setMinimum(0)
         self._progress_bar.setMaximum(100)
 
-        self.setLayout(
-            lay_out_vertically(self._progress_bar)
-        )
+        self.setLayout(lay_out_vertically(self._progress_bar))
 
     def reset(self):
         self._progress_bar.setValue(0)
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        tssr = self._get_task_specific_status_report(TaskSpecificStatusReport.MotorIdentification, s)
+        tssr = self._get_task_specific_status_report(
+            TaskSpecificStatusReport.MotorIdentification, s
+        )
         self._progress_bar.setValue(round(tssr.progress * 100))

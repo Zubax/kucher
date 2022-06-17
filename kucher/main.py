@@ -17,18 +17,20 @@ import sys
 import logging
 
 # Configuring logging before other packages are imported.
-if '--debug' in sys.argv:
-    sys.argv.remove('--debug')
+if "--debug" in sys.argv:
+    sys.argv.remove("--debug")
     LOGGING_LEVEL = logging.DEBUG
 else:
     LOGGING_LEVEL = logging.INFO
 
-logging.basicConfig(stream=sys.stderr,
-                    level=LOGGING_LEVEL,
-                    format='%(asctime)s pid=%(process)-5d %(levelname)s: %(name)s: %(message)s')
+logging.basicConfig(
+    stream=sys.stderr,
+    level=LOGGING_LEVEL,
+    format="%(asctime)s pid=%(process)-5d %(levelname)s: %(name)s: %(message)s",
+)
 
 
-_logger = logging.getLogger(__name__.replace('__', ''))
+_logger = logging.getLogger(__name__.replace("__", ""))
 
 
 def main() -> int:
@@ -48,13 +50,19 @@ def main() -> int:
     data_dir.init()
 
     # Only the main process will be logging into the file
-    log_file_name = os.path.join(data_dir.LOG_DIR, f'{datetime.datetime.now():%Y%m%d-%H%M%S}-{os.getpid()}.log')
+    log_file_name = os.path.join(
+        data_dir.LOG_DIR, f"{datetime.datetime.now():%Y%m%d-%H%M%S}-{os.getpid()}.log"
+    )
     file_handler = logging.FileHandler(log_file_name)
     file_handler.setLevel(LOGGING_LEVEL)
-    file_handler.setFormatter(logging.Formatter('%(asctime)s pid=%(process)-5d %(levelname)-8s %(name)s: %(message)s'))
+    file_handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s pid=%(process)-5d %(levelname)-8s %(name)s: %(message)s"
+        )
+    )
     logging.root.addHandler(file_handler)
 
-    if '--profile' in sys.argv:
+    if "--profile" in sys.argv:
         try:
             # noinspection PyPep8Naming
             import cProfile as profile
@@ -63,7 +71,7 @@ def main() -> int:
 
         def save_profile():
             prof.disable()
-            prof.dump_stats(log_file_name.replace('.log', '.pstat'))
+            prof.dump_stats(log_file_name.replace(".log", ".pstat"))
 
         prof = profile.Profile()
         atexit.register(save_profile)
@@ -75,7 +83,11 @@ def main() -> int:
     asyncio.set_event_loop(loop)
 
     # Running the application
-    _logger.info('Starting version %r; package root: %r', version.__version__, resources.PACKAGE_ROOT)
+    _logger.info(
+        "Starting version %r; package root: %r",
+        version.__version__,
+        resources.PACKAGE_ROOT,
+    )
     with loop:
         ctrl = Fuhrer()
         loop.run_until_complete(ctrl.run())

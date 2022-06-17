@@ -30,21 +30,23 @@ _logger = getLogger(__name__)
 
 class ValueDisplayWidget(WidgetBase):
     class Style(enum.Enum):
-        NORMAL      = enum.auto()
+        NORMAL = enum.auto()
         ALERT_ERROR = enum.auto()
-        ALERT_HIGH  = enum.auto()
-        ALERT_LOW   = enum.auto()
+        ALERT_HIGH = enum.auto()
+        ALERT_LOW = enum.auto()
 
     # noinspection PyArgumentList
-    def __init__(self,
-                 parent: QWidget,
-                 title: str,
-                 placeholder_text: typing.Optional[str] = None,
-                 with_comment: bool = False,
-                 tooltip: typing.Optional[str] = None):
+    def __init__(
+        self,
+        parent: QWidget,
+        title: str,
+        placeholder_text: typing.Optional[str] = None,
+        with_comment: bool = False,
+        tooltip: typing.Optional[str] = None,
+    ):
         super(ValueDisplayWidget, self).__init__(parent)
 
-        self._placeholder_text = str(placeholder_text or '')
+        self._placeholder_text = str(placeholder_text or "")
 
         self._value_display = QLabel(self)
         self._value_display.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
@@ -57,7 +59,7 @@ class ValueDisplayWidget(WidgetBase):
         else:
             self._comment = None
 
-        self._default_tooltip = str(tooltip or '')
+        self._default_tooltip = str(tooltip or "")
         self.setToolTip(self._default_tooltip)
         self.setStatusTip(self.toolTip())
 
@@ -82,11 +84,13 @@ class ValueDisplayWidget(WidgetBase):
         if isinstance(self._comment, _Comment):
             self._comment.reset()
 
-    def set(self,
-            text:       str,
-            style:     'typing.Optional[ValueDisplayWidget.Style]' = None,
-            comment:    typing.Optional[str] = None,
-            icon_name:  typing.Optional[str] = None):
+    def set(
+        self,
+        text: str,
+        style: "typing.Optional[ValueDisplayWidget.Style]" = None,
+        comment: typing.Optional[str] = None,
+        icon_name: typing.Optional[str] = None,
+    ):
         # TODO: handle style
         style = style or self.Style.NORMAL
 
@@ -96,7 +100,9 @@ class ValueDisplayWidget(WidgetBase):
             self._comment.set_text(comment)
             self._comment.set_icon(icon_name)
         elif comment or icon_name:
-            warnings.warn('Attempting to set comment, but the instance is configured to not use one')
+            warnings.warn(
+                "Attempting to set comment, but the instance is configured to not use one"
+            )
 
 
 # noinspection PyArgumentList
@@ -104,17 +110,18 @@ class ValueDisplayWidget(WidgetBase):
 def _unittest_value_display_widget_main():
     import time
     from PyQt5.QtWidgets import QApplication, QMainWindow, QGroupBox
+
     app = QApplication([])
 
     win = QMainWindow()
     container = QGroupBox(win)
     layout = QVBoxLayout()
 
-    a = ValueDisplayWidget(container, 'Vladimir', 'N/A', tooltip='This is Vladimir')
+    a = ValueDisplayWidget(container, "Vladimir", "N/A", tooltip="This is Vladimir")
     layout.addWidget(a)
 
-    b = ValueDisplayWidget(container, 'Dmitri', with_comment=True)
-    b.set('123.4 \u00B0C', comment='Init', icon_name='info')
+    b = ValueDisplayWidget(container, "Dmitri", with_comment=True)
+    b.set("123.4 \u00B0C", comment="Init", icon_name="info")
     layout.addWidget(b)
 
     container.setLayout(layout)
@@ -127,11 +134,11 @@ def _unittest_value_display_widget_main():
             app.processEvents()
 
     run_a_bit()
-    b.set('12.3 \u00B0C', comment='OK', icon_name='ok')
+    b.set("12.3 \u00B0C", comment="OK", icon_name="ok")
     run_a_bit()
-    b.set('123.4 \u00B0C')
+    b.set("123.4 \u00B0C")
     run_a_bit()
-    b.set('-45.6 \u00B0C', comment='Cold', icon_name='cold')
+    b.set("-45.6 \u00B0C", comment="Cold", icon_name="cold")
     run_a_bit()
 
     win.close()
@@ -142,7 +149,7 @@ class _Comment(QLabel):
     def __init__(self, parent: QWidget):
         super(_Comment, self).__init__(parent)
         self.setAlignment(Qt.AlignCenter)
-        self._icon_size = QFontMetrics(QFont()).height()        # As large as font
+        self._icon_size = QFontMetrics(QFont()).height()  # As large as font
         self._pixmap_cache: typing.Dict[str, QPixmap] = {}
         self._current_icon_name: typing.Optional[str] = None
         # Initializing defaults
@@ -153,7 +160,7 @@ class _Comment(QLabel):
         self.set_icon(None)
 
     def set_icon(self, icon_name: typing.Optional[str]):
-        icon_name = str(icon_name or '_empty')
+        icon_name = str(icon_name or "_empty")
         if icon_name == self._current_icon_name:
             return
 
@@ -167,7 +174,7 @@ class _Comment(QLabel):
         self._current_icon_name = icon_name
 
     def set_text(self, text: typing.Optional[str]):
-        text = str(text or '')
+        text = str(text or "")
         self.setToolTip(text)
         self.setStatusTip(text)
 
@@ -177,6 +184,7 @@ class _Comment(QLabel):
 def _unittest_value_display_widget_comment():
     import time
     from PyQt5.QtWidgets import QApplication, QMainWindow, QGroupBox
+
     app = QApplication([])
 
     win = QMainWindow()
@@ -192,14 +200,14 @@ def _unittest_value_display_widget_comment():
         layout.addWidget(s)
         return s
 
-    a = let_there_be_icon('Cold', 'cold')
+    a = let_there_be_icon("Cold", "cold")
     b = let_there_be_icon(None, None)
-    c = let_there_be_icon(None, 'info')
-    let_there_be_icon('No icon', None)
-    let_there_be_icon('Fire', 'fire')
-    let_there_be_icon('Error', 'error')
-    let_there_be_icon('Warning', 'warning')
-    let_there_be_icon('Ok', 'ok')
+    c = let_there_be_icon(None, "info")
+    let_there_be_icon("No icon", None)
+    let_there_be_icon("Fire", "fire")
+    let_there_be_icon("Error", "error")
+    let_there_be_icon("Warning", "warning")
+    let_there_be_icon("Ok", "ok")
 
     layout.addStretch(1)
     container.setLayout(layout)
@@ -212,14 +220,14 @@ def _unittest_value_display_widget_comment():
             app.processEvents()
 
     run_a_bit()
-    a.set_icon('fire')
-    b.set_text('Text')
-    c.set_text('New icon')
-    c.set_icon('guru')
+    a.set_icon("fire")
+    b.set_text("Text")
+    c.set_text("New icon")
+    c.set_icon("guru")
     run_a_bit()
     c.set_icon(None)
-    b.set_text('Text')
-    a.set_text('New icon')
+    b.set_text("Text")
+    a.set_text("New icon")
     a.set_icon(None)
     run_a_bit()
 

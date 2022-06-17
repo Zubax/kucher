@@ -23,10 +23,9 @@ _logger = getLogger(__name__)
 
 
 class GroupBoxWidget(QGroupBox):
-    def __init__(self,
-                 parent:        QWidget,
-                 title:         str,
-                 icon_name:     typing.Optional[str] = None):
+    def __init__(
+        self, parent: QWidget, title: str, icon_name: typing.Optional[str] = None
+    ):
         super(GroupBoxWidget, self).__init__(title, parent)
 
         # Changing icons is very expensive, so we store last set icon in order to avoid re-setting it
@@ -39,7 +38,7 @@ class GroupBoxWidget(QGroupBox):
         if self._current_icon == icon_name:
             return
 
-        _logger.debug('Changing icon from %r to %r', self._current_icon, icon_name)
+        _logger.debug("Changing icon from %r to %r", self._current_icon, icon_name)
         self._current_icon = icon_name
 
         icon_size = QFontMetrics(QFont()).height()
@@ -47,14 +46,16 @@ class GroupBoxWidget(QGroupBox):
 
         # This hack adds a custom icon to the GroupBox: make it checkable, and then, using styling, override
         # the image of the check box with the custom icon.
-        self.setCheckable(True)     # This is needed to make the icon visible
-        self.setStyleSheet(f'''
+        self.setCheckable(True)  # This is needed to make the icon visible
+        self.setStyleSheet(
+            f"""
             QGroupBox::indicator {{
                 width:  {icon_size}px;
                 height: {icon_size}px;
                 image: url({icon_path});
             }}
-        ''')
+        """
+        )
 
         # We don't actually want it to be checkable, so override this thing to return it back to normal again
         # noinspection PyUnresolvedReferences

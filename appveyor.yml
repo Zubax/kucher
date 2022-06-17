@@ -23,20 +23,15 @@ install:
   - sh: "pip install -r requirements-dev-linux.txt"
   - sh: "sudo apt-get update"
   - sh: "sudo apt-get -y install python3.10-dev"
-  - py --list
-  - py -m pip install --upgrade pip
-  - py -m pip install tox
 #build: off
 
 test_script:
-  - py -m tox
-#test_script:
-#  - cmd: "test_windows.bat"
-#  # Plugins related to software display are missing on Linux. Appveyor can't handle display so we disable it. See:
-#  # https://doc.qt.io/qt-5/embedded-linux.html
-#  # https://github.com/ariya/phantomjs/issues/14376
-#  - sh: "export QT_QPA_PLATFORM=offscreen"
-#  - sh: "bash test_linux.sh"
+  - cmd: "test_windows.bat"
+  # Plugins related to software display are missing on Linux. Appveyor can't handle display so we disable it. See:
+  # https://doc.qt.io/qt-5/embedded-linux.html
+  # https://github.com/ariya/phantomjs/issues/14376
+  - sh: "export QT_QPA_PLATFORM=offscreen"
+  - sh: "bash test_linux.sh"
 
 after_test:
   - cmd: "7z a zubax-kucher.7z *"

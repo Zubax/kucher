@@ -15,41 +15,42 @@
 from dataclasses import dataclass
 from PyQt5.QtWidgets import QWidget
 
-from kucher.view.widgets.value_display_group_widget import ValueDisplayGroupWidget, ValueDisplayWidget
+from kucher.view.widgets.value_display_group_widget import (
+    ValueDisplayGroupWidget,
+    ValueDisplayWidget,
+)
 
 
 class HardwareFlagCountersWidget(ValueDisplayGroupWidget):
     @dataclass
     class FlagState:
-        event_count:    int = 0
-        active:         bool = False
+        event_count: int = 0
+        active: bool = False
 
     # noinspection PyArgumentList,PyCallingNonCallable
     def __init__(self, parent: QWidget):
-        super(HardwareFlagCountersWidget, self).__init__(parent,
-                                                         'HW flag cnt.',
-                                                         'integrated-circuit',
-                                                         with_comments=True)
-        self.setToolTip('Hardware flag counters - how many times each flag was seen')
+        super(HardwareFlagCountersWidget, self).__init__(
+            parent, "HW flag cnt.", "integrated-circuit", with_comments=True
+        )
+        self.setToolTip("Hardware flag counters - how many times each flag was seen")
         self.setStatusTip(self.toolTip())
-        placeholder = '0'
+        placeholder = "0"
 
-        self._lvps_malfunction = self.create_value_display('LVPS mlf.',
-                                                           placeholder,
-                                                           tooltip='Low-voltage power supply malfunction')
+        self._lvps_malfunction = self.create_value_display(
+            "LVPS mlf.", placeholder, tooltip="Low-voltage power supply malfunction"
+        )
 
-        self._overload = self.create_value_display('Overload',
-                                                   placeholder,
-                                                   tooltip='Critical hardware overload or critical overheating')
+        self._overload = self.create_value_display(
+            "Overload",
+            placeholder,
+            tooltip="Critical hardware overload or critical overheating",
+        )
 
-        self._fault = self.create_value_display('Fault',
-                                                placeholder,
-                                                tooltip='Hardware fault flag')
+        self._fault = self.create_value_display(
+            "Fault", placeholder, tooltip="Hardware fault flag"
+        )
 
-    def set(self,
-            lvps_malfunction: FlagState,
-            overload:         FlagState,
-            fault:            FlagState):
+    def set(self, lvps_malfunction: FlagState, overload: FlagState, fault: FlagState):
         self._display(lvps_malfunction, self._lvps_malfunction)
         self._display(overload, self._overload)
         self._display(fault, self._fault)
@@ -58,14 +59,13 @@ class HardwareFlagCountersWidget(ValueDisplayGroupWidget):
     def _display(state, display_target: ValueDisplayWidget):
         if state.active:
             style = ValueDisplayWidget.Style.ALERT_ERROR
-            comment = 'Flag is set!'
-            icon_name = 'flag-red'
+            comment = "Flag is set!"
+            icon_name = "flag-red"
         else:
             style = ValueDisplayWidget.Style.NORMAL
-            comment = 'Flag is not set, OK'
-            icon_name = 'ok'
+            comment = "Flag is not set, OK"
+            icon_name = "ok"
 
-        display_target.set(str(state.event_count),
-                           style=style,
-                           comment=comment,
-                           icon_name=icon_name)
+        display_target.set(
+            str(state.event_count), style=style, comment=comment, icon_name=icon_name
+        )

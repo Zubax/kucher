@@ -19,31 +19,47 @@ from PyQt5.QtCore import QUrl, QSize
 
 from kucher.data_dir import LOG_DIR
 from kucher.view.utils import get_application_icon, get_icon, is_small_screen
-from kucher.view.tool_window_manager import ToolWindowManager, ToolWindowLocation, ToolWindowGroupingCondition
-from kucher.view.device_model_representation import GeneralStatusView, TaskStatisticsView, BasicDeviceInfo, Commander,\
-    Register
+from kucher.view.tool_window_manager import (
+    ToolWindowManager,
+    ToolWindowLocation,
+    ToolWindowGroupingCondition,
+)
+from kucher.view.device_model_representation import (
+    GeneralStatusView,
+    TaskStatisticsView,
+    BasicDeviceInfo,
+    Commander,
+    Register,
+)
 
-from .device_management_widget import ConnectionRequestCallback, DisconnectionRequestCallback
+from .device_management_widget import (
+    ConnectionRequestCallback,
+    DisconnectionRequestCallback,
+)
 from .main_widget import MainWidget
 from .task_statistics_widget import TaskStatisticsWidget
 from .log_widget import LogWidget
 from .register_view_widget import RegisterViewWidget
 
 
-_WINDOW_TITLE_PREFIX = 'Zubax Kucher'
+_WINDOW_TITLE_PREFIX = "Zubax Kucher"
 
 
-TaskStatisticsRequestCallback = typing.Callable[[], typing.Awaitable[typing.Optional[TaskStatisticsView]]]
+TaskStatisticsRequestCallback = typing.Callable[
+    [], typing.Awaitable[typing.Optional[TaskStatisticsView]]
+]
 
 
 class MainWindow(QMainWindow):
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
-    def __init__(self,
-                 on_close:                   typing.Callable[[], None],
-                 on_connection_request:      ConnectionRequestCallback,
-                 on_disconnection_request:   DisconnectionRequestCallback,
-                 on_task_statistics_request: TaskStatisticsRequestCallback,
-                 commander:                  Commander):
+    def __init__(
+        self,
+        on_close: typing.Callable[[], None],
+        on_connection_request: ConnectionRequestCallback,
+        on_disconnection_request: DisconnectionRequestCallback,
+        on_task_statistics_request: TaskStatisticsRequestCallback,
+        commander: Commander,
+    ):
         super(MainWindow, self).__init__()
         self.setWindowTitle(_WINDOW_TITLE_PREFIX)
         self.setWindowIcon(get_application_icon())
@@ -55,28 +71,35 @@ class MainWindow(QMainWindow):
 
         self._registers: typing.List[Register] = None
 
-        self._main_widget = MainWidget(self,
-                                       on_connection_request=on_connection_request,
-                                       on_disconnection_request=on_disconnection_request,
-                                       commander=commander)
+        self._main_widget = MainWidget(
+            self,
+            on_connection_request=on_connection_request,
+            on_disconnection_request=on_disconnection_request,
+            commander=commander,
+        )
 
         self._configure_file_menu()
         self._configure_tool_windows(on_task_statistics_request)
         self._configure_help_menu()
 
-        self._tool_window_manager.tool_window_resize_event.connect(lambda *_: self._readjust_size_policies())
-        self._tool_window_manager.new_tool_window_event.connect(lambda *_: self._readjust_size_policies())
-        self._tool_window_manager.tool_window_removed_event.connect(lambda *_: self._readjust_size_policies())
+        self._tool_window_manager.tool_window_resize_event.connect(
+            lambda *_: self._readjust_size_policies()
+        )
+        self._tool_window_manager.new_tool_window_event.connect(
+            lambda *_: self._readjust_size_policies()
+        )
+        self._tool_window_manager.tool_window_removed_event.connect(
+            lambda *_: self._readjust_size_policies()
+        )
 
         self._main_widget.resize_event.connect(self._readjust_size_policies)
-        self._main_widget.setSizePolicy(QSizePolicy.Minimum,
-                                        QSizePolicy.Minimum)
+        self._main_widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
 
         self.setCentralWidget(self._main_widget)
 
-    def on_connection_established(self,
-                                  device_info: BasicDeviceInfo,
-                                  registers: typing.List[Register]):
+    def on_connection_established(
+        self, device_info: BasicDeviceInfo, registers: typing.List[Register]
+    ):
         self._main_widget.on_connection_established(device_info)
         for w in self._tool_window_manager.select_widgets(LogWidget):
             w.on_device_connected(device_info)
@@ -85,7 +108,9 @@ class MainWindow(QMainWindow):
         for w in self._tool_window_manager.select_widgets(RegisterViewWidget):
             w.setup(self._registers)
 
-        self.setWindowTitle(f'{_WINDOW_TITLE_PREFIX} - #{device_info.globally_unique_id.hex()}')
+        self.setWindowTitle(
+            f"{_WINDOW_TITLE_PREFIX} - #{device_info.globally_unique_id.hex()}"
+        )
 
     def on_connection_loss(self, reason: str):
         self._main_widget.on_connection_loss(reason)
@@ -98,10 +123,12 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle(_WINDOW_TITLE_PREFIX)
 
-    def on_connection_initialization_progress_report(self,
-                                                     stage_description: str,
-                                                     progress: float):
-        self._main_widget.on_connection_initialization_progress_report(stage_description, progress)
+    def on_connection_initialization_progress_report(
+        self, stage_description: str, progress: float
+    ):
+        self._main_widget.on_connection_initialization_progress_report(
+            stage_description, progress
+        )
 
     def on_general_status_update(self, timestamp: float, status: GeneralStatusView):
         self._main_widget.on_general_status_update(timestamp, status)
@@ -110,25 +137,31 @@ class MainWindow(QMainWindow):
         for w in self._tool_window_manager.select_widgets(LogWidget):
             w.append_lines([text])
 
-    def _configure_tool_windows(self,
-                                on_task_statistics_request: TaskStatisticsRequestCallback):
-        self._tool_window_manager.add_arrangement_rule(apply_to=[LogWidget, TaskStatisticsWidget],
-                                                       group_when=ToolWindowGroupingCondition.ALWAYS,
-                                                       location=ToolWindowLocation.BOTTOM)
+    def _configure_tool_windows(
+        self, on_task_statistics_request: TaskStatisticsRequestCallback
+    ):
+        self._tool_window_manager.add_arrangement_rule(
+            apply_to=[LogWidget, TaskStatisticsWidget],
+            group_when=ToolWindowGroupingCondition.ALWAYS,
+            location=ToolWindowLocation.BOTTOM,
+        )
 
-        self._tool_window_manager.add_arrangement_rule(apply_to=[RegisterViewWidget],
-                                                       group_when=ToolWindowGroupingCondition.ALWAYS,
-                                                       location=ToolWindowLocation.RIGHT)
+        self._tool_window_manager.add_arrangement_rule(
+            apply_to=[RegisterViewWidget],
+            group_when=ToolWindowGroupingCondition.ALWAYS,
+            location=ToolWindowLocation.RIGHT,
+        )
 
-        self._tool_window_manager.register(lambda parent: TaskStatisticsWidget(parent, on_task_statistics_request),
-                                           'Task statistics',
-                                           'spreadsheet',
-                                           shown_by_default=not is_small_screen())
+        self._tool_window_manager.register(
+            lambda parent: TaskStatisticsWidget(parent, on_task_statistics_request),
+            "Task statistics",
+            "spreadsheet",
+            shown_by_default=not is_small_screen(),
+        )
 
-        self._tool_window_manager.register(LogWidget,
-                                           'Device log',
-                                           'log',
-                                           shown_by_default=True)
+        self._tool_window_manager.register(
+            LogWidget, "Device log", "log", shown_by_default=True
+        )
 
         def spawn_register_widget(parent: QWidget):
             w = RegisterViewWidget(parent)
@@ -137,33 +170,42 @@ class MainWindow(QMainWindow):
 
             return w
 
-        self._tool_window_manager.register(spawn_register_widget,
-                                           'Registers',
-                                           'data',
-                                           shown_by_default=True)
+        self._tool_window_manager.register(
+            spawn_register_widget, "Registers", "data", shown_by_default=True
+        )
 
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
     def _configure_file_menu(self):
         # File menu
-        quit_action = QAction(get_icon('exit'), '&Quit', self)
+        quit_action = QAction(get_icon("exit"), "&Quit", self)
         quit_action.triggered.connect(self._on_close)
 
-        file_menu = self.menuBar().addMenu('&File')
+        file_menu = self.menuBar().addMenu("&File")
         file_menu.addAction(quit_action)
 
     # noinspection PyCallByClass,PyUnresolvedReferences,PyArgumentList
     def _configure_help_menu(self):
         # Help menu
-        website_action = QAction(get_icon('www'), 'Open Zubax Robotics &website', self)
-        website_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('https://zubax.com')))
+        website_action = QAction(get_icon("www"), "Open Zubax Robotics &website", self)
+        website_action.triggered.connect(
+            lambda: QDesktopServices.openUrl(QUrl("https://zubax.com"))
+        )
 
-        knowledge_base_action = QAction(get_icon('knowledge'), 'Open Zubax &Knowledge Base website', self)
-        knowledge_base_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('https://kb.zubax.com')))
+        knowledge_base_action = QAction(
+            get_icon("knowledge"), "Open Zubax &Knowledge Base website", self
+        )
+        knowledge_base_action.triggered.connect(
+            lambda: QDesktopServices.openUrl(QUrl("https://kb.zubax.com"))
+        )
 
-        show_log_directory_action = QAction(get_icon('log'), 'Open &log directory', self)
-        show_log_directory_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(LOG_DIR)))
+        show_log_directory_action = QAction(
+            get_icon("log"), "Open &log directory", self
+        )
+        show_log_directory_action.triggered.connect(
+            lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(LOG_DIR))
+        )
 
-        help_menu = self.menuBar().addMenu('&Help')
+        help_menu = self.menuBar().addMenu("&Help")
         help_menu.addAction(website_action)
         help_menu.addAction(knowledge_base_action)
         help_menu.addAction(show_log_directory_action)
@@ -176,16 +218,24 @@ class MainWindow(QMainWindow):
         # TODO: remember the largest width hint, use it in order to prevent back and forth resizing when
         # TODO: the content changes?
 
-        docked_tb = \
-            self._tool_window_manager.select_widgets(current_location=ToolWindowLocation.TOP) + \
-            self._tool_window_manager.select_widgets(current_location=ToolWindowLocation.BOTTOM)
+        docked_tb = self._tool_window_manager.select_widgets(
+            current_location=ToolWindowLocation.TOP
+        ) + self._tool_window_manager.select_widgets(
+            current_location=ToolWindowLocation.BOTTOM
+        )
 
-        docked_lr = \
-            self._tool_window_manager.select_widgets(current_location=ToolWindowLocation.LEFT) + \
-            self._tool_window_manager.select_widgets(current_location=ToolWindowLocation.RIGHT)
+        docked_lr = self._tool_window_manager.select_widgets(
+            current_location=ToolWindowLocation.LEFT
+        ) + self._tool_window_manager.select_widgets(
+            current_location=ToolWindowLocation.RIGHT
+        )
 
-        self.centralWidget().setMaximumHeight(height_hint if len(docked_tb) else QWIDGETSIZE_MAX)
-        self.centralWidget().setMaximumWidth(width_hint if len(docked_lr) else QWIDGETSIZE_MAX)
+        self.centralWidget().setMaximumHeight(
+            height_hint if len(docked_tb) else QWIDGETSIZE_MAX
+        )
+        self.centralWidget().setMaximumWidth(
+            width_hint if len(docked_lr) else QWIDGETSIZE_MAX
+        )
 
     def closeEvent(self, event: QCloseEvent):
         self._on_close()

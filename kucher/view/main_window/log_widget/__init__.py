@@ -17,7 +17,14 @@ import typing
 import datetime
 from dataclasses import dataclass
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QTableView, QLabel, QVBoxLayout, QHBoxLayout, QApplication
+from PyQt5.QtWidgets import (
+    QWidget,
+    QTableView,
+    QLabel,
+    QVBoxLayout,
+    QHBoxLayout,
+    QApplication,
+)
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, QVariant
 from PyQt5.QtGui import QFontMetrics, QFont, QPalette, QKeyEvent, QKeySequence
 
@@ -36,9 +43,13 @@ class LogWidget(WidgetBase):
     # noinspection PyUnresolvedReferences,PyArgumentList
     def __init__(self, parent: QWidget):
         super(LogWidget, self).__init__(parent)
-        self.setAttribute(Qt.WA_DeleteOnClose)                  # This is required to stop background timers!
+        self.setAttribute(
+            Qt.WA_DeleteOnClose
+        )  # This is required to stop background timers!
 
-        self._clear_button = make_button(self, 'Clear', 'delete-document', on_clicked=self._do_clear)
+        self._clear_button = make_button(
+            self, "Clear", "delete-document", on_clicked=self._do_clear
+        )
         self._status_display = QLabel(self)
 
         self._model = _TableModel(self)
@@ -64,31 +75,33 @@ class LogWidget(WidgetBase):
         swv = di.software_version
         hwv = di.hardware_version
 
-        sw_str = f'{swv.major}.{swv.minor}.{swv.vcs_commit_id:08x}'
+        sw_str = f"{swv.major}.{swv.minor}.{swv.vcs_commit_id:08x}"
         if not swv.release_build:
-            sw_str += '-debug'
+            sw_str += "-debug"
 
         if swv.dirty_build:
-            sw_str += '-dirty'
+            sw_str += "-dirty"
 
-        hw_str = f'{hwv.major}.{hwv.minor}'
+        hw_str = f"{hwv.major}.{hwv.minor}"
 
-        self._model.append_special_event(f'Connected to {di.name!r} SW v{sw_str} HW v{hw_str} '
-                                         f'#{di.globally_unique_id.hex()}')
+        self._model.append_special_event(
+            f"Connected to {di.name!r} SW v{sw_str} HW v{hw_str} "
+            f"#{di.globally_unique_id.hex()}"
+        )
 
     def on_device_disconnected(self, reason: str):
-        self._model.append_special_event(f'Disconnected: {reason}')
+        self._model.append_special_event(f"Disconnected: {reason}")
 
     def _do_clear(self):
         self._model.clear()
 
     def _on_model_changed(self):
-        self._status_display.setText(f'{self._model.rowCount()} rows')
+        self._status_display.setText(f"{self._model.rowCount()} rows")
 
 
 class _TableView(QTableView):
     # noinspection PyUnresolvedReferences
-    def __init__(self, parent, model: '_TableModel'):
+    def __init__(self, parent, model: "_TableModel"):
         super(_TableView, self).__init__(parent)
 
         self._model = model
@@ -96,12 +109,16 @@ class _TableView(QTableView):
 
         model.layoutChanged.connect(self._do_scroll)
 
-        self.horizontalHeader().setSectionResizeMode(self.horizontalHeader().ResizeToContents)
+        self.horizontalHeader().setSectionResizeMode(
+            self.horizontalHeader().ResizeToContents
+        )
         self.horizontalHeader().setStretchLastSection(True)
 
         # ResizeToContents may be inefficient, but it is necessary for proper word wrapping
         self.verticalHeader().setDefaultSectionSize(model.font_height)
-        self.verticalHeader().setSectionResizeMode(self.verticalHeader().ResizeToContents)
+        self.verticalHeader().setSectionResizeMode(
+            self.verticalHeader().ResizeToContents
+        )
 
         self.setWordWrap(True)
         self.setSortingEnabled(False)
@@ -112,8 +129,12 @@ class _TableView(QTableView):
     # noinspection PyArgumentList
     def keyPressEvent(self, event: QKeyEvent):
         if event.matches(QKeySequence.Copy):
-            selected_indexes = [(x.row(), x.column()) for x in self.selectionModel().selectedIndexes()]
-            _logger.info('Copying the following items to the clipboard: %r', selected_indexes)
+            selected_indexes = [
+                (x.row(), x.column()) for x in self.selectionModel().selectedIndexes()
+            ]
+            _logger.info(
+                "Copying the following items to the clipboard: %r", selected_indexes
+            )
 
             # Dicts are ordered now. Yay!
             by_row = {}
@@ -122,8 +143,16 @@ class _TableView(QTableView):
 
             out_strings = []
             for row, column_list in by_row.items():
-                out_strings.append('\t'.join([self._model.render_item_for_clipboard(self._model.index(row, col))
-                                             for col in column_list]))
+                out_strings.append(
+                    "\t".join(
+                        [
+                            self._model.render_item_for_clipboard(
+                                self._model.index(row, col)
+                            )
+                            for col in column_list
+                        ]
+                    )
+                )
 
             if out_strings:
                 QApplication.clipboard().setText(os.linesep.join(out_strings))
@@ -132,7 +161,9 @@ class _TableView(QTableView):
 
     def _do_scroll(self):
         try:
-            relative_scroll_position = self.verticalScrollBar().value() / self.verticalScrollBar().maximum()
+            relative_scroll_position = (
+                self.verticalScrollBar().value() / self.verticalScrollBar().maximum()
+            )
         except ZeroDivisionError:
             relative_scroll_position = 1.0
 
@@ -151,16 +182,16 @@ def _model_modifier(method):
 class _TableModel(QAbstractTableModel):
     # TODO: Print device time as well! That would require modifications to the device model classes.
     COLUMNS = [
-        'Local time',
-        'Text',
+        "Local time",
+        "Text",
     ]
 
     @dataclass
     class Entry:
-        local_time:         datetime.datetime
-        text:               str
+        local_time: datetime.datetime
+        text: str
         line_is_terminated: bool
-        is_special_event:   bool = False
+        is_special_event: bool = False
 
     def __init__(self, parent: QWidget):
         super(_TableModel, self).__init__(parent)
@@ -174,9 +205,11 @@ class _TableModel(QAbstractTableModel):
 
     @property
     def font_height(self):
-        return max(QFontMetrics(self._monospace_font).height(),
-                   QFontMetrics(self._special_event_font).height(),
-                   QFontMetrics(QFont()).height())
+        return max(
+            QFontMetrics(self._monospace_font).height(),
+            QFontMetrics(self._special_event_font).height(),
+            QFontMetrics(QFont()).height(),
+        )
 
     def rowCount(self, _parent=None):
         return len(self._rows)
@@ -200,12 +233,12 @@ class _TableModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             if column == 0:
-                return entry.local_time.strftime('%H:%M:%S')
+                return entry.local_time.strftime("%H:%M:%S")
 
             if column == 1:
                 return entry.text
 
-            raise ValueError(f'Invalid column index: {column}')
+            raise ValueError(f"Invalid column index: {column}")
 
         if role == Qt.TextAlignmentRole:
             return Qt.AlignLeft + Qt.AlignVCenter
@@ -229,27 +262,32 @@ class _TableModel(QAbstractTableModel):
         local_time = datetime.datetime.now()
 
         for text in text_lines:
-            this_line_is_terminated = text.endswith('\n')
+            this_line_is_terminated = text.endswith("\n")
 
             if not self._rows or self._rows[-1].line_is_terminated:
-                self._rows.append(self.Entry(local_time=local_time,
-                                             text=text.rstrip(),
-                                             line_is_terminated=this_line_is_terminated))
+                self._rows.append(
+                    self.Entry(
+                        local_time=local_time,
+                        text=text.rstrip(),
+                        line_is_terminated=this_line_is_terminated,
+                    )
+                )
             else:
                 self._rows[-1].text += text.rstrip()
                 self._rows[-1].line_is_terminated = this_line_is_terminated
                 # Reporting that the last row has changed
-                index = self.index(self.rowCount() - 1,
-                                   self.columnCount() - 1)
+                index = self.index(self.rowCount() - 1, self.columnCount() - 1)
                 self.dataChanged.emit(index, index)
 
     # noinspection PyUnresolvedReferences
     @_model_modifier
     def append_special_event(self, text: str):
-        entry = self.Entry(local_time=datetime.datetime.now(),
-                           text=text,
-                           line_is_terminated=True,
-                           is_special_event=True)
+        entry = self.Entry(
+            local_time=datetime.datetime.now(),
+            text=text,
+            line_is_terminated=True,
+            is_special_event=True,
+        )
         self._rows.append(entry)
 
     # noinspection PyUnresolvedReferences
@@ -262,7 +300,7 @@ class _TableModel(QAbstractTableModel):
         column = index.column()
 
         if column == 0:
-            return entry.local_time.strftime('%Y-%m-%dT%H:%M:%S')
+            return entry.local_time.strftime("%Y-%m-%dT%H:%M:%S")
 
         if column == 1:
             return entry.text
@@ -297,7 +335,9 @@ def _unittest_log_widget():
 
     for it in range(5):
         go_go_go()
-        lw.append_lines([f'This is a very long line, its number is {it + 1}\n', 'Piggyback\n'])
+        lw.append_lines(
+            [f"This is a very long line, its number is {it + 1}\n", "Piggyback\n"]
+        )
 
     go_go_go()
 

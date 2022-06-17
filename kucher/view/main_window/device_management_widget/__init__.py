@@ -16,11 +16,25 @@ import typing
 import string
 import asyncio
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QCompleter, QStackedLayout, QLabel, QProgressBar
+from PyQt5.QtWidgets import (
+    QWidget,
+    QHBoxLayout,
+    QComboBox,
+    QCompleter,
+    QStackedLayout,
+    QLabel,
+    QProgressBar,
+)
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtCore import QTimer, Qt
 
-from kucher.view.utils import get_monospace_font, gui_test, make_button, show_error, get_icon
+from kucher.view.utils import (
+    get_monospace_font,
+    gui_test,
+    make_button,
+    show_error,
+    get_icon,
+)
 from kucher.view.device_model_representation import BasicDeviceInfo
 from kucher.view.widgets import WidgetBase
 
@@ -31,7 +45,7 @@ from .little_bobby_tables_widget import LittleBobbyTablesWidget
 _logger = getLogger(__name__)
 
 
-_STATUS_WHEN_NOT_CONNECTED = 'Not connected'
+_STATUS_WHEN_NOT_CONNECTED = "Not connected"
 
 
 ConnectionRequestCallback = typing.Callable[[str], typing.Awaitable[BasicDeviceInfo]]
@@ -40,15 +54,19 @@ DisconnectionRequestCallback = typing.Callable[[], typing.Awaitable[None]]
 
 class DeviceManagementWidget(WidgetBase):
     # noinspection PyArgumentList,PyUnresolvedReferences
-    def __init__(self,
-                 parent: typing.Optional[QWidget],
-                 on_connection_request: ConnectionRequestCallback,
-                 on_disconnection_request: DisconnectionRequestCallback):
+    def __init__(
+        self,
+        parent: typing.Optional[QWidget],
+        on_connection_request: ConnectionRequestCallback,
+        on_disconnection_request: DisconnectionRequestCallback,
+    ):
         super(DeviceManagementWidget, self).__init__(parent)
-        self.setAttribute(Qt.WA_DeleteOnClose)                  # This is required to stop background timers!
+        self.setAttribute(
+            Qt.WA_DeleteOnClose
+        )  # This is required to stop background timers!
 
         self._port_discoverer = PortDiscoverer()
-        self._port_mapping: typing.Dict[str: str] = {}
+        self._port_mapping: typing.Dict[str:str] = {}
 
         self._port_combo = QComboBox(self)
         self._port_combo.setEditable(True)
@@ -57,11 +75,16 @@ class DeviceManagementWidget(WidgetBase):
         self._port_combo.setFont(get_monospace_font())
         self._port_combo.lineEdit().returnPressed.connect(self._on_confirmation)
 
-        self._connect_button = make_button(self, 'Connect', 'disconnected', on_clicked=self._on_confirmation)
-        self._connect_button.setEnabled(False)              # Empty by default, therefore disabled
+        self._connect_button = make_button(
+            self, "Connect", "disconnected", on_clicked=self._on_confirmation
+        )
+        self._connect_button.setEnabled(False)  # Empty by default, therefore disabled
 
         self._port_combo.currentTextChanged.connect(
-            lambda: self._connect_button.setEnabled(bool(self._port_combo.currentText().strip())))
+            lambda: self._connect_button.setEnabled(
+                bool(self._port_combo.currentText().strip())
+            )
+        )
 
         self._status_text = QLabel(self)
         self._status_text.setText(_STATUS_WHEN_NOT_CONNECTED)
@@ -85,8 +108,12 @@ class DeviceManagementWidget(WidgetBase):
         self._connection_established = False
         self._last_task: typing.Optional[asyncio.Task] = None
 
-        self._connection_request_callback: ConnectionRequestCallback = on_connection_request
-        self._disconnection_request_callback: DisconnectionRequestCallback = on_disconnection_request
+        self._connection_request_callback: ConnectionRequestCallback = (
+            on_connection_request
+        )
+        self._disconnection_request_callback: DisconnectionRequestCallback = (
+            on_disconnection_request
+        )
 
         # Layout
         self._overlay = QStackedLayout(self)
@@ -104,11 +131,13 @@ class DeviceManagementWidget(WidgetBase):
         """
         if self._connection_established:
             self._switch_state_disconnected()
-            self._status_text.setText(f'Connection lost: {reason.strip() or "Unknown reason"}')
+            self._status_text.setText(
+                f'Connection lost: {reason.strip() or "Unknown reason"}'
+            )
 
-    def on_connection_initialization_progress_report(self,
-                                                     stage_description: str,
-                                                     progress: float):
+    def on_connection_initialization_progress_report(
+        self, stage_description: str, progress: float
+    ):
         """
         This method should be periodically invoked while connection is being initialized.
         :param stage_description: Human-readable short string displaying what is currently being done.
@@ -117,16 +146,20 @@ class DeviceManagementWidget(WidgetBase):
                                   where 0 - nothing, 1 - all done.
         """
         if self._overlay.currentIndex() != 1:
-            raise RuntimeError('Invalid usage: this method can only be invoked when connection initialization is '
-                               'in progress. Currently it is not.')
+            raise RuntimeError(
+                "Invalid usage: this method can only be invoked when connection initialization is "
+                "in progress. Currently it is not."
+            )
 
         # noinspection PyTypeChecker
         if not (0.0 <= progress <= 1.0):
-            _logger.error(f'Connection progress estimate falls outside of [0, 1]: {progress}')
+            _logger.error(
+                f"Connection progress estimate falls outside of [0, 1]: {progress}"
+            )
 
         stage_description = stage_description.strip()
         if stage_description[-1] in string.ascii_letters:
-            stage_description += '...'
+            stage_description += "..."
 
         self._connection_progress_bar.setValue(int(progress * 100))
         self._connection_progress_bar.setFormat(stage_description)
@@ -138,7 +171,7 @@ class DeviceManagementWidget(WidgetBase):
         operational = WidgetBase(self)
 
         operational_layout_top = QHBoxLayout()
-        operational_layout_top.addWidget(QLabel('Port:'))
+        operational_layout_top.addWidget(QLabel("Port:"))
         operational_layout_top.addWidget(self._port_combo, stretch=1)
         operational_layout_top.addWidget(self._connect_button)
 
@@ -170,11 +203,13 @@ class DeviceManagementWidget(WidgetBase):
         try:
             ports = self._port_discoverer.get_ports()
         except Exception as ex:
-            _logger.exception('Could not list ports')
-            self.flash(f'Could not list ports: {ex}', duration=10)
+            _logger.exception("Could not list ports")
+            self.flash(f"Could not list ports: {ex}", duration=10)
             ports = []
 
-        self._port_mapping = self._port_discoverer.display_ports(ports, self._port_combo)
+        self._port_mapping = self._port_discoverer.display_ports(
+            ports, self._port_combo
+        )
 
     def _switch_state_connected(self, device_info: BasicDeviceInfo):
         self._connection_established = True
@@ -183,10 +218,10 @@ class DeviceManagementWidget(WidgetBase):
         self._port_combo.setEnabled(False)
 
         self._connect_button.setEnabled(True)
-        self._connect_button.setText('Disconnect')
-        self._connect_button.setIcon(get_icon('connected'))
+        self._connect_button.setText("Disconnect")
+        self._connect_button.setIcon(get_icon("connected"))
 
-        self._status_text.setText('Connected')
+        self._status_text.setText("Connected")
         self._device_info_widget.set(device_info)
 
     def _switch_state_disconnected(self):
@@ -196,8 +231,8 @@ class DeviceManagementWidget(WidgetBase):
         self._port_combo.setEnabled(True)
 
         self._connect_button.setEnabled(True)
-        self._connect_button.setText('Connect')
-        self._connect_button.setIcon(get_icon('disconnected'))
+        self._connect_button.setText("Connect")
+        self._connect_button.setIcon(get_icon("disconnected"))
 
         self._device_info_widget.clear()
         self._status_text.setText(_STATUS_WHEN_NOT_CONNECTED)
@@ -205,44 +240,50 @@ class DeviceManagementWidget(WidgetBase):
         self._update_ports()
 
     async def _do_connect(self):
-        _logger.info('Connection initialization task spawned')
+        _logger.info("Connection initialization task spawned")
         try:
-            selected_port = self._port_mapping[str(self._port_combo.currentText()).strip()]
+            selected_port = self._port_mapping[
+                str(self._port_combo.currentText()).strip()
+            ]
         except KeyError:
             selected_port = str(self._port_combo.currentText()).strip()
 
         # Activate the progress view and initialize it
         self._overlay.setCurrentIndex(1)
         self._connection_progress_bar.setValue(0)
-        self._connection_progress_bar.setFormat('Requesting connection...')
+        self._connection_progress_bar.setFormat("Requesting connection...")
 
         # noinspection PyBroadException
         try:
-            device_info: BasicDeviceInfo = await self._connection_request_callback(selected_port)
+            device_info: BasicDeviceInfo = await self._connection_request_callback(
+                selected_port
+            )
         except Exception as ex:
-            show_error('Could not connect',
-                       f'Connection via the port {selected_port} could not be established.',
-                       f'Reason: {str(ex)}',
-                       parent=self)
+            show_error(
+                "Could not connect",
+                f"Connection via the port {selected_port} could not be established.",
+                f"Reason: {str(ex)}",
+                parent=self,
+            )
             self._switch_state_disconnected()
         else:
             assert device_info is not None
             self._switch_state_connected(device_info)
 
     async def _do_disconnect(self):
-        _logger.info('Connection termination task spawned')
+        _logger.info("Connection termination task spawned")
 
         # Activate the progress view and initialize it
         self._overlay.setCurrentIndex(1)
         self._connection_progress_bar.setValue(100)
-        self._connection_progress_bar.setFormat('Disconnecting, please wait...')
+        self._connection_progress_bar.setFormat("Disconnecting, please wait...")
 
         # noinspection PyBroadException
         try:
             await self._disconnection_request_callback()
         except Exception as ex:
-            _logger.exception('Disconnect request failed')
-            self.flash(f'Disconnection problem: {ex}', duration=10)
+            _logger.exception("Disconnect request failed")
+            self.flash(f"Disconnection problem: {ex}", duration=10)
 
         self._switch_state_disconnected()
 
@@ -252,15 +293,21 @@ class DeviceManagementWidget(WidgetBase):
         self._connect_button.setEnabled(False)
 
         if (self._last_task is not None) and not self._last_task.done():
-            show_error("I'm sorry Dave, I'm afraid I can't do that",
-                       'Cannot connect/disconnect while another connection/disconnection operation is still running',
-                       f'Pending future: {self._last_task}',
-                       self)
+            show_error(
+                "I'm sorry Dave, I'm afraid I can't do that",
+                "Cannot connect/disconnect while another connection/disconnection operation is still running",
+                f"Pending future: {self._last_task}",
+                self,
+            )
         else:
             if not self._connection_established:
-                self._last_task = asyncio.get_event_loop().create_task(self._do_connect())
+                self._last_task = asyncio.get_event_loop().create_task(
+                    self._do_connect()
+                )
             else:
-                self._last_task = asyncio.get_event_loop().create_task(self._do_disconnect())
+                self._last_task = asyncio.get_event_loop().create_task(
+                    self._do_disconnect()
+                )
 
 
 # noinspection PyGlobalUndefined
@@ -274,23 +321,23 @@ def _unittest_connection_management_widget():
         class Mock:
             @staticmethod
             def manufacturer():
-                return 'Vendor'
+                return "Vendor"
 
             @staticmethod
             def description():
-                return 'Product'
+                return "Product"
 
             @staticmethod
             def portName():
-                return 'PortName'
+                return "PortName"
 
             @staticmethod
             def systemLocation():
-                return 'SystemLocation'
+                return "SystemLocation"
 
             @staticmethod
             def serialNumber():
-                return 'SerialNumber'
+                return "SerialNumber"
 
         return [Mock()]
 
@@ -310,73 +357,79 @@ def _unittest_connection_management_widget():
         nonlocal good_night_sweet_prince, throw
 
         await asyncio.sleep(2)
-        print('Connect button click')
+        print("Connect button click")
         assert not widget._connection_established
         widget._on_confirmation()
 
         # Should be CONNECTED now
         await asyncio.sleep(10)
-        print('Disconnect button click')
+        print("Disconnect button click")
         assert widget._connection_established
         widget._on_confirmation()
 
         # Should be DISCONNECTED now
         await asyncio.sleep(2)
-        print('Connect button click with error')
+        print("Connect button click with error")
         assert not widget._connection_established
         throw = True
         widget._on_confirmation()
 
         # Should be DISCONNECTED now
         await asyncio.sleep(10)
-        print('Connect button click without error, connection loss later')
+        print("Connect button click without error, connection loss later")
         assert not widget._connection_established
         throw = False
         widget._on_confirmation()
 
         # Should be CONNECTED now
         await asyncio.sleep(10)
-        print('Connection loss')
+        print("Connection loss")
         assert widget._connection_established
         widget.on_connection_loss("You're half machine, half pussy!")
 
         # Should be DISCONNECTED now
         await asyncio.sleep(5)
-        print('Termination')
+        print("Termination")
         assert not widget._connection_established
         good_night_sweet_prince = True
         widget.close()
 
     async def on_connection_request(selected_port):
-        print('CONNECTION REQUESTED:', selected_port)
-        assert selected_port == 'SystemLocation'            # See above
+        print("CONNECTION REQUESTED:", selected_port)
+        assert selected_port == "SystemLocation"  # See above
 
         await asyncio.sleep(0.5)
-        widget.on_connection_initialization_progress_report('First stage', 0.2)
+        widget.on_connection_initialization_progress_report("First stage", 0.2)
 
         await asyncio.sleep(0.5)
-        widget.on_connection_initialization_progress_report('Second stage', 0.4)
+        widget.on_connection_initialization_progress_report("Second stage", 0.4)
 
         await asyncio.sleep(0.5)
-        widget.on_connection_initialization_progress_report('Third stage', 0.6)
+        widget.on_connection_initialization_progress_report("Third stage", 0.6)
 
         await asyncio.sleep(0.5)
-        widget.on_connection_initialization_progress_report('Fourth stage', 0.7)
+        widget.on_connection_initialization_progress_report("Fourth stage", 0.7)
 
         if throw:
-            raise RuntimeError('Houston we have a problem!')
+            raise RuntimeError("Houston we have a problem!")
 
         await asyncio.sleep(0.5)
-        widget.on_connection_initialization_progress_report('Success!', 1.0)
+        widget.on_connection_initialization_progress_report("Success!", 1.0)
 
-        from kucher.view.device_model_representation import SoftwareVersion, HardwareVersion
-        out = BasicDeviceInfo(name='com.zubax.whatever',
-                              description='Joo Janta 200 Super-Chromatic Peril Sensitive Sunglasses',
-                              globally_unique_id=b'0123456789abcdef',
-                              build_environment_description='',
-                              runtime_environment_description='',
-                              software_version=SoftwareVersion(),
-                              hardware_version=HardwareVersion())
+        from kucher.view.device_model_representation import (
+            SoftwareVersion,
+            HardwareVersion,
+        )
+
+        out = BasicDeviceInfo(
+            name="com.zubax.whatever",
+            description="Joo Janta 200 Super-Chromatic Peril Sensitive Sunglasses",
+            globally_unique_id=b"0123456789abcdef",
+            build_environment_description="",
+            runtime_environment_description="",
+            software_version=SoftwareVersion(),
+            hardware_version=HardwareVersion(),
+        )
         out.software_version.major = 1
         out.software_version.minor = 2
         out.software_version.dirty_build = True
@@ -386,20 +439,19 @@ def _unittest_connection_management_widget():
         return out
 
     async def on_disconnection_request():
-        print('DISCONNECTION REQUESTED')
+        print("DISCONNECTION REQUESTED")
         await asyncio.sleep(0.5)
 
     app = QApplication([])
 
-    widget = DeviceManagementWidget(None,
-                                    on_connection_request=on_connection_request,
-                                    on_disconnection_request=on_disconnection_request)
+    widget = DeviceManagementWidget(
+        None,
+        on_connection_request=on_connection_request,
+        on_disconnection_request=on_disconnection_request,
+    )
     widget.show()
 
-    asyncio.get_event_loop().run_until_complete(asyncio.gather(
-        run_events(),
-        walk()
-    ))
+    asyncio.get_event_loop().run_until_complete(asyncio.gather(run_events(), walk()))
 
     # Restore the global state carefully
     PortDiscoverer.get_ports = original_get_ports
