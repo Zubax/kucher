@@ -7,6 +7,3 @@
 [submodule "kucher/libraries/dataclasses"]
 	path = kucher/libraries/dataclasses
 	url = https://github.com/ericvsmith/dataclasses
-[submodule "kucher/libraries/qasync"]
-	path = kucher/libraries/qasync
-	url = https://github.com/silverv/qasync.git
