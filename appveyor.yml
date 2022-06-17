@@ -21,11 +21,12 @@ install:
   - cmd: "python3 -m pip install --upgrade pip"
   - cmd: "python3 -m pip install -r requirements.txt"
   - cmd: "python3 -m pip install -r requirements-dev-windows.txt"
+  - sh: "sudo add-apt-repository -y ppa:deadsnakes/ppa"
+  - sh: "sudo apt-get -y install python3.10-dev"
   - sh: "pip install --upgrade pip"
   - sh: "pip install -r requirements.txt"
   - sh: "pip install -r requirements-dev-linux.txt"
   - sh: "sudo apt-get update"
-  - sh: "sudo apt-get -y install python3.10-dev"
 #build: off
 
 test_script:
