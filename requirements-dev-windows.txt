@@ -9,6 +9,7 @@ wheel
 # Test dependencies
 pytest >= 7.*
 pycodestyle
+black == 22.*
 
 # Packaging tools
 PyInstaller ~= 3.3

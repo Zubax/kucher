@@ -36,12 +36,3 @@ test_script:
   # https://github.com/ariya/phantomjs/issues/14376
   - sh: "export QT_QPA_PLATFORM=offscreen"
   - sh: ". test_linux.sh"
-
-after_test:
-  - cmd: "7z a zubax-kucher.7z *"
-  - sh: "7z a zubax-kucher.7z *"
-  - "appveyor PushArtifact zubax-kucher.7z"
-  - sh: "bash build_linux.sh"
-  - cmd: "build_windows.bat"
-  - cmd: "appveyor PushArtifact dist\\Kucher.exe"
-  - sh: "appveyor PushArtifact dist/Kucher"
