@@ -7,7 +7,7 @@ setuptools
 wheel
 
 # Test dependencies
-pytest == 3.*
+pytest == 7.*
 black == 22.*
 
 # Packaging tools
