@@ -27,7 +27,7 @@ class PlaceholderWidget(StatusWidgetBase):
         super(PlaceholderWidget, self).__init__(parent)
 
         label = QLabel(self)
-        label.setText('Task-specific status information is not available')
+        label.setText("Task-specific status information is not available")
         label.setWordWrap(True)
         label.setAlignment(Qt.AlignCenter)
 

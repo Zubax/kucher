@@ -17,11 +17,27 @@ import asyncio
 import itertools
 from logging import getLogger
 from PyQt5.QtCore import Qt, QModelIndex
-from PyQt5.QtWidgets import QWidget, QTreeView, QHeaderView, QStyleOptionViewItem, QComboBox, QAbstractItemView, \
-    QLabel, QAction, QGridLayout
+from PyQt5.QtWidgets import (
+    QWidget,
+    QTreeView,
+    QHeaderView,
+    QStyleOptionViewItem,
+    QComboBox,
+    QAbstractItemView,
+    QLabel,
+    QAction,
+    QGridLayout,
+)
 
 from kucher.view.widgets import WidgetBase
-from kucher.view.utils import gui_test, make_button, lay_out_vertically, lay_out_horizontally, show_error, get_icon
+from kucher.view.utils import (
+    gui_test,
+    make_button,
+    lay_out_vertically,
+    lay_out_horizontally,
+    show_error,
+    get_icon,
+)
 from kucher.view.device_model_representation import Register
 
 from .model import Model
@@ -30,8 +46,8 @@ from .editor_delegate import EditorDelegate
 from .import_export_dialog import export_registers, import_registers
 
 
-READ_SELECTED_SHORTCUT = 'Ctrl+R'       # Like Reload
-RESET_SELECTED_SHORTCUT = 'Ctrl+D'      # Like Delete
+READ_SELECTED_SHORTCUT = "Ctrl+R"  # Like Reload
+RESET_SELECTED_SHORTCUT = "Ctrl+D"  # Like Delete
 
 
 _logger = getLogger(__name__)
@@ -45,57 +61,85 @@ class RegisterViewWidget(WidgetBase):
         self._running_task: asyncio.Task = None
 
         self._visibility_selector = QComboBox(self)
-        self._visibility_selector.addItem('Show all registers', lambda _: True)
-        self._visibility_selector.addItem('Only configuration parameters', lambda r: r.mutable and r.persistent)
+        self._visibility_selector.addItem("Show all registers", lambda _: True)
+        self._visibility_selector.addItem(
+            "Only configuration parameters", lambda r: r.mutable and r.persistent
+        )
 
         # noinspection PyUnresolvedReferences
-        self._visibility_selector.currentIndexChanged.connect(lambda _: self._on_visibility_changed())
+        self._visibility_selector.currentIndexChanged.connect(
+            lambda _: self._on_visibility_changed()
+        )
 
-        self._reset_selected_button = make_button(self, 'Reset selected',
-                                                  icon_name='clear-symbol',
-                                                  tool_tip=f'Reset the currently selected registers to their default '
-                                                           f'values. The restored values will be committed '
-                                                           f'immediately. This function is available only if a '
-                                                           f'default value is defined. [{RESET_SELECTED_SHORTCUT}]',
-                                                  on_clicked=self._do_reset_selected)
+        self._reset_selected_button = make_button(
+            self,
+            "Reset selected",
+            icon_name="clear-symbol",
+            tool_tip=f"Reset the currently selected registers to their default "
+            f"values. The restored values will be committed "
+            f"immediately. This function is available only if a "
+            f"default value is defined. [{RESET_SELECTED_SHORTCUT}]",
+            on_clicked=self._do_reset_selected,
+        )
 
-        self._reset_all_button = make_button(self, 'Reset all',
-                                             icon_name='skull-crossbones',
-                                             tool_tip=f'Reset the all registers to their default '
-                                                      f'values. The restored values will be committed '
-                                                      f'immediately.',
-                                             on_clicked=self._do_reset_all)
+        self._reset_all_button = make_button(
+            self,
+            "Reset all",
+            icon_name="skull-crossbones",
+            tool_tip=f"Reset the all registers to their default "
+            f"values. The restored values will be committed "
+            f"immediately.",
+            on_clicked=self._do_reset_all,
+        )
 
-        self._read_selected_button = make_button(self, 'Read selected',
-                                                 icon_name='process',
-                                                 tool_tip=f'Read the currently selected registers only '
-                                                          f'[{READ_SELECTED_SHORTCUT}]',
-                                                 on_clicked=self._do_read_selected)
+        self._read_selected_button = make_button(
+            self,
+            "Read selected",
+            icon_name="process",
+            tool_tip=f"Read the currently selected registers only "
+            f"[{READ_SELECTED_SHORTCUT}]",
+            on_clicked=self._do_read_selected,
+        )
 
-        self._read_all_button = make_button(self, 'Read all',
-                                            icon_name='process-plus',
-                                            tool_tip='Read all registers from the device',
-                                            on_clicked=self._do_read_all)
+        self._read_all_button = make_button(
+            self,
+            "Read all",
+            icon_name="process-plus",
+            tool_tip="Read all registers from the device",
+            on_clicked=self._do_read_all,
+        )
 
-        self._export_button = make_button(self, 'Export',
-                                          icon_name='export',
-                                          tool_tip='Export configuration parameters',
-                                          on_clicked=self._do_export)
+        self._export_button = make_button(
+            self,
+            "Export",
+            icon_name="export",
+            tool_tip="Export configuration parameters",
+            on_clicked=self._do_export,
+        )
 
-        self._import_button = make_button(self, 'Import',
-                                          icon_name='import',
-                                          tool_tip='Import configuration parameters',
-                                          on_clicked=self._do_import)
+        self._import_button = make_button(
+            self,
+            "Import",
+            icon_name="import",
+            tool_tip="Import configuration parameters",
+            on_clicked=self._do_import,
+        )
 
-        self._expand_all_button = make_button(self, '',
-                                              icon_name='expand-arrow',
-                                              tool_tip='Expand all namespaces',
-                                              on_clicked=lambda: self._tree.expandAll())
+        self._expand_all_button = make_button(
+            self,
+            "",
+            icon_name="expand-arrow",
+            tool_tip="Expand all namespaces",
+            on_clicked=lambda: self._tree.expandAll(),
+        )
 
-        self._collapse_all_button = make_button(self, '',
-                                                icon_name='collapse-arrow',
-                                                tool_tip='Collapse all namespaces',
-                                                on_clicked=lambda: self._tree.collapseAll())
+        self._collapse_all_button = make_button(
+            self,
+            "",
+            icon_name="collapse-arrow",
+            tool_tip="Collapse all namespaces",
+            on_clicked=lambda: self._tree.collapseAll(),
+        )
 
         self._status_display = QLabel(self)
         self._status_display.setWordWrap(True)
@@ -118,10 +162,12 @@ class RegisterViewWidget(WidgetBase):
         # Not sure about this one. This hardcoded value may look bad on some platforms.
         self._tree.setIndentation(20)
 
-        def add_action(callback: typing.Callable[[], None],
-                       icon_name: str,
-                       name: str,
-                       shortcut: typing.Optional[str] = None):
+        def add_action(
+            callback: typing.Callable[[], None],
+            icon_name: str,
+            name: str,
+            shortcut: typing.Optional[str] = None,
+        ):
             action = QAction(get_icon(icon_name), name, self)
             # noinspection PyUnresolvedReferences
             action.triggered.connect(callback)
@@ -131,29 +177,45 @@ class RegisterViewWidget(WidgetBase):
                 try:
                     action.setShortcutVisibleInContextMenu(True)
                 except AttributeError:
-                    pass                # This feature is not available in PyQt before 5.10
+                    pass  # This feature is not available in PyQt before 5.10
 
             self._tree.addAction(action)
 
-        add_action(self._do_read_all, 'process-plus', 'Read all registers')
-        add_action(self._do_read_selected, 'process', 'Read selected registers', READ_SELECTED_SHORTCUT)
-        add_action(self._do_reset_selected, 'clear-symbol', 'Reset selected to default', RESET_SELECTED_SHORTCUT)
+        add_action(self._do_read_all, "process-plus", "Read all registers")
+        add_action(
+            self._do_read_selected,
+            "process",
+            "Read selected registers",
+            READ_SELECTED_SHORTCUT,
+        )
+        add_action(
+            self._do_reset_selected,
+            "clear-symbol",
+            "Reset selected to default",
+            RESET_SELECTED_SHORTCUT,
+        )
 
         self._tree.setItemDelegateForColumn(
             int(Model.ColumnIndices.VALUE),
-            EditorDelegate(self._tree, self._display_status))
+            EditorDelegate(self._tree, self._display_status),
+        )
 
         # It doesn't seem to be explicitly documented, but it seems to be necessary to select either top or bottom
         # decoration position in order to be able to use center alignment. Left or right positions do not work here.
         self._tree.setItemDelegateForColumn(
             int(Model.ColumnIndices.FLAGS),
-            StyleOptionModifyingDelegate(self._tree,
-                                         decoration_position=QStyleOptionViewItem.Top,  # Important
-                                         decoration_alignment=Qt.AlignCenter))
+            StyleOptionModifyingDelegate(
+                self._tree,
+                decoration_position=QStyleOptionViewItem.Top,  # Important
+                decoration_alignment=Qt.AlignCenter,
+            ),
+        )
 
         header: QHeaderView = self._tree.header()
         header.setSectionResizeMode(QHeaderView.ResizeToContents)
-        header.setStretchLastSection(False)  # Horizontal scroll bar doesn't work if this is enabled
+        header.setStretchLastSection(
+            False
+        )  # Horizontal scroll bar doesn't work if this is enabled
 
         buttons_layout = QGridLayout()
         buttons_layout.addWidget(self._read_selected_button, 0, 0)
@@ -175,7 +237,7 @@ class RegisterViewWidget(WidgetBase):
                 self._expand_all_button,
                 self._collapse_all_button,
             ),
-            self._status_display
+            self._status_display,
         )
 
         self.setLayout(layout)
@@ -187,21 +249,27 @@ class RegisterViewWidget(WidgetBase):
         self._registers = list(registers)
         self._on_visibility_changed()
 
-    def _replace_model(self, register_visibility_predicate: typing.Callable[[Register], bool]):
+    def _replace_model(
+        self, register_visibility_predicate: typing.Callable[[Register], bool]
+    ):
         # Cancel all operations that might be pending on the old model
         self._cancel_task()
 
         old_model = self._tree.model()
 
         # Configure the new model
-        filtered_registers = list(filter(register_visibility_predicate, self._registers))
+        filtered_registers = list(
+            filter(register_visibility_predicate, self._registers)
+        )
         # It is important to set the Tree widget as the parent in order to let the widget take ownership
         new_model = Model(self._tree, filtered_registers)
-        _logger.info('New model %r', new_model)
+        _logger.info("New model %r", new_model)
         self._tree.setModel(new_model)
 
         # The selection model is implicitly replaced when we replace the model, so it has to be reconfigured
-        self._tree.selectionModel().selectionChanged.connect(lambda *_: self._on_selection_changed())
+        self._tree.selectionModel().selectionChanged.connect(
+            lambda *_: self._on_selection_changed()
+        )
 
         # TODO: Something fishy is going on. Something keeps the old model alive when we're replacing it.
         #       We could call deleteLater() on it, but it seems dangerous, because if that something ever decided
@@ -209,9 +277,14 @@ class RegisterViewWidget(WidgetBase):
         #       our hands. The horror!
         if old_model is not None:
             import gc
+
             model_referrers = gc.get_referrers(old_model)
             if len(model_referrers) > 1:
-                _logger.warning('Extra references to the old model %r: %r', old_model, model_referrers)
+                _logger.warning(
+                    "Extra references to the old model %r: %r",
+                    old_model,
+                    model_referrers,
+                )
 
         # Update the widget - all root items are expanded by default
         for row in itertools.count():
@@ -228,7 +301,7 @@ class RegisterViewWidget(WidgetBase):
         self._export_button.setEnabled(len(filtered_registers) > 0)
         self._import_button.setEnabled(len(filtered_registers) > 0)
 
-        self._display_status(f'{len(filtered_registers)} registers loaded')
+        self._display_status(f"{len(filtered_registers)} registers loaded")
 
     def _on_visibility_changed(self):
         self._replace_model(self._visibility_selector.currentData())
@@ -236,7 +309,9 @@ class RegisterViewWidget(WidgetBase):
     def _on_selection_changed(self):
         selected = self._get_selected_registers()
 
-        self._reset_selected_button.setEnabled(any(map(lambda r: r.has_default_value, selected)))
+        self._reset_selected_button.setEnabled(
+            any(map(lambda r: r.has_default_value, selected))
+        )
         self._read_selected_button.setEnabled(len(selected) > 0)
 
     def _do_read_selected(self):
@@ -244,7 +319,7 @@ class RegisterViewWidget(WidgetBase):
         if selected:
             self._read_specific(selected)
         else:
-            self._display_status('No registers are selected, nothing to read')
+            self._display_status("No registers are selected, nothing to read")
 
     def _do_reset_selected(self):
         rv = {}
@@ -274,55 +349,71 @@ class RegisterViewWidget(WidgetBase):
     def _read_specific(self, registers: typing.List[Register]):
         total_registers_read = None
 
-        def progress_callback(register: Register, current_register_index: int, total_registers: int):
+        def progress_callback(
+            register: Register, current_register_index: int, total_registers: int
+        ):
             nonlocal total_registers_read
             total_registers_read = total_registers
-            self._display_status(f'Reading {register.name!r} '
-                                 f'({current_register_index + 1} of {total_registers})')
+            self._display_status(
+                f"Reading {register.name!r} "
+                f"({current_register_index + 1} of {total_registers})"
+            )
 
         async def executor():
             try:
-                _logger.info('Reading registers: %r', [r.name for r in registers])
+                _logger.info("Reading registers: %r", [r.name for r in registers])
                 mod: Model = self._tree.model()
-                await mod.read(registers=registers,
-                               progress_callback=progress_callback)
+                await mod.read(registers=registers, progress_callback=progress_callback)
             except asyncio.CancelledError:
-                self._display_status(f'Read has been cancelled')
+                self._display_status(f"Read has been cancelled")
                 raise
             except Exception as ex:
-                _logger.exception('Register read failed')
-                show_error('Read failed', 'Could not read registers', repr(ex), self)
-                self._display_status(f'Could not read registers: {ex!r}')
+                _logger.exception("Register read failed")
+                show_error("Read failed", "Could not read registers", repr(ex), self)
+                self._display_status(f"Could not read registers: {ex!r}")
             else:
-                self._display_status(f'{total_registers_read} registers have been read')
+                self._display_status(f"{total_registers_read} registers have been read")
 
         self._cancel_task()
         self._running_task = asyncio.get_event_loop().create_task(executor())
 
-    def _write_specific(self, register_value_mapping: typing.Dict[Register, typing.Any]):
+    def _write_specific(
+        self, register_value_mapping: typing.Dict[Register, typing.Any]
+    ):
         total_registers_assigned = None
 
-        def progress_callback(register: Register, current_register_index: int, total_registers: int):
+        def progress_callback(
+            register: Register, current_register_index: int, total_registers: int
+        ):
             nonlocal total_registers_assigned
             total_registers_assigned = total_registers
-            self._display_status(f'Writing {register.name!r} '
-                                 f'({current_register_index + 1} of {total_registers})')
+            self._display_status(
+                f"Writing {register.name!r} "
+                f"({current_register_index + 1} of {total_registers})"
+            )
 
         async def executor():
             try:
-                _logger.info('Writing registers: %r', [r.name for r in register_value_mapping.keys()])
+                _logger.info(
+                    "Writing registers: %r",
+                    [r.name for r in register_value_mapping.keys()],
+                )
                 mod: Model = self._tree.model()
-                await mod.write(register_value_mapping=register_value_mapping,
-                                progress_callback=progress_callback)
+                await mod.write(
+                    register_value_mapping=register_value_mapping,
+                    progress_callback=progress_callback,
+                )
             except asyncio.CancelledError:
-                self._display_status(f'Write has been cancelled')
+                self._display_status(f"Write has been cancelled")
                 raise
             except Exception as ex:
-                _logger.exception('Register write failed')
-                show_error('Write failed', 'Could not read registers', repr(ex), self)
-                self._display_status(f'Could not write registers: {ex!r}')
+                _logger.exception("Register write failed")
+                show_error("Write failed", "Could not read registers", repr(ex), self)
+                self._display_status(f"Could not write registers: {ex!r}")
             else:
-                self._display_status(f'{total_registers_assigned} registers have been written')
+                self._display_status(
+                    f"{total_registers_assigned} registers have been written"
+                )
 
         self._cancel_task()
         self._running_task = asyncio.get_event_loop().create_task(executor())
@@ -345,7 +436,7 @@ class RegisterViewWidget(WidgetBase):
         except Exception:
             pass
         else:
-            _logger.info('A running task had to be cancelled: %r', self._running_task)
+            _logger.info("A running task had to be cancelled: %r", self._running_task)
         finally:
             self._running_task = None
 
@@ -381,9 +472,6 @@ def _unittest_register_tree_widget():
         await asyncio.sleep(10)
         good_night_sweet_prince = True
 
-    asyncio.get_event_loop().run_until_complete(asyncio.gather(
-        run_events(),
-        walk()
-    ))
+    asyncio.get_event_loop().run_until_complete(asyncio.gather(run_events(), walk()))
 
     win.close()

@@ -18,8 +18,14 @@ from dataclasses import dataclass
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QCheckBox, QComboBox, QLabel
 
-from kucher.view.device_model_representation import Commander, GeneralStatusView, ControlMode, TaskID, \
-    TaskSpecificStatusReport, get_human_friendly_control_mode_name_and_its_icon_name
+from kucher.view.device_model_representation import (
+    Commander,
+    GeneralStatusView,
+    ControlMode,
+    TaskID,
+    TaskSpecificStatusReport,
+    get_human_friendly_control_mode_name_and_its_icon_name,
+)
 from kucher.view.utils import get_icon, lay_out_vertically, lay_out_horizontally
 from kucher.view.widgets.spinbox_linked_with_slider import SpinboxLinkedWithSlider
 
@@ -31,9 +37,7 @@ _logger = getLogger(__name__)
 
 class RunControlWidget(SpecializedControlWidgetBase):
     # noinspection PyUnresolvedReferences,PyArgumentList
-    def __init__(self,
-                 parent:    QWidget,
-                 commander: Commander):
+    def __init__(self, parent: QWidget, commander: Commander):
         from . import STOP_SHORTCUT
 
         super(RunControlWidget, self).__init__(parent)
@@ -43,26 +47,35 @@ class RunControlWidget(SpecializedControlWidgetBase):
         self._last_status: typing.Optional[TaskSpecificStatusReport.Run] = None
 
         # noinspection PyTypeChecker
-        self._named_control_policies: typing.Dict[str, _ControlPolicy] = _make_named_control_policies()
+        self._named_control_policies: typing.Dict[
+            str, _ControlPolicy
+        ] = _make_named_control_policies()
 
-        self._guru_mode_checkbox = QCheckBox('Guru', self)
-        self._guru_mode_checkbox.setToolTip("The Guru Mode is dangerous! "
-                                            "Use it only if you know what you're doing, and be ready for problems.")
+        self._guru_mode_checkbox = QCheckBox("Guru", self)
+        self._guru_mode_checkbox.setToolTip(
+            "The Guru Mode is dangerous! "
+            "Use it only if you know what you're doing, and be ready for problems."
+        )
         self._guru_mode_checkbox.setStatusTip(self._guru_mode_checkbox.toolTip())
-        self._guru_mode_checkbox.setIcon(get_icon('guru'))
+        self._guru_mode_checkbox.setIcon(get_icon("guru"))
         self._guru_mode_checkbox.toggled.connect(self._on_guru_mode_toggled)
 
-        self._setpoint_control =\
-            SpinboxLinkedWithSlider(self,
-                                    slider_orientation=SpinboxLinkedWithSlider.SliderOrientation.HORIZONTAL)
-        self._setpoint_control.tool_tip = f'To stop the motor, press {STOP_SHORTCUT} or click the Stop button'
+        self._setpoint_control = SpinboxLinkedWithSlider(
+            self,
+            slider_orientation=SpinboxLinkedWithSlider.SliderOrientation.HORIZONTAL,
+        )
+        self._setpoint_control.tool_tip = (
+            f"To stop the motor, press {STOP_SHORTCUT} or click the Stop button"
+        )
         self._setpoint_control.status_tip = self._setpoint_control.tool_tip
         self._setpoint_control.value_change_event.connect(self._on_setpoint_changed)
         self._setpoint_control.spinbox.setKeyboardTracking(False)
 
         self._mode_selector = QComboBox(self)
         self._mode_selector.setEditable(False)
-        self._mode_selector.currentIndexChanged.connect(lambda *_: self._on_control_mode_changed())
+        self._mode_selector.currentIndexChanged.connect(
+            lambda *_: self._on_control_mode_changed()
+        )
         for name, cp in self._named_control_policies.items():
             if not cp.only_for_guru:
                 self._mode_selector.addItem(get_icon(cp.icon_name), name)
@@ -72,16 +85,16 @@ class RunControlWidget(SpecializedControlWidgetBase):
         self.setLayout(
             lay_out_vertically(
                 lay_out_horizontally(
-                    QLabel('Control mode', self),
+                    QLabel("Control mode", self),
                     self._mode_selector,
                     (None, 1),
-                    QLabel('Setpoint', self),
+                    QLabel("Setpoint", self),
                     (self._setpoint_control.spinbox, 1),
                     (None, 1),
                     self._guru_mode_checkbox,
                 ),
                 self._setpoint_control.slider,
-                (None, 1)
+                (None, 1),
             )
         )
 
@@ -104,7 +117,9 @@ class RunControlWidget(SpecializedControlWidgetBase):
             self.setEnabled(False)
             self._setpoint_control.value = 0
 
-        self._mode_selector.setEnabled((s.current_task_id == TaskID.IDLE) or self._guru_mode_checkbox.isChecked())
+        self._mode_selector.setEnabled(
+            (s.current_task_id == TaskID.IDLE) or self._guru_mode_checkbox.isChecked()
+        )
 
         if self.isEnabled() and (abs(self._setpoint_control.value) > 1e-6):
             # We do not emit zero setpoints periodically - that is not necessary because the device will
@@ -117,7 +132,7 @@ class RunControlWidget(SpecializedControlWidgetBase):
         cp = self._get_current_control_policy()
         value = self._setpoint_control.value
         if cp.is_ratiometric:
-            value *= 0.01           # Percent scaling
+            value *= 0.01  # Percent scaling
 
         self._launch_async(self._commander.run(mode=cp.mode, value=value))
 
@@ -127,7 +142,7 @@ class RunControlWidget(SpecializedControlWidgetBase):
 
     def _on_control_mode_changed(self):
         cp = self._get_current_control_policy()
-        _logger.info(f'New control mode: {cp}')
+        _logger.info(f"New control mode: {cp}")
 
         # Determining the initial value from the last received status
         if self._last_status is not None:
@@ -136,21 +151,27 @@ class RunControlWidget(SpecializedControlWidgetBase):
         else:
             initial_value = 0.0
 
-        _logger.info(f'Initial value of the new control mode: {initial_value} {cp.unit}')
+        _logger.info(
+            f"Initial value of the new control mode: {initial_value} {cp.unit}"
+        )
 
         assert cp.setpoint_range[1] > cp.setpoint_range[0]
         assert cp.setpoint_range[1] >= 0
         assert cp.setpoint_range[0] <= 0
 
-        self._setpoint_control.update_atomically(minimum=cp.setpoint_range[0],
-                                                 maximum=cp.setpoint_range[1],
-                                                 step=cp.setpoint_step,
-                                                 value=initial_value)
-        self._setpoint_control.spinbox.setSuffix(f' {cp.unit}')
+        self._setpoint_control.update_atomically(
+            minimum=cp.setpoint_range[0],
+            maximum=cp.setpoint_range[1],
+            step=cp.setpoint_step,
+            value=initial_value,
+        )
+        self._setpoint_control.spinbox.setSuffix(f" {cp.unit}")
         self._setpoint_control.slider_visible = cp.is_ratiometric
 
     def _on_guru_mode_toggled(self, active: bool):
-        _logger.warning(f'GURU MODE TOGGLED. New state: {"ACTIVE" if active else "inactive"}')
+        _logger.warning(
+            f'GURU MODE TOGGLED. New state: {"ACTIVE" if active else "inactive"}'
+        )
 
         if self._get_current_control_policy().only_for_guru:
             self.stop()
@@ -173,18 +194,20 @@ class RunControlWidget(SpecializedControlWidgetBase):
         # Updating the mode selector state - always enabled in guru mode
         self._mode_selector.setEnabled(active)
 
-    def _get_current_control_policy(self) -> '_ControlPolicy':
+    def _get_current_control_policy(self) -> "_ControlPolicy":
         return self._named_control_policies[self._mode_selector.currentText().strip()]
 
 
 @dataclass(frozen=True)
 class _ControlPolicy:
-    mode:                   ControlMode
-    unit:                   str
-    setpoint_range:         typing.Tuple[float, float]
-    setpoint_step:          float
-    only_for_guru:          bool
-    get_value_from_status:  typing.Callable[[TaskSpecificStatusReport.Run], float] = lambda _: 0.0
+    mode: ControlMode
+    unit: str
+    setpoint_range: typing.Tuple[float, float]
+    setpoint_step: float
+    only_for_guru: bool
+    get_value_from_status: typing.Callable[
+        [TaskSpecificStatusReport.Run], float
+    ] = lambda _: 0.0
 
     @property
     def icon_name(self) -> str:
@@ -196,7 +219,7 @@ class _ControlPolicy:
 
     @property
     def is_ratiometric(self) -> bool:
-        return 'ratiometric' in str(self.mode).lower()
+        return "ratiometric" in str(self.mode).lower()
 
 
 def _make_named_control_policies():
@@ -211,46 +234,56 @@ def _make_named_control_policies():
     def get_u_q(s: TaskSpecificStatusReport.Run) -> float:
         return s.u_dq[1]
 
-    return {cp.name: cp for cp in [
-        _ControlPolicy(mode=ControlMode.RATIOMETRIC_ANGULAR_VELOCITY,
-                       unit='%rad/s',
-                       setpoint_range=percent_range,
-                       setpoint_step=0.1,
-                       only_for_guru=False),
-
-        _ControlPolicy(mode=ControlMode.MECHANICAL_RPM,
-                       unit='RPM',
-                       setpoint_range=(-999999, +999999),  # 1e6 takes too much space
-                       setpoint_step=10.0,
-                       only_for_guru=False,
-                       get_value_from_status=get_rpm),
-
-        _ControlPolicy(mode=ControlMode.RATIOMETRIC_CURRENT,
-                       unit='%A',
-                       setpoint_range=percent_range,
-                       setpoint_step=0.1,
-                       only_for_guru=False),
-
-        _ControlPolicy(mode=ControlMode.CURRENT,
-                       unit='A',
-                       setpoint_range=(-1e3, +1e3),
-                       setpoint_step=0.1,
-                       only_for_guru=False,
-                       get_value_from_status=get_i_q),
-
-        _ControlPolicy(mode=ControlMode.RATIOMETRIC_VOLTAGE,
-                       unit='%V',
-                       setpoint_range=percent_range,
-                       setpoint_step=0.1,
-                       only_for_guru=True),
-
-        _ControlPolicy(mode=ControlMode.VOLTAGE,
-                       unit='V',
-                       setpoint_range=(-1e3, +1e3),
-                       setpoint_step=0.1,
-                       only_for_guru=True,
-                       get_value_from_status=get_u_q),
-    ]}
+    return {
+        cp.name: cp
+        for cp in [
+            _ControlPolicy(
+                mode=ControlMode.RATIOMETRIC_ANGULAR_VELOCITY,
+                unit="%rad/s",
+                setpoint_range=percent_range,
+                setpoint_step=0.1,
+                only_for_guru=False,
+            ),
+            _ControlPolicy(
+                mode=ControlMode.MECHANICAL_RPM,
+                unit="RPM",
+                setpoint_range=(-999999, +999999),  # 1e6 takes too much space
+                setpoint_step=10.0,
+                only_for_guru=False,
+                get_value_from_status=get_rpm,
+            ),
+            _ControlPolicy(
+                mode=ControlMode.RATIOMETRIC_CURRENT,
+                unit="%A",
+                setpoint_range=percent_range,
+                setpoint_step=0.1,
+                only_for_guru=False,
+            ),
+            _ControlPolicy(
+                mode=ControlMode.CURRENT,
+                unit="A",
+                setpoint_range=(-1e3, +1e3),
+                setpoint_step=0.1,
+                only_for_guru=False,
+                get_value_from_status=get_i_q,
+            ),
+            _ControlPolicy(
+                mode=ControlMode.RATIOMETRIC_VOLTAGE,
+                unit="%V",
+                setpoint_range=percent_range,
+                setpoint_step=0.1,
+                only_for_guru=True,
+            ),
+            _ControlPolicy(
+                mode=ControlMode.VOLTAGE,
+                unit="V",
+                setpoint_range=(-1e3, +1e3),
+                setpoint_step=0.1,
+                only_for_guru=True,
+                get_value_from_status=get_u_q,
+            ),
+        ]
+    }
 
 
 def _angular_velocity_to_rpm(radian_per_sec: float) -> float:

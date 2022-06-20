@@ -20,9 +20,21 @@ from dataclasses import dataclass
 # We keep it this way while the codebase is new and fluid. In the future we may want to come up with an
 # independent state representation in View, and add a converter into Fuhrer.
 # noinspection PyUnresolvedReferences
-from kucher.model.device_model import GeneralStatusView, TaskStatisticsView, TaskID, TaskSpecificStatusReport, Commander
+from kucher.model.device_model import (
+    GeneralStatusView,
+    TaskStatisticsView,
+    TaskID,
+    TaskSpecificStatusReport,
+    Commander,
+)
+
 # noinspection PyUnresolvedReferences
-from kucher.model.device_model import ControlMode, MotorIdentificationMode, LowLevelManipulationMode
+from kucher.model.device_model import (
+    ControlMode,
+    MotorIdentificationMode,
+    LowLevelManipulationMode,
+)
+
 # noinspection PyUnresolvedReferences
 from kucher.model.device_model import Register
 
@@ -30,13 +42,13 @@ from .utils import cached
 
 
 _TASK_ID_TO_ICON_MAPPING: typing.Dict[TaskID, str] = {
-    TaskID.IDLE:                   'sleep',
-    TaskID.FAULT:                  'skull',
-    TaskID.BEEP:                   'speaker',
-    TaskID.RUN:                    'running',
-    TaskID.HARDWARE_TEST:          'pass-fail',
-    TaskID.MOTOR_IDENTIFICATION:   'caliper',
-    TaskID.LOW_LEVEL_MANIPULATION: 'hand-button',
+    TaskID.IDLE: "sleep",
+    TaskID.FAULT: "skull",
+    TaskID.BEEP: "speaker",
+    TaskID.RUN: "running",
+    TaskID.HARDWARE_TEST: "pass-fail",
+    TaskID.MOTOR_IDENTIFICATION: "caliper",
+    TaskID.LOW_LEVEL_MANIPULATION: "hand-button",
 }
 
 
@@ -45,39 +57,52 @@ def get_icon_name_for_task_id(tid: TaskID) -> str:
     try:
         return _TASK_ID_TO_ICON_MAPPING[tid]
     except KeyError:
-        return 'question-mark'
+        return "question-mark"
 
 
 @cached
-def get_human_friendly_task_name(tid: TaskID,
-                                 multi_line=False,
-                                 short=False) -> str:
-    words = str(tid).split('.')[-1].split('_')
-    out = ' '.join([w.capitalize() for w in words])
+def get_human_friendly_task_name(tid: TaskID, multi_line=False, short=False) -> str:
+    words = str(tid).split(".")[-1].split("_")
+    out = " ".join([w.capitalize() for w in words])
 
-    if short and (' ' in out):      # If short name requested, collapse multi-word names into acronyms
-        out = ''.join([w[0].upper() for w in out.split()])
+    if short and (
+        " " in out
+    ):  # If short name requested, collapse multi-word names into acronyms
+        out = "".join([w[0].upper() for w in out.split()])
 
     if multi_line:
-        out = '\n'.join(out.rsplit(' ', 1))
+        out = "\n".join(out.rsplit(" ", 1))
 
     return out
 
 
 @cached
-def get_human_friendly_control_mode_name_and_its_icon_name(control_mode: ControlMode,
-                                                           short=False) -> typing.Tuple[str, str]:
+def get_human_friendly_control_mode_name_and_its_icon_name(
+    control_mode: ControlMode, short=False
+) -> typing.Tuple[str, str]:
     try:
         full_name, short_name, icon_name = {
-            ControlMode.RATIOMETRIC_CURRENT:            ('Ratiometric current',     '%A',       'muscle-percent'),
-            ControlMode.RATIOMETRIC_ANGULAR_VELOCITY:   ('Ratiometric RPM',         '%\u03C9',  'rotation-percent'),
-            ControlMode.RATIOMETRIC_VOLTAGE:            ('Ratiometric voltage',     '%V',       'voltage-percent'),
-            ControlMode.CURRENT:                        ('Current',                 'A',        'muscle'),
-            ControlMode.MECHANICAL_RPM:                 ('Mechanical RPM',          'RPM',      'rotation'),
-            ControlMode.VOLTAGE:                        ('Voltage',                 'V',        'voltage'),
+            ControlMode.RATIOMETRIC_CURRENT: (
+                "Ratiometric current",
+                "%A",
+                "muscle-percent",
+            ),
+            ControlMode.RATIOMETRIC_ANGULAR_VELOCITY: (
+                "Ratiometric RPM",
+                "%\u03C9",
+                "rotation-percent",
+            ),
+            ControlMode.RATIOMETRIC_VOLTAGE: (
+                "Ratiometric voltage",
+                "%V",
+                "voltage-percent",
+            ),
+            ControlMode.CURRENT: ("Current", "A", "muscle"),
+            ControlMode.MECHANICAL_RPM: ("Mechanical RPM", "RPM", "rotation"),
+            ControlMode.VOLTAGE: ("Voltage", "V", "voltage"),
         }[control_mode]
     except KeyError:
-        return str(control_mode).split('.')[-1].replace('_', ' '), 'question-mark'
+        return str(control_mode).split(".")[-1].replace("_", " "), "question-mark"
     else:
         return (short_name if short else full_name), icon_name
 
@@ -104,10 +129,10 @@ class HardwareVersion:
 
 @dataclass
 class BasicDeviceInfo:
-    name:                               str
-    description:                        str
-    build_environment_description:      str
-    runtime_environment_description:    str
-    software_version:                   SoftwareVersion
-    hardware_version:                   HardwareVersion
-    globally_unique_id:                 bytes
+    name: str
+    description: str
+    build_environment_description: str
+    runtime_environment_description: str
+    software_version: SoftwareVersion
+    hardware_version: HardwareVersion
+    globally_unique_id: bytes

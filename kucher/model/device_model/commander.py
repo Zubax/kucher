@@ -15,8 +15,14 @@
 import typing
 from logging import getLogger
 from .communicator import MessageType, Message
-from .general_status_view import ControlMode, MotorIdentificationMode, LowLevelManipulationMode,\
-    CONTROL_MODE_MAPPING, LOW_LEVEL_MANIPULATION_MODE_MAPPING, MOTOR_IDENTIFICATION_MODE_MAPPING
+from .general_status_view import (
+    ControlMode,
+    MotorIdentificationMode,
+    LowLevelManipulationMode,
+    CONTROL_MODE_MAPPING,
+    LOW_LEVEL_MANIPULATION_MODE_MAPPING,
+    MOTOR_IDENTIFICATION_MODE_MAPPING,
+)
 
 
 SendCommandFunction = typing.Callable[[Message], typing.Awaitable[None]]
@@ -40,56 +46,67 @@ class Commander:
         try:
             mode = self._reverse_control_mode_mapping[mode]
         except KeyError:
-            raise ValueError(f'Unsupported control mode: {mode!r}') from None
+            raise ValueError(f"Unsupported control mode: {mode!r}") from None
         else:
-            await self._send('run', mode=mode, value=float(value))
+            await self._send("run", mode=mode, value=float(value))
 
     async def stop(self):
-        _logger.info('Requesting stop')
-        await self._send('idle')
+        _logger.info("Requesting stop")
+        await self._send("idle")
 
     async def beep(self, frequency: float, duration: float):
         frequency = float(frequency)
         duration = float(duration)
-        _logger.info(f'Requesting beep at {frequency:.3f} Hz for {duration:.3} seconds')
-        await self._send('beep', frequency=frequency, duration=duration)
+        _logger.info(f"Requesting beep at {frequency:.3f} Hz for {duration:.3} seconds")
+        await self._send("beep", frequency=frequency, duration=duration)
 
     async def begin_hardware_test(self):
-        _logger.info('Requesting hardware test')
-        await self._send('hardware_test')
+        _logger.info("Requesting hardware test")
+        await self._send("hardware_test")
 
     async def begin_motor_identification(self, mode: MotorIdentificationMode):
-        _logger.info(f'Requesting motor ID with mode {mode!r}')
+        _logger.info(f"Requesting motor ID with mode {mode!r}")
         try:
             mode = self._reverse_motor_id_mode_mapping[mode]
         except KeyError:
-            raise ValueError(f'Unsupported motor identification mode: {mode!r}') from None
+            raise ValueError(
+                f"Unsupported motor identification mode: {mode!r}"
+            ) from None
         else:
-            await self._send('motor_identification', mode=mode)
+            await self._send("motor_identification", mode=mode)
 
-    async def low_level_manipulate(self, mode: LowLevelManipulationMode, *parameters: float):
+    async def low_level_manipulate(
+        self, mode: LowLevelManipulationMode, *parameters: float
+    ):
         parameters = list(map(float, parameters))
         while len(parameters) < 4:
             parameters.append(0.0)
 
         if len(parameters) > 4:
-            raise ValueError(f'Too many parameters: {parameters!r}')
+            raise ValueError(f"Too many parameters: {parameters!r}")
 
-        assert len(parameters) == 4, 'Logic error'
+        assert len(parameters) == 4, "Logic error"
 
         try:
             mode = self._reverse_llm_mode_mapping[mode]
         except KeyError:
-            raise ValueError(f'Unsupported low-level manipulation mode: {mode!r}') from None
+            raise ValueError(
+                f"Unsupported low-level manipulation mode: {mode!r}"
+            ) from None
         else:
-            await self._send('low_level_manipulation', mode=mode, parameters=parameters)
+            await self._send("low_level_manipulation", mode=mode, parameters=parameters)
 
     async def emergency(self):
-        await self._send('fault', magic=0xBADC0FFE)
-        _logger.info('Emergency command sent')
+        await self._send("fault", magic=0xBADC0FFE)
+        _logger.info("Emergency command sent")
 
     async def _send(self, converted_task_id: str, **kwargs):
-        await self._sender(Message(MessageType.COMMAND, {
-            'task_id': converted_task_id,
-            'task_specific_command': kwargs,
-        }))
+        await self._sender(
+            Message(
+                MessageType.COMMAND,
+                {
+                    "task_id": converted_task_id,
+                    "task_specific_command": kwargs,
+                },
+            )
+        )

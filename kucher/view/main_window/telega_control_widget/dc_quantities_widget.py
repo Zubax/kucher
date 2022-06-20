@@ -16,49 +16,55 @@ from PyQt5.QtWidgets import QWidget
 
 from kucher.view.utils import gui_test
 from kucher.view.monitored_quantity import MonitoredQuantity, MonitoredQuantityPresenter
-from kucher.view.widgets.value_display_group_widget import ValueDisplayGroupWidget, ValueDisplayWidget
+from kucher.view.widgets.value_display_group_widget import (
+    ValueDisplayGroupWidget,
+    ValueDisplayWidget,
+)
 
 
 class DCQuantitiesWidget(ValueDisplayGroupWidget):
     # noinspection PyArgumentList,PyCallingNonCallable
     def __init__(self, parent: QWidget):
-        super(DCQuantitiesWidget, self).__init__(parent,
-                                                 'DC quantities',
-                                                 'electricity',
-                                                 with_comments=True)
+        super(DCQuantitiesWidget, self).__init__(
+            parent, "DC quantities", "electricity", with_comments=True
+        )
         dp = MonitoredQuantityPresenter.DisplayParameters
         style = ValueDisplayWidget.Style
-        placeholder = 'N/A'
+        placeholder = "N/A"
 
-        self._voltage = MonitoredQuantityPresenter(self.create_value_display('Voltage', placeholder),
-                                                   '%.1f V',
-                                                   params_default=dp(comment='OK',
-                                                                     icon_name='ok'),
-                                                   params_when_low=dp(comment='Undervoltage',
-                                                                      icon_name='overload-negative',
-                                                                      style=style.ALERT_LOW),
-                                                   params_when_high=dp(comment='Overvoltage',
-                                                                       icon_name='overload',
-                                                                       style=style.ALERT_HIGH))
+        self._voltage = MonitoredQuantityPresenter(
+            self.create_value_display("Voltage", placeholder),
+            "%.1f V",
+            params_default=dp(comment="OK", icon_name="ok"),
+            params_when_low=dp(
+                comment="Undervoltage",
+                icon_name="overload-negative",
+                style=style.ALERT_LOW,
+            ),
+            params_when_high=dp(
+                comment="Overvoltage", icon_name="overload", style=style.ALERT_HIGH
+            ),
+        )
 
-        self._current = MonitoredQuantityPresenter(self.create_value_display('Current', placeholder),
-                                                   '%.1f A',
-                                                   params_default=dp(comment='OK',
-                                                                     icon_name='ok'),
-                                                   params_when_low=dp(comment='Recuperation overcurrent',
-                                                                      icon_name='overload-negative',
-                                                                      style=style.ALERT_LOW),
-                                                   params_when_high=dp(comment='Overcurrent',
-                                                                       icon_name='overload',
-                                                                       style=style.ALERT_HIGH))
+        self._current = MonitoredQuantityPresenter(
+            self.create_value_display("Current", placeholder),
+            "%.1f A",
+            params_default=dp(comment="OK", icon_name="ok"),
+            params_when_low=dp(
+                comment="Recuperation overcurrent",
+                icon_name="overload-negative",
+                style=style.ALERT_LOW,
+            ),
+            params_when_high=dp(
+                comment="Overcurrent", icon_name="overload", style=style.ALERT_HIGH
+            ),
+        )
 
-        self._power = MonitoredQuantityPresenter(self.create_value_display('Power', placeholder),
-                                                 '%.0f W')
+        self._power = MonitoredQuantityPresenter(
+            self.create_value_display("Power", placeholder), "%.0f W"
+        )
 
-    def set(self,
-            voltage: MonitoredQuantity,
-            current: MonitoredQuantity,
-            power:   float):
+    def set(self, voltage: MonitoredQuantity, current: MonitoredQuantity, power: float):
         self._voltage.display(voltage)
         self._current.display(current)
         self._power.display(power)
@@ -69,6 +75,7 @@ class DCQuantitiesWidget(ValueDisplayGroupWidget):
 def _unittest_dc_quantities_widget():
     import time
     from PyQt5.QtWidgets import QApplication, QMainWindow
+
     app = QApplication([])
 
     win = QMainWindow()
@@ -89,9 +96,13 @@ def _unittest_dc_quantities_widget():
     run_a_bit()
     do_set(12.34, 56.78)
     run_a_bit()
-    do_set(MonitoredQuantity(123, alert.TOO_HIGH), MonitoredQuantity(-56.78, alert.TOO_LOW))
+    do_set(
+        MonitoredQuantity(123, alert.TOO_HIGH), MonitoredQuantity(-56.78, alert.TOO_LOW)
+    )
     run_a_bit()
-    do_set(MonitoredQuantity(9, alert.TOO_LOW), MonitoredQuantity(156.78, alert.TOO_HIGH))
+    do_set(
+        MonitoredQuantity(9, alert.TOO_LOW), MonitoredQuantity(156.78, alert.TOO_HIGH)
+    )
     run_a_bit()
 
     win.close()

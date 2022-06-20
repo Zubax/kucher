@@ -7,8 +7,8 @@ setuptools
 wheel
 
 # Test dependencies
-pytest >= 3.3
-pycodestyle
+pytest == 7.*
+black == 22.*
 
 # Packaging tools
-PyInstaller ~= 3.3
+PyInstaller == 5.*

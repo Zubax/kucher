@@ -21,19 +21,25 @@ from .base import SpecializedControlWidgetBase
 
 
 class HardwareTestControlWidget(SpecializedControlWidgetBase):
-    def __init__(self,
-                 parent:    QWidget,
-                 commander: Commander):
+    def __init__(self, parent: QWidget, commander: Commander):
         super(HardwareTestControlWidget, self).__init__(parent)
 
         self._commander = commander
 
         self.setLayout(
             lay_out_vertically(
-                QLabel('The motor must be connected in order for the self test to succeed.', self),
+                QLabel(
+                    "The motor must be connected in order for the self test to succeed.",
+                    self,
+                ),
                 lay_out_horizontally(
                     (None, 1),
-                    make_button(self, text='Run self-test', icon_name='play', on_clicked=self._execute),
+                    make_button(
+                        self,
+                        text="Run self-test",
+                        icon_name="play",
+                        on_clicked=self._execute,
+                    ),
                     (None, 1),
                 ),
                 (None, 1),
@@ -44,11 +50,13 @@ class HardwareTestControlWidget(SpecializedControlWidgetBase):
         self.setEnabled(False)
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        if s.current_task_id in (TaskID.RUN,
-                                 TaskID.BEEP,
-                                 TaskID.HARDWARE_TEST,
-                                 TaskID.LOW_LEVEL_MANIPULATION,
-                                 TaskID.MOTOR_IDENTIFICATION):
+        if s.current_task_id in (
+            TaskID.RUN,
+            TaskID.BEEP,
+            TaskID.HARDWARE_TEST,
+            TaskID.LOW_LEVEL_MANIPULATION,
+            TaskID.MOTOR_IDENTIFICATION,
+        ):
             self.setEnabled(False)
         else:
             self.setEnabled(True)

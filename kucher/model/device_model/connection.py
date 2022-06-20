@@ -16,7 +16,13 @@ import time
 import popcop
 import typing
 import asyncio
-from .communicator import Communicator, MessageType, Message, CommunicationChannelClosedException, AnyMessage
+from .communicator import (
+    Communicator,
+    MessageType,
+    Message,
+    CommunicationChannelClosedException,
+    AnyMessage,
+)
 from .device_info_view import DeviceInfoView
 from .general_status_view import GeneralStatusView
 from . import register
@@ -56,25 +62,34 @@ class Connection:
     If it is detected that the connection is lost, a callback will be invoked.
     """
 
-    def __init__(self,
-                 event_loop:                    asyncio.AbstractEventLoop,
-                 communicator:                  Communicator,
-                 device_info:                   DeviceInfoView,
-                 initial_register_data_msgs:    typing.List[popcop.standard.register.DataResponseMessage],
-                 general_status_with_ts:        typing.Tuple[float, GeneralStatusView],
-                 on_connection_loss:            typing.Callable[[typing.Union[str, Exception]], None],
-                 on_general_status_update:      typing.Callable[[float, GeneralStatusView], None],
-                 on_log_line:                   typing.Callable[[float, str], None],
-                 general_status_update_period:  float):
+    def __init__(
+        self,
+        event_loop: asyncio.AbstractEventLoop,
+        communicator: Communicator,
+        device_info: DeviceInfoView,
+        initial_register_data_msgs: typing.List[
+            popcop.standard.register.DataResponseMessage
+        ],
+        general_status_with_ts: typing.Tuple[float, GeneralStatusView],
+        on_connection_loss: typing.Callable[[typing.Union[str, Exception]], None],
+        on_general_status_update: typing.Callable[[float, GeneralStatusView], None],
+        on_log_line: typing.Callable[[float, str], None],
+        general_status_update_period: float,
+    ):
         self._event_loop = event_loop
         self._com: Communicator = communicator
         self._device_info = device_info
         self._last_general_status_with_timestamp = general_status_with_ts
         self._general_status_update_period = general_status_update_period
 
-        self._registers: typing.Dict[str, Register] = self._build_register_model(initial_register_data_msgs)
-        _logger.info('Constructed %d register model objects:\n%s\n',
-                     len(self._registers), '\n'.join(map(str, self._registers.values())))
+        self._registers: typing.Dict[str, Register] = self._build_register_model(
+            initial_register_data_msgs
+        )
+        _logger.info(
+            "Constructed %d register model objects:\n%s\n",
+            len(self._registers),
+            "\n".join(map(str, self._registers.values())),
+        )
 
         self._on_connection_loss = on_connection_loss
         self._on_general_status_update = on_general_status_update
@@ -89,7 +104,9 @@ class Connection:
         return self._device_info
 
     @property
-    def last_general_status_with_timestamp(self) -> typing.Tuple[float, GeneralStatusView]:
+    def last_general_status_with_timestamp(
+        self,
+    ) -> typing.Tuple[float, GeneralStatusView]:
         return self._last_general_status_with_timestamp
 
     @property
@@ -100,74 +117,90 @@ class Connection:
         return self._registers
 
     async def disconnect(self):
-        self._on_connection_loss = lambda *_: None     # Suppress further reporting
+        self._on_connection_loss = lambda *_: None  # Suppress further reporting
 
         # noinspection PyBroadException
         try:
             await self._com.close()
         except Exception:
-            _logger.exception('Could not properly close the communicator. '
-                              'The communicator is a big boy and should be able to sort its stuff out on its own. '
-                              'Hey communicator, you suck!')
+            _logger.exception(
+                "Could not properly close the communicator. "
+                "The communicator is a big boy and should be able to sort its stuff out on its own. "
+                "Hey communicator, you suck!"
+            )
 
     async def send(self, message: typing.Union[Message, popcop.standard.MessageBase]):
         try:
             await self._com.send(message)
         except CommunicationChannelClosedException as ex:
-            raise ConnectionNotEstablishedException('Could not send the message because the communication channel is '
-                                                    'closed') from ex
+            raise ConnectionNotEstablishedException(
+                "Could not send the message because the communication channel is "
+                "closed"
+            ) from ex
 
-    async def request(self,
-                      message_or_type: typing.Union[Message,
-                                                    MessageType,
-                                                    popcop.standard.MessageBase,
-                                                    typing.Type[popcop.standard.MessageBase]],
-                      timeout: typing.Optional[typing.Union[float, int]] = None,
-                      predicate: typing.Optional[typing.Callable[[typing.Union[Message,
-                                                                               popcop.standard.MessageBase]],
-                                                                 bool]] = None) ->\
-            typing.Union[Message, popcop.standard.MessageBase]:
+    async def request(
+        self,
+        message_or_type: typing.Union[
+            Message,
+            MessageType,
+            popcop.standard.MessageBase,
+            typing.Type[popcop.standard.MessageBase],
+        ],
+        timeout: typing.Optional[typing.Union[float, int]] = None,
+        predicate: typing.Optional[
+            typing.Callable[[typing.Union[Message, popcop.standard.MessageBase]], bool]
+        ] = None,
+    ) -> typing.Union[Message, popcop.standard.MessageBase]:
         try:
-            return await self._com.request(message_or_type,
-                                           timeout=timeout,
-                                           predicate=predicate)
+            return await self._com.request(
+                message_or_type, timeout=timeout, predicate=predicate
+            )
         except CommunicationChannelClosedException as ex:
-            raise ConnectionNotEstablishedException('Could not complete the request because the communication channel '
-                                                    'is closed') from ex
+            raise ConnectionNotEstablishedException(
+                "Could not complete the request because the communication channel "
+                "is closed"
+            ) from ex
 
     async def _handle_connection_loss(self, reason: typing.Union[str, Exception]):
         # noinspection PyBroadException
         try:
             self._on_connection_loss(reason)
         except Exception:
-            _logger.exception('Unhandled exception in the connection loss callback')
+            _logger.exception("Unhandled exception in the connection loss callback")
 
         await self.disconnect()
 
     async def _status_monitoring_task_entry_point(self):
         request_errors = 0
         while True:
-            await asyncio.sleep(self._general_status_update_period, loop=self._event_loop)
+            await asyncio.sleep(self._general_status_update_period)
 
-            response = await self._com.request(MessageType.GENERAL_STATUS,
-                                               timeout=STATUS_REQUEST_TIMEOUT)
+            response = await self._com.request(
+                MessageType.GENERAL_STATUS, timeout=STATUS_REQUEST_TIMEOUT
+            )
             if not response:
                 request_errors += 1
                 if request_errors >= 3:
                     request_errors = 0
-                    raise ConnectionLostException('Three general status requests have timed out')
+                    raise ConnectionLostException(
+                        "Three general status requests have timed out"
+                    )
 
                     assert isinstance(response, Message)
                     assert response.type == MessageType.GENERAL_STATUS
 
                     if prev.timestamp > new.timestamp:
-                        raise ConnectionLostException('Device has been restarted, connection lost')
+                        raise ConnectionLostException(
+                            "Device has been restarted, connection lost"
+                        )
             else:
                 prev = self._last_general_status_with_timestamp[1]
                 new = GeneralStatusView.populate(response.fields)
                 request_errors = 0
                 self._last_general_status_with_timestamp = response.timestamp, new
-                self._on_general_status_update(*self._last_general_status_with_timestamp)
+                self._on_general_status_update(
+                    *self._last_general_status_with_timestamp
+                )
 
     async def _receiver_task_entry_point(self):
         while True:
@@ -177,11 +210,13 @@ class Connection:
             if isinstance(item, popcop.standard.register.DataResponseMessage):
                 try:
                     # noinspection PyProtectedMember
-                    self._registers[item.name]._sync(item.value, item.timestamp, ts_mono)
+                    self._registers[item.name]._sync(
+                        item.value, item.timestamp, ts_mono
+                    )
                 except KeyError:
-                    _logger.exception('Unknown register name: %r', item.name)
+                    _logger.exception("Unknown register name: %r", item.name)
             else:
-                _logger.warning('Unattended message: %r', item)
+                _logger.warning("Unattended message: %r", item)
 
     async def _log_reader_task_entry_point(self):
         while True:
@@ -191,54 +226,65 @@ class Connection:
 
     def _launch_task(self, target):
         async def proxy():
-            _logger.info('Starting task %r', target)
+            _logger.info("Starting task %r", target)
             # noinspection PyBroadException
             try:
                 await target()
             except CommunicationChannelClosedException as ex:
-                _logger.info('Task %r is stopping because the communication channel is closed: %r', target, ex)
+                _logger.info(
+                    "Task %r is stopping because the communication channel is closed: %r",
+                    target,
+                    ex,
+                )
                 await self._handle_connection_loss(ex)
             except Exception as ex:
-                _logger.exception('Unhandled exception in the task %r', target)
+                _logger.exception("Unhandled exception in the task %r", target)
                 await self._handle_connection_loss(ex)
             else:
-                _logger.error('Unexpected termination of the task %r', target)
-                await self._handle_connection_loss('Unknown reason')    # Should never happen!
+                _logger.error("Unexpected termination of the task %r", target)
+                await self._handle_connection_loss(
+                    "Unknown reason"
+                )  # Should never happen!
             finally:
-                _logger.info('Task %r has stopped', target)
+                _logger.info("Task %r has stopped", target)
 
         self._event_loop.create_task(proxy())
 
-    def _curry_register_set_get_executor(self,
-                                         name: str,
-                                         type_id: popcop.standard.register.ValueType) -> register.SetGetCallback:
+    def _curry_register_set_get_executor(
+        self, name: str, type_id: popcop.standard.register.ValueType
+    ) -> register.SetGetCallback:
         """
         Returns an awaitable async function that modifies register state on the device itself.
         The function is bound to a particular register, whose name and type are specified in the arguments.
         """
+
         def predicate(item: AnyMessage) -> bool:
             if isinstance(item, popcop.standard.register.DataResponseMessage):
                 return item.name == name
 
         async def executor(value: typing.Optional[register.StrictValueTypeAnnotation]):
             from popcop.standard.register import DataRequestMessage, DataResponseMessage
+
             if value is None:
-                msg = DataRequestMessage(name=name)     # None means that we're not setting the value, only reading
+                msg = DataRequestMessage(
+                    name=name
+                )  # None means that we're not setting the value, only reading
             else:
-                msg = DataRequestMessage(name=name,
-                                         type_id=type_id,
-                                         value=value)
+                msg = DataRequestMessage(name=name, type_id=type_id, value=value)
             resp = await self.request(msg, predicate=predicate)
-            _logger.info('Register set/get result: %r -> %r', msg, resp)
+            _logger.info("Register set/get result: %r -> %r", msg, resp)
             assert isinstance(resp, DataResponseMessage)
             assert msg.name == resp.name == name
             return resp.value, resp.timestamp, time.monotonic()
 
         return executor
 
-    def _build_register_model(self,
-                              initial_register_data_msgs: typing.List[popcop.standard.register.DataResponseMessage]) \
-            -> typing.Dict[str, Register]:
+    def _build_register_model(
+        self,
+        initial_register_data_msgs: typing.List[
+            popcop.standard.register.DataResponseMessage
+        ],
+    ) -> typing.Dict[str, Register]:
         index: typing.Dict[str, popcop.standard.register.DataResponseMessage] = {
             m.name: m for m in initial_register_data_msgs
         }
@@ -249,35 +295,44 @@ class Connection:
                 if msg.type_id == type_id:
                     return msg.value
                 else:
-                    _logger.error('Meta register type mismatch: expected %r, found %r', type_id, msg)
+                    _logger.error(
+                        "Meta register type mismatch: expected %r, found %r",
+                        type_id,
+                        msg,
+                    )
 
-        suffix_default = '='
-        suffix_min = '<'
-        suffix_max = '>'
+        suffix_default = "="
+        suffix_min = "<"
+        suffix_max = ">"
 
         out = {}
         for m in initial_register_data_msgs:
             if m.name[-1] not in (suffix_default, suffix_min, suffix_max):
-                out[m.name] = \
-                    Register(name=m.name,
-                             value=m.value,
-                             default_value=find_meta_value(m.name, m.type_id, suffix_default),
-                             min_value=find_meta_value(m.name, m.type_id, suffix_min),
-                             max_value=find_meta_value(m.name, m.type_id, suffix_max),
-                             type_id=m.type_id,
-                             update_timestamp_device_time=m.timestamp,
-                             flags=m.flags,
-                             set_get_callback=self._curry_register_set_get_executor(m.name, m.type_id))
+                out[m.name] = Register(
+                    name=m.name,
+                    value=m.value,
+                    default_value=find_meta_value(m.name, m.type_id, suffix_default),
+                    min_value=find_meta_value(m.name, m.type_id, suffix_min),
+                    max_value=find_meta_value(m.name, m.type_id, suffix_max),
+                    type_id=m.type_id,
+                    update_timestamp_device_time=m.timestamp,
+                    flags=m.flags,
+                    set_get_callback=self._curry_register_set_get_executor(
+                        m.name, m.type_id
+                    ),
+                )
         return out
 
 
-async def connect(event_loop:                   asyncio.AbstractEventLoop,
-                  port_name:                    str,
-                  on_connection_loss:           typing.Callable[[typing.Union[str, Exception]], None],
-                  on_general_status_update:     typing.Callable[[float, GeneralStatusView], None],
-                  on_log_line:                  typing.Callable[[float, str], None],
-                  on_progress_report:           typing.Optional[typing.Callable[[str, float], None]],
-                  general_status_update_period: float) -> Connection:
+async def connect(
+    event_loop: asyncio.AbstractEventLoop,
+    port_name: str,
+    on_connection_loss: typing.Callable[[typing.Union[str, Exception]], None],
+    on_general_status_update: typing.Callable[[float, GeneralStatusView], None],
+    on_log_line: typing.Callable[[float, str], None],
+    on_progress_report: typing.Optional[typing.Callable[[str, float], None]],
+    general_status_update_period: float,
+) -> Connection:
     begun_at = time.monotonic()
     progress = 0.0
 
@@ -285,71 +340,94 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
         nonlocal progress
         assert progress_increment > 0
         progress = min(1.0, progress + progress_increment)
-        _logger.debug('Connection process on port %r reached a new stage %r', port_name, stage)
+        _logger.debug(
+            "Connection process on port %r reached a new stage %r", port_name, stage
+        )
         if on_progress_report:
             on_progress_report(stage, progress)
 
-    report('I/O initialization')
+    report("I/O initialization")
     com = await Communicator.new(port_name, event_loop)
 
     try:
-        report('Device detection')
+        report("Device detection")
         node_info = await com.request(popcop.standard.NodeInfoMessage)
 
-        _logger.info('Node info of the connected device: %r', node_info)
+        _logger.info("Node info of the connected device: %r", node_info)
         if not node_info:
-            raise ConnectionAttemptFailedException('Node info request has timed out')
+            raise ConnectionAttemptFailedException("Node info request has timed out")
 
         assert isinstance(node_info, popcop.standard.NodeInfoMessage)
-        if node_info.node_name != 'com.zubax.telega':
-            raise IncompatibleDeviceException(f'The connected device is not compatible with this software: '
-                                              f'{node_info}')
+        if node_info.node_name != "com.zubax.telega":
+            raise IncompatibleDeviceException(
+                f"The connected device is not compatible with this software: "
+                f"{node_info}"
+            )
 
         if node_info.mode == popcop.standard.NodeInfoMessage.Mode.BOOTLOADER:
-            raise IncompatibleDeviceException('The connected device is in the bootloader mode. '
-                                              'This mode is not yet supported (but soon will be).')
+            raise IncompatibleDeviceException(
+                "The connected device is in the bootloader mode. "
+                "This mode is not yet supported (but soon will be)."
+            )
 
         if node_info.mode != popcop.standard.NodeInfoMessage.Mode.NORMAL:
-            raise IncompatibleDeviceException(f'The connected device is in a wrong mode: {node_info.mode}')
+            raise IncompatibleDeviceException(
+                f"The connected device is in a wrong mode: {node_info.mode}"
+            )
 
         # Configuring the communicator to use a specific version of the protocol.
         # From now on, we can use the application-specific messages, since the communicator knows how to
         # encode and decode them.
-        sw_major_minor = node_info.software_version_major, node_info.software_version_minor
+        sw_major_minor = (
+            node_info.software_version_major,
+            node_info.software_version_minor,
+        )
         com.set_protocol_version(sw_major_minor)
 
-        report('Device identification')
+        report("Device identification")
         characteristics = await com.request(MessageType.DEVICE_CHARACTERISTICS)
-        _logger.info('Device characteristics: %r', characteristics)
+        _logger.info("Device characteristics: %r", characteristics)
         if not characteristics:
-            raise ConnectionAttemptFailedException('Device capabilities request has timed out')
+            raise ConnectionAttemptFailedException(
+                "Device capabilities request has timed out"
+            )
 
-        report('Device status request')
+        report("Device status request")
         general_status = await com.request(MessageType.GENERAL_STATUS)
-        _logger.info('General status: %r', general_status)
+        _logger.info("General status: %r", general_status)
         if not general_status:
-            raise ConnectionAttemptFailedException('General status request has timed out')
+            raise ConnectionAttemptFailedException(
+                "General status request has timed out"
+            )
 
-        device_info = DeviceInfoView.populate(node_info_message=node_info,
-                                              characteristics_message=characteristics.fields)
-        _logger.info('Populated device info view: %r', device_info)
+        device_info = DeviceInfoView.populate(
+            node_info_message=node_info, characteristics_message=characteristics.fields
+        )
+        _logger.info("Populated device info view: %r", device_info)
 
         # Requesting the list of all register names - this may take a while
         register_names = []
         index = 0
         while True:
+
             def predicate(item: AnyMessage) -> bool:
                 if isinstance(item, popcop.standard.register.DiscoveryResponseMessage):
                     return item.index == index
 
-            discovered_future = com.request(popcop.standard.register.DiscoveryRequestMessage(index=index),
-                                            predicate=predicate)
-            report(f'Register discovery at index {index}', 1e-3)
+            discovered_future = com.request(
+                popcop.standard.register.DiscoveryRequestMessage(index=index),
+                predicate=predicate,
+            )
+            report(f"Register discovery at index {index}", 1e-3)
             discovered = await discovered_future
             if not discovered:
-                raise ConnectionAttemptFailedException(f'Register discovery request at index {index} has timed out')
+                raise ConnectionAttemptFailedException(
+                    f"Register discovery request at index {index} has timed out"
+                )
 
-            assert isinstance(discovered, popcop.standard.register.DiscoveryResponseMessage)
+            assert isinstance(
+                discovered, popcop.standard.register.DiscoveryResponseMessage
+            )
             assert discovered.index == index
             index += 1
             if discovered.name:
@@ -360,48 +438,67 @@ async def connect(event_loop:                   asyncio.AbstractEventLoop,
         del index
         del discovered
         del discovered_future
-        _logger.info('Discovered %d registers:\n%s\n', len(register_names), '\n'.join(map(str, register_names)))
+        _logger.info(
+            "Discovered %d registers:\n%s\n",
+            len(register_names),
+            "\n".join(map(str, register_names)),
+        )
 
         # Requesting all registers now
         final_progress_increment = (1.0 - progress) / len(register_names)
         registers: typing.List[popcop.standard.register.DataResponseMessage] = []
         for name in register_names:
+
             def predicate(item: AnyMessage) -> bool:
                 if isinstance(item, popcop.standard.register.DataResponseMessage):
                     return item.name == name
 
-            data_future = com.request(popcop.standard.register.DataRequestMessage(name=name),
-                                      predicate=predicate)
-            report(f'Reading register {name!r}', final_progress_increment)
+            data_future = com.request(
+                popcop.standard.register.DataRequestMessage(name=name),
+                predicate=predicate,
+            )
+            report(f"Reading register {name!r}", final_progress_increment)
             data = await data_future
             if not data:
-                raise ConnectionAttemptFailedException(f'Register read request with name {name!r} has timed out')
+                raise ConnectionAttemptFailedException(
+                    f"Register read request with name {name!r} has timed out"
+                )
 
             assert isinstance(data, popcop.standard.register.DataResponseMessage)
             assert data.name == name
             if data.value is not None:
                 registers.append(data)
             else:
-                _logger.warning(f'Empty or unknown register ignored: {data}')
+                _logger.warning(f"Empty or unknown register ignored: {data}")
 
-        _logger.info('Read %d registers:\n%s\n', len(registers), '\n'.join(map(str, registers)))
-        report('Completed successfully', 1.0)
+        _logger.info(
+            "Read %d registers:\n%s\n", len(registers), "\n".join(map(str, registers))
+        )
+        report("Completed successfully", 1.0)
     except Exception:
         await com.close()
         raise
 
-    _logger.info('Connection on port %r established in %.1f seconds', port_name, time.monotonic() - begun_at)
+    _logger.info(
+        "Connection on port %r established in %.1f seconds",
+        port_name,
+        time.monotonic() - begun_at,
+    )
 
-    return Connection(event_loop=event_loop,
-                      communicator=com,
-                      device_info=device_info,
-                      initial_register_data_msgs=registers,
-                      general_status_with_ts=(general_status.timestamp,
-                                              GeneralStatusView.populate(general_status.fields)),
-                      on_connection_loss=on_connection_loss,
-                      on_general_status_update=on_general_status_update,
-                      on_log_line=on_log_line,
-                      general_status_update_period=general_status_update_period)
+    return Connection(
+        event_loop=event_loop,
+        communicator=com,
+        device_info=device_info,
+        initial_register_data_msgs=registers,
+        general_status_with_ts=(
+            general_status.timestamp,
+            GeneralStatusView.populate(general_status.fields),
+        ),
+        on_connection_loss=on_connection_loss,
+        on_general_status_update=on_general_status_update,
+        on_log_line=on_log_line,
+        general_status_update_period=general_status_update_period,
+    )
 
 
 def _unittest_connection():
@@ -410,14 +507,18 @@ def _unittest_connection():
     import glob
     import asyncio
 
-    port_glob = os.environ.get('KUCHER_TEST_PORT', None)
+    port_glob = os.environ.get("KUCHER_TEST_PORT", None)
     if not port_glob:
-        pytest.skip('Skipping because the environment variable KUCHER_TEST_PORT is not set. '
-                    'In order to test the device connection, set that variable to a name or a glob of a serial port. '
-                    'If a glob is used, it must evaluate to exactly one port, otherwise the test will fail.')
+        pytest.skip(
+            "Skipping because the environment variable KUCHER_TEST_PORT is not set. "
+            "In order to test the device connection, set that variable to a name or a glob of a serial port. "
+            "If a glob is used, it must evaluate to exactly one port, otherwise the test will fail."
+        )
 
     port = glob.glob(port_glob)
-    assert len(port) == 1, f'The glob was supposed to resolve to exactly one port; got {len(port)} ports.'
+    assert (
+        len(port) == 1
+    ), f"The glob was supposed to resolve to exactly one port; got {len(port)} ports."
     port = port[0]
 
     loop = asyncio.get_event_loop()
@@ -430,43 +531,47 @@ def _unittest_connection():
         def on_connection_loss(reason):
             nonlocal num_connection_loss_notifications
             num_connection_loss_notifications += 1
-            print(f'Connection lost! Reason: {reason}')
+            print(f"Connection lost! Reason: {reason}")
 
         def on_general_status_update(ts, rep):
             nonlocal num_status_reports
             num_status_reports += 1
-            print(f'Status report at {ts}:\n{rep}')
+            print(f"Status report at {ts}:\n{rep}")
 
         assert num_status_reports == 0
         assert num_connection_loss_notifications == 0
 
-        print('Connecting...')
-        con = await connect(event_loop=loop,
-                            port_name=port,
-                            on_connection_loss=on_connection_loss,
-                            on_general_status_update=on_general_status_update,
-                            on_log_line=lambda *args: print('Log line:', *args),
-                            on_progress_report=lambda *args: print('Progress report:', *args),
-                            general_status_update_period=0.5)
-        print('Connected successfully')
+        print("Connecting...")
+        con = await connect(
+            event_loop=loop,
+            port_name=port,
+            on_connection_loss=on_connection_loss,
+            on_general_status_update=on_general_status_update,
+            on_log_line=lambda *args: print("Log line:", *args),
+            on_progress_report=lambda *args: print("Progress report:", *args),
+            general_status_update_period=0.5,
+        )
+        print("Connected successfully")
 
         assert num_status_reports == 0
         assert num_connection_loss_notifications == 0
 
-        await asyncio.sleep(con._general_status_update_period * 2 + 0.4, loop=loop)
+        await asyncio.sleep(con._general_status_update_period * 2 + 0.4)
 
         assert num_status_reports == 2
         assert num_connection_loss_notifications == 0
 
-        assert 'zubax' in con.device_info.name
-        assert con.device_info.characteristics.vsi_model.resistance_per_phase[1].high > 0
+        assert "zubax" in con.device_info.name
+        assert (
+            con.device_info.characteristics.vsi_model.resistance_per_phase[1].high > 0
+        )
         assert con.last_general_status_with_timestamp[0] > 0
         assert con.last_general_status_with_timestamp[1].timestamp > 0
 
         # Simulate failure of the underlying port
         con._com._ch.close()
 
-        await asyncio.sleep(1, loop=loop)
+        await asyncio.sleep(1)
 
         assert num_status_reports == 2
         assert num_connection_loss_notifications == 1

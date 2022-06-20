@@ -17,7 +17,11 @@ import importlib
 from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QTabWidget
 
-from kucher.view.device_model_representation import Commander, GeneralStatusView, LowLevelManipulationMode
+from kucher.view.device_model_representation import (
+    Commander,
+    GeneralStatusView,
+    LowLevelManipulationMode,
+)
 from kucher.view.utils import get_icon, lay_out_vertically
 
 from ..base import SpecializedControlWidgetBase
@@ -29,12 +33,12 @@ _logger = getLogger(__name__)
 
 class LowLevelManipulationControlWidget(SpecializedControlWidgetBase):
     # noinspection PyUnresolvedReferences
-    def __init__(self,
-                 parent:    QWidget,
-                 commander: Commander):
+    def __init__(self, parent: QWidget, commander: Commander):
         super(LowLevelManipulationControlWidget, self).__init__(parent)
 
-        self._last_seen_timestamped_general_status: typing.Optional[typing.Tuple[float, GeneralStatusView]] = None
+        self._last_seen_timestamped_general_status: typing.Optional[
+            typing.Tuple[float, GeneralStatusView]
+        ] = None
 
         self._tabs = QTabWidget(self)
 
@@ -43,7 +47,9 @@ class LowLevelManipulationControlWidget(SpecializedControlWidgetBase):
             tab_name, icon_name = widget.get_widget_name_and_icon_name()
             self._tabs.addTab(widget, get_icon(icon_name), tab_name)
 
-        self._current_widget: LowLevelManipulationControlSubWidgetBase = self._tabs.currentWidget()
+        self._current_widget: LowLevelManipulationControlSubWidgetBase = (
+            self._tabs.currentWidget()
+        )
         self._tabs.currentChanged.connect(self._on_current_widget_changed)
 
         # Presentation configuration.
@@ -68,34 +74,43 @@ class LowLevelManipulationControlWidget(SpecializedControlWidgetBase):
         self._current_widget.on_general_status_update(timestamp, s)
 
     def _on_current_widget_changed(self, new_widget_index: int):
-        _logger.debug(f'The user has changed the active widget. '
-                      f'Stopping the previous widget, which was {self._current_widget!r}')
+        _logger.debug(
+            f"The user has changed the active widget. "
+            f"Stopping the previous widget, which was {self._current_widget!r}"
+        )
         self._current_widget.stop()
 
         self._current_widget = self._tabs.currentWidget()
-        assert isinstance(self._current_widget, LowLevelManipulationControlSubWidgetBase)
+        assert isinstance(
+            self._current_widget, LowLevelManipulationControlSubWidgetBase
+        )
 
-        _logger.debug(f'Starting the new widget (at index {new_widget_index}), which is {self._current_widget!r}')
+        _logger.debug(
+            f"Starting the new widget (at index {new_widget_index}), which is {self._current_widget!r}"
+        )
         self._current_widget.start()
 
         # We also make sure to always provide the newly activated widget with the latest known general status,
         # in order to let it actualize its state faster.
         if self._last_seen_timestamped_general_status is not None:
-            self._current_widget.on_general_status_update(*self._last_seen_timestamped_general_status)
+            self._current_widget.on_general_status_update(
+                *self._last_seen_timestamped_general_status
+            )
 
 
-_LLM_MODE_TO_WIDGET_TYPE_MAPPING: typing.Dict[LowLevelManipulationMode,
-                                              typing.Type[LowLevelManipulationControlSubWidgetBase]] = {}
+_LLM_MODE_TO_WIDGET_TYPE_MAPPING: typing.Dict[
+    LowLevelManipulationMode, typing.Type[LowLevelManipulationControlSubWidgetBase]
+] = {}
 
 
 def _load_widgets():
     for llm_mode in LowLevelManipulationMode:
         module_name = f'{str(llm_mode).split(".")[-1].lower()}_widget'
-        _logger.info(f'Loading module {module_name} for LLM mode {llm_mode!r}')
+        _logger.info(f"Loading module {module_name} for LLM mode {llm_mode!r}")
         try:
-            module = importlib.import_module('.' + module_name, __name__)
+            module = importlib.import_module("." + module_name, __name__)
         except ImportError:
-            _logger.exception('Module load failed')
+            _logger.exception("Module load failed")
         else:
             assert issubclass(module.Widget, LowLevelManipulationControlSubWidgetBase)
             _LLM_MODE_TO_WIDGET_TYPE_MAPPING[llm_mode] = module.Widget

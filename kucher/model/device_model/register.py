@@ -18,7 +18,13 @@ import numpy
 import typing
 import itertools
 from decimal import Decimal
-from popcop.standard.register import ValueType, Flags, ValueKind, VALUE_TYPE_TO_KIND, SCALAR_VALUE_TYPE_TO_NUMPY_TYPE
+from popcop.standard.register import (
+    ValueType,
+    Flags,
+    ValueKind,
+    VALUE_TYPE_TO_KIND,
+    SCALAR_VALUE_TYPE_TO_NUMPY_TYPE,
+)
 from kucher.utils import Event
 
 
@@ -37,10 +43,14 @@ RelaxedValueTypeAnnotation = typing.Union[
     float,
 ]
 
-SetGetCallback = typing.Callable[[typing.Optional[StrictValueTypeAnnotation]],
-                                 typing.Awaitable[typing.Tuple[StrictValueTypeAnnotation,   # Value
-                                                               Decimal,                     # Device timestamp
-                                                               float]]]                     # Monotonic timestamp
+SetGetCallback = typing.Callable[
+    [typing.Optional[StrictValueTypeAnnotation]],
+    typing.Awaitable[
+        typing.Tuple[
+            StrictValueTypeAnnotation, Decimal, float  # Value  # Device timestamp
+        ]
+    ],
+]  # Monotonic timestamp
 
 
 class Register:
@@ -51,20 +61,23 @@ class Register:
     is ambiguous, an exception will be thrown.
     Note that this type is hashable and can be used in mappings like dict.
     """
+
     ValueType = ValueType
     ValueKind = ValueKind
 
-    def __init__(self,
-                 name:                          str,
-                 value:                         StrictValueTypeAnnotation,
-                 default_value:                 typing.Optional[StrictValueTypeAnnotation],
-                 min_value:                     typing.Optional[StrictValueTypeAnnotation],
-                 max_value:                     typing.Optional[StrictValueTypeAnnotation],
-                 type_id:                       ValueType,
-                 flags:                         Flags,
-                 update_timestamp_device_time:  Decimal,
-                 set_get_callback:              SetGetCallback,
-                 update_timestamp_monotonic:    float = None):
+    def __init__(
+        self,
+        name: str,
+        value: StrictValueTypeAnnotation,
+        default_value: typing.Optional[StrictValueTypeAnnotation],
+        min_value: typing.Optional[StrictValueTypeAnnotation],
+        max_value: typing.Optional[StrictValueTypeAnnotation],
+        type_id: ValueType,
+        flags: Flags,
+        update_timestamp_device_time: Decimal,
+        set_get_callback: SetGetCallback,
+        update_timestamp_monotonic: float = None,
+    ):
         self._name = str(name)
         self._cached_value = value
         self._default_value = default_value
@@ -72,7 +85,9 @@ class Register:
         self._max_value = max_value
         self._type_id = ValueType(type_id)
         self._update_ts_device_time = Decimal(update_timestamp_device_time)
-        self._update_ts_monotonic = float(update_timestamp_monotonic or time.monotonic())
+        self._update_ts_monotonic = float(
+            update_timestamp_monotonic or time.monotonic()
+        )
         self._flags = flags
         self._set_get_callback = set_get_callback
 
@@ -99,8 +114,7 @@ class Register:
         if not self.has_default_value:
             return False
 
-        if self.type_id in (ValueType.F32,
-                            ValueType.F64):
+        if self.type_id in (ValueType.F32, ValueType.F64):
             # Absolute tolerance equals the epsilon as per IEEE754
             absolute_tolerance = {
                 ValueType.F32: 1e-6,
@@ -113,8 +127,14 @@ class Register:
                 ValueType.F64: 1e-13,
             }[self.type_id]
 
-            return all(map(lambda args: math.isclose(*args, rel_tol=relative_tolerance, abs_tol=absolute_tolerance),
-                           itertools.zip_longest(self.cached_value, self.default_value)))
+            return all(
+                map(
+                    lambda args: math.isclose(
+                        *args, rel_tol=relative_tolerance, abs_tol=absolute_tolerance
+                    ),
+                    itertools.zip_longest(self.cached_value, self.default_value),
+                )
+            )
         else:
             return self.cached_value == self.default_value
 
@@ -162,7 +182,9 @@ class Register:
         """
         return self._update_event
 
-    async def write_through(self, value: RelaxedValueTypeAnnotation) -> StrictValueTypeAnnotation:
+    async def write_through(
+        self, value: RelaxedValueTypeAnnotation
+    ) -> StrictValueTypeAnnotation:
         """
         Sets the provided value to the device, then requests the new value from the device,
         at the same time updating the cache with the latest state once the response is received.
@@ -191,10 +213,12 @@ class Register:
         except KeyError:
             return None
 
-    def _sync(self,
-              value:            RelaxedValueTypeAnnotation,
-              device_time:      Decimal,
-              monotonic_time:   float):
+    def _sync(
+        self,
+        value: RelaxedValueTypeAnnotation,
+        device_time: Decimal,
+        monotonic_time: float,
+    ):
         """This method is invoked from the Connection instance."""
         self._cached_value = value
         self._update_ts_device_time = Decimal(device_time)
@@ -213,21 +237,23 @@ class Register:
             return value
         else:
             try:
-                return [x for x in value]   # Coerce to list
+                return [x for x in value]  # Coerce to list
             except TypeError:
-                raise TypeError(f'Invalid type of register value: {type(value)!r}')
+                raise TypeError(f"Invalid type of register value: {type(value)!r}")
 
     def __str__(self):
         # Monotonic timestamps are imprecise, so we print them with a low number of decimal places.
         # Device-provided timestamps are extremely accurate (sub-microsecond resolution and precision).
         # We use "!s" with the enum, otherwise it prints as int (quite surprising).
-        out = f'name={self.name!r}, type_id={self.type_id!s}, ' \
-              f'cached={self.cached_value!r}, default={self.default_value!r}, ' \
-              f'min={self.min_value!r}, max={self.max_value!r}, ' \
-              f'mutable={self.mutable}, persistent={self.persistent}, ' \
-              f'ts_device={self.update_timestamp_device_time:.9f}, ts_mono={self.update_timestamp_monotonic:.3f}'
+        out = (
+            f"name={self.name!r}, type_id={self.type_id!s}, "
+            f"cached={self.cached_value!r}, default={self.default_value!r}, "
+            f"min={self.min_value!r}, max={self.max_value!r}, "
+            f"mutable={self.mutable}, persistent={self.persistent}, "
+            f"ts_device={self.update_timestamp_device_time:.9f}, ts_mono={self.update_timestamp_monotonic:.3f}"
+        )
 
-        return f'Register({out})'
+        return f"Register({out})"
 
     __repr__ = __str__
 

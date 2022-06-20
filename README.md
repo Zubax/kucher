@@ -1,4 +1,4 @@
-[![Join the chat at https://gitter.im/Zubax/general](https://img.shields.io/badge/GITTER-join%20chat-green.svg)](https://gitter.im/Zubax/general)
+[![Forum](https://img.shields.io/discourse/https/forum.zubax.com/users.svg?color=e00000)](https://forum.zubax.com)
 
 # Kucher
 
@@ -35,9 +35,7 @@ Non-conforming contributions should not be accepted.
 This section describes how to configure the local system for development.
 An AMD64 GNU/Linux system is required.
 
-Kucher requires Python version 3.6 or newer.
-If your system uses an older version, please refer to the section below to install
-Python 3.6 before continuing.
+Kucher requires Python version 3.10 or newer.
 
 ```bash
 git clone --recursive https://github.com/Zubax/kucher
@@ -66,37 +64,6 @@ On Windows:
 ```bash
 pytest
 ```
-
-
-### Getting the right version of Python
-
-Kucher requires Python 3.6 or newer.
-You can check whether you have the right version by running `python3 --version`.
-If a newer Python is needed, and you're running Ubuntu or an Ubuntu-based distro such as Mint,
-execute the following commands:
-
-```bash
-sudo apt-get install -y git-core curl build-essential libsqlite3-dev
-sudo apt-get install -y libbz2-dev libssl-dev libreadline-dev libsqlite3-dev tk-dev libpng-dev libfreetype6-dev
-curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
-```
-
-Follow the instructions in the output of the last command above.
-**WARNING:** If the above command tells you to use `~/.bash_profile`,
-disregard that and use `~/.bashrc` instead.
-
-Reload the bash profile configuration
-(e.g. close the current shell session and open a new one).
-Then continue:
-
-```
-PYTHON_CONFIGURE_OPTS='--enable-shared' pyenv install 3.6.4
-pyenv global 3.6.4
-```
-
-If there was a warning that `sqlite3` has not been compiled,
-make sure to resolve it first before continuing - `sqlite3` is required by Kucher.
-Now run `python3 --version` and ensure that you have v3.6 as default.
 
 ### CI artifacts
 

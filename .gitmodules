@@ -1,12 +1,6 @@
 [submodule "kucher/libraries/popcop"]
 	path = kucher/libraries/popcop
 	url = https://github.com/Zubax/popcop
-[submodule "kucher/libraries/construct"]
-	path = kucher/libraries/construct
-	url = https://github.com/construct/construct
-[submodule "kucher/libraries/dataclasses"]
-	path = kucher/libraries/dataclasses
-	url = https://github.com/ericvsmith/dataclasses
-[submodule "kucher/libraries/quamash"]
-	path = kucher/libraries/quamash
-	url = https://github.com/harvimt/quamash
+[submodule "kucher/libraries/qasync"]
+	path = kucher/libraries/qasync
+	url = https://github.com/CabbageDevelopment/qasync.git

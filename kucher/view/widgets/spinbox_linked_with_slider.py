@@ -63,22 +63,26 @@ class SpinboxLinkedWithSlider:
 
     class SliderOrientation(enum.IntEnum):
         HORIZONTAL = Qt.Horizontal
-        VERTICAL   = Qt.Vertical
+        VERTICAL = Qt.Vertical
 
     # noinspection PyUnresolvedReferences
-    def __init__(self,
-                 parent:                QWidget,
-                 minimum:               float = 0.0,
-                 maximum:               float = 100.0,
-                 step:                  float = 1.0,
-                 slider_orientation:    SliderOrientation = SliderOrientation.VERTICAL):
+    def __init__(
+        self,
+        parent: QWidget,
+        minimum: float = 0.0,
+        maximum: float = 100.0,
+        step: float = 1.0,
+        slider_orientation: SliderOrientation = SliderOrientation.VERTICAL,
+    ):
         self._events_suppression_depth = 0
 
         # Instantiating the widgets
         self._box = QDoubleSpinBox(parent)
         self._sld = QSlider(int(slider_orientation), parent)
 
-        self._sld.setTickPosition(QSlider.TicksBothSides)       # Perhaps expose this via API later
+        self._sld.setTickPosition(
+            QSlider.TicksBothSides
+        )  # Perhaps expose this via API later
 
         # This stuff breaks if I remove lambdas, no clue why, investigate later
         self._box.valueChanged[float].connect(lambda v: self._on_box_changed(v))
@@ -123,7 +127,7 @@ class SpinboxLinkedWithSlider:
         with self._with_events_suppressed():
             self._sld.setMinimum(self._value_to_int(value))
 
-        _logger.debug('New minimum: %r %r', value, self._value_to_int(value))
+        _logger.debug("New minimum: %r %r", value, self._value_to_int(value))
 
     @property
     def maximum(self) -> float:
@@ -138,7 +142,7 @@ class SpinboxLinkedWithSlider:
 
         self._refresh_invariants()
 
-        _logger.debug('New maximum: %r %r', value, self._value_to_int(value))
+        _logger.debug("New maximum: %r %r", value, self._value_to_int(value))
 
     @property
     def step(self) -> float:
@@ -147,7 +151,7 @@ class SpinboxLinkedWithSlider:
     @step.setter
     def step(self, value: float):
         if not (value > 0):
-            raise ValueError(f'Step must be positive, got {value!r}')
+            raise ValueError(f"Step must be positive, got {value!r}")
 
         self._box.setSingleStep(value)
 
@@ -158,8 +162,12 @@ class SpinboxLinkedWithSlider:
 
         self._refresh_invariants()
 
-        _logger.debug('New step: %r; resulting range of the slider: [%r, %r]',
-                      value, self._sld.minimum(), self._sld.maximum())
+        _logger.debug(
+            "New step: %r; resulting range of the slider: [%r, %r]",
+            value,
+            self._sld.minimum(),
+            self._sld.maximum(),
+        )
 
     @property
     def value(self) -> float:
@@ -216,16 +224,20 @@ class SpinboxLinkedWithSlider:
 
     def set_range(self, minimum: float, maximum: float):
         if minimum >= maximum:
-            raise ValueError(f'Minimum must be less than maximum: min={minimum} max={maximum}')
+            raise ValueError(
+                f"Minimum must be less than maximum: min={minimum} max={maximum}"
+            )
 
         self.minimum = minimum
         self.maximum = maximum
 
-    def update_atomically(self,
-                          minimum:  typing.Optional[float] = None,
-                          maximum:  typing.Optional[float] = None,
-                          step:     typing.Optional[float] = None,
-                          value:    typing.Optional[float] = None):
+    def update_atomically(
+        self,
+        minimum: typing.Optional[float] = None,
+        maximum: typing.Optional[float] = None,
+        step: typing.Optional[float] = None,
+        value: typing.Optional[float] = None,
+    ):
         """
         This function updates all of the parameters, and invokes the change event only once at the end, provided
         that the new value is different from the old value.
@@ -233,7 +245,9 @@ class SpinboxLinkedWithSlider:
         """
         if (minimum is not None) and (maximum is not None):
             if minimum >= maximum:
-                raise ValueError(f'Minimum must be less than maximum: min={minimum} max={maximum}')
+                raise ValueError(
+                    f"Minimum must be less than maximum: min={minimum} max={maximum}"
+                )
 
         original_value = self.value
 
@@ -305,22 +319,22 @@ def _unittest_spinbox_linked_with_slider():
 
     instances: typing.List[SpinboxLinkedWithSlider] = []
 
-    def make(minimum:   float,
-             maximum:   float,
-             step:      float) -> QLayout:
-        o = SpinboxLinkedWithSlider(widget,
-                                    minimum=minimum,
-                                    maximum=maximum,
-                                    step=step,
-                                    slider_orientation=SpinboxLinkedWithSlider.SliderOrientation.HORIZONTAL)
+    def make(minimum: float, maximum: float, step: float) -> QLayout:
+        o = SpinboxLinkedWithSlider(
+            widget,
+            minimum=minimum,
+            maximum=maximum,
+            step=step,
+            slider_orientation=SpinboxLinkedWithSlider.SliderOrientation.HORIZONTAL,
+        )
         instances.append(o)
         return lay_out_horizontally((o.slider, 1), o.spinbox)
 
     win = QMainWindow()
     widget = QWidget(win)
-    widget.setLayout(lay_out_vertically(make(0, 100, 1),
-                                        make(-10, 10, 0.01),
-                                        make(-99999, 100, 100)))
+    widget.setLayout(
+        lay_out_vertically(make(0, 100, 1), make(-10, 10, 0.01), make(-99999, 100, 100))
+    )
     win.setCentralWidget(widget)
     win.show()
 

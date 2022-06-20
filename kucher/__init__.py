@@ -16,8 +16,8 @@
 import os
 import sys
 
-if sys.version_info[:2] < (3, 6):
-    raise ImportError('A newer version of Python is required')
+if sys.version_info[:2] < (3, 10):
+    raise ImportError("A newer version of Python is required")
 
 from .version import *  # noqa
 from .main import main  # noqa
@@ -27,20 +27,14 @@ from .main import main  # noqa
 # The list of paths defined here can also be used by external packaging tools such as PyInstaller.
 #
 _SOURCE_PATH = os.path.abspath(os.path.dirname(__file__))
-THIRDPARTY_PATH_ROOT = os.path.join(_SOURCE_PATH, 'libraries')
+THIRDPARTY_PATH_ROOT = os.path.join(_SOURCE_PATH, "libraries")
 
 THIRDPARTY_PATH = [
     os.path.join(THIRDPARTY_PATH_ROOT),
-    os.path.join(THIRDPARTY_PATH_ROOT, 'popcop', 'python'),
-    os.path.join(THIRDPARTY_PATH_ROOT, 'construct'),
-    os.path.join(THIRDPARTY_PATH_ROOT, 'quamash'),
+    os.path.join(THIRDPARTY_PATH_ROOT, "popcop", "python"),
+    os.path.join(THIRDPARTY_PATH_ROOT, "construct"),
+    os.path.join(THIRDPARTY_PATH_ROOT, "qasync"),
 ]
-
-# 'dataclasses' module is included in Python libraries since version 3.7. For Python versions below, the dataclass
-# module located in the 'libraries' directory will be used. It is not compatible with Python 3.7, so we only declare
-# its path if Python version is below 3.7. Otherwise, the built-in module will be used by default.
-if sys.version_info[:2] < (3, 7):
-    THIRDPARTY_PATH.append(os.path.join(THIRDPARTY_PATH_ROOT, 'dataclasses'))
 
 for tp in THIRDPARTY_PATH:
     sys.path.insert(0, tp)

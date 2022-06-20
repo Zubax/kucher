@@ -21,13 +21,27 @@ import enum
 import typing
 
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QFileDialog, QTableWidget, QTableWidgetItem, QDialog, QLabel, \
-    QPushButton, QHeaderView, QMessageBox
+from PyQt5.QtWidgets import (
+    QWidget,
+    QFileDialog,
+    QTableWidget,
+    QTableWidgetItem,
+    QDialog,
+    QLabel,
+    QPushButton,
+    QHeaderView,
+    QMessageBox,
+)
 from popcop.standard.register import ValueType
 
 from kucher.view.widgets import WidgetBase
 from kucher.view.device_model_representation import Register
-from kucher.view.utils import show_error, lay_out_horizontally, lay_out_vertically, get_monospace_font
+from kucher.view.utils import (
+    show_error,
+    lay_out_horizontally,
+    lay_out_vertically,
+    get_monospace_font,
+)
 
 _logger = getLogger(__name__)
 
@@ -42,11 +56,11 @@ class CheckResult(enum.Enum):
 
 
 CHECK_RESULT_MAPPING: typing.Dict[CheckResult, str] = {
-    CheckResult.NOT_MUTABLE:         'This parameter cannot be modified on this device: ',
-    CheckResult.INCORRECT_TYPE:      'This parameter type is incorrect: ',
-    CheckResult.INCORRECT_DIMENSION: 'This parameter dimension is incorrect: ',
-    CheckResult.OUTSIDE_RANGE:       'This parameter value is outside permitted range: ',
-    CheckResult.UNKNOWN:             'Reason: ',
+    CheckResult.NOT_MUTABLE: "This parameter cannot be modified on this device: ",
+    CheckResult.INCORRECT_TYPE: "This parameter type is incorrect: ",
+    CheckResult.INCORRECT_DIMENSION: "This parameter dimension is incorrect: ",
+    CheckResult.OUTSIDE_RANGE: "This parameter value is outside permitted range: ",
+    CheckResult.UNKNOWN: "Reason: ",
 }
 
 
@@ -57,18 +71,21 @@ def export_registers(parent: WidgetBase, registers: list):
     dialog_box = QWidget()
     dialog_box.setGeometry(10, 10, 1000, 700)
 
-    file_name, _ = QFileDialog.getSaveFileName(dialog_box, 'Export configuration file', 'config.yml',
-                                               'YAML Files (*.yml  *.yaml);;All Files (*)')
+    file_name, _ = QFileDialog.getSaveFileName(
+        dialog_box,
+        "Export configuration file",
+        "config.yml",
+        "YAML Files (*.yml  *.yaml);;All Files (*)",
+    )
     if not file_name:
         return
     try:
-        _file = open(file_name, 'w+')
+        _file = open(file_name, "w+")
     except Exception as ex:
-        show_error('Export failed',
-                   f'Cannot open {file_name}',
-                   f'Error: {str(ex)}',
-                   parent)
-        _logger.exception(f'File {file_name} could not be open: {str(ex)}')
+        show_error(
+            "Export failed", f"Cannot open {file_name}", f"Error: {str(ex)}", parent
+        )
+        _logger.exception(f"File {file_name} could not be open: {str(ex)}")
         return
 
     async def executor():
@@ -79,15 +96,14 @@ def export_registers(parent: WidgetBase, registers: list):
                     register_yaml[reg.name] = await reg.read_through()
 
             yaml.dump(register_yaml, _file)
-            display_sucess_message('Export successful',
-                                   f'Parameters have been successfully exported to:\n{file_name}',
-                                   parent)
+            display_sucess_message(
+                "Export successful",
+                f"Parameters have been successfully exported to:\n{file_name}",
+                parent,
+            )
         except Exception as ex:
-            show_error('Export failed',
-                       f'Parameters cannot be read.',
-                       str(ex),
-                       parent)
-            _logger.exception(f'Registers could not be read')
+            show_error("Export failed", f"Parameters cannot be read.", str(ex), parent)
+            _logger.exception(f"Registers could not be read")
         finally:
             _file.close()
 
@@ -116,27 +132,29 @@ def import_registers(parent: WidgetBase, registers: list):
     """
     dialog_box = QWidget()
     dialog_box.setGeometry(10, 10, 1000, 700)
-    file_name, _ = QFileDialog.getOpenFileName(dialog_box, 'Import configuration file', '',
-                                               'YAML Files (*.yml *.yaml);;All Files (*)')
+    file_name, _ = QFileDialog.getOpenFileName(
+        dialog_box,
+        "Import configuration file",
+        "",
+        "YAML Files (*.yml *.yaml);;All Files (*)",
+    )
     if not file_name:
         return
     try:
-        with open(file_name, 'r') as file:
+        with open(file_name, "r") as file:
             imported_registers = yaml.load(file, Loader=yaml.Loader)
     except IOError as ex:
-        _logger.exception(f'File {file_name} could not be open')
-        show_error('Import failed',
-                   f'Cannot open {file_name}',
-                   f'Error: {str(ex)}',
-                   parent)
+        _logger.exception(f"File {file_name} could not be open")
+        show_error(
+            "Import failed", f"Cannot open {file_name}", f"Error: {str(ex)}", parent
+        )
         return
 
     except Exception as ex:
-        _logger.exception(f'File {file_name} could not be parsed')
-        show_error('Import failed',
-                   f'Cannot read {file_name}',
-                   f'Error: {str(ex)}',
-                   parent)
+        _logger.exception(f"File {file_name} could not be parsed")
+        show_error(
+            "Import failed", f"Cannot read {file_name}", f"Error: {str(ex)}", parent
+        )
         return
 
     if imported_registers:
@@ -152,37 +170,60 @@ def check_registers(registers: list, imported_registers: dict) -> CheckResult:
         for reg_check in registers:
             if reg_check.name in imported_registers:
                 if not (reg_check.mutable and reg_check.persistent):
-                    _logger.error(f'Import failed: this parameter cannot be modified on this device: {reg_check}')
+                    _logger.error(
+                        f"Import failed: this parameter cannot be modified on this device: {reg_check}"
+                    )
                     return CheckResult.NOT_MUTABLE, reg_check.name
 
                 elif not check_type(reg_check, imported_registers[reg_check.name]):
-                    _logger.error(f'Import failed: this parameter type is incorrect {reg_check}')
+                    _logger.error(
+                        f"Import failed: this parameter type is incorrect {reg_check}"
+                    )
                     return CheckResult.INCORRECT_TYPE, reg_check.name
 
-                elif len(imported_registers[reg_check.name]) != len(reg_check.cached_value):
-                    _logger.error(f'Import failed: this parameter dimension is incorrect {reg_check}')
+                elif len(imported_registers[reg_check.name]) != len(
+                    reg_check.cached_value
+                ):
+                    _logger.error(
+                        f"Import failed: this parameter dimension is incorrect {reg_check}"
+                    )
                     return CheckResult.INCORRECT_DIMENSION, reg_check.name
 
-                elif reg_check.has_min_and_max_values and reg_check.type_id != Register.ValueType.BOOLEAN:
-                    if not (reg_check.min_value <= imported_registers[reg_check.name] <= reg_check.max_value):
-                        _logger.error(f'Import failed: this parameter value is outside permitted range {reg_check}')
+                elif (
+                    reg_check.has_min_and_max_values
+                    and reg_check.type_id != Register.ValueType.BOOLEAN
+                ):
+                    if not (
+                        reg_check.min_value
+                        <= imported_registers[reg_check.name]
+                        <= reg_check.max_value
+                    ):
+                        _logger.error(
+                            f"Import failed: this parameter value is outside permitted range {reg_check}"
+                        )
                         return CheckResult.OUTSIDE_RANGE, reg_check.name
 
     except Exception as ex:
-        _logger.exception(f'Could not write registers: {str(ex)}')
+        _logger.exception(f"Could not write registers: {str(ex)}")
         return CheckResult.UNKNOWN, str(ex)
 
-    return CheckResult.NO_ERROR, ''
+    return CheckResult.NO_ERROR, ""
 
 
-def show_error_box(result: CheckResult, detail: str, file_name: str, parent: WidgetBase):
-    show_error('Import failed',
-               f'Cannot import {file_name}',
-               CHECK_RESULT_MAPPING[result] + detail,
-               parent)
+def show_error_box(
+    result: CheckResult, detail: str, file_name: str, parent: WidgetBase
+):
+    show_error(
+        "Import failed",
+        f"Cannot import {file_name}",
+        CHECK_RESULT_MAPPING[result] + detail,
+        parent,
+    )
 
 
-def write_registers(parent: WidgetBase, file_name: str, registers: list, imported_registers: dict):
+def write_registers(
+    parent: WidgetBase, file_name: str, registers: list, imported_registers: dict
+):
     async def executor():
         unwritten_registers = []
         for reg in imported_registers:
@@ -195,27 +236,35 @@ def write_registers(parent: WidgetBase, file_name: str, registers: list, importe
 
                 except Exception as ex:
                     _attempt += 1
-                    _logger.exception(f'Register {reg} could not be loaded (attempt {_attempt}/3)')
+                    _logger.exception(
+                        f"Register {reg} could not be loaded (attempt {_attempt}/3)"
+                    )
                     if _attempt >= 3:
                         try:
                             old_reg = next((r for r in registers if r.name == reg))
                             old_value = old_reg.cached_value
                         except Exception:
-                            old_value = ['(unknown)']
+                            old_value = ["(unknown)"]
 
-                        unwritten_registers.append([reg, old_value, imported_registers[reg]])
+                        unwritten_registers.append(
+                            [reg, old_value, imported_registers[reg]]
+                        )
                         break
 
         if unwritten_registers:
-            display_warning_message('Import successful',
-                                    f'{file_name} have been successfully imported.',
-                                    parent,
-                                    unwritten_registers)
+            display_warning_message(
+                "Import successful",
+                f"{file_name} have been successfully imported.",
+                parent,
+                unwritten_registers,
+            )
 
         else:
-            display_sucess_message('Import successful',
-                                   f'{file_name} have been successfully imported.',
-                                   parent)
+            display_sucess_message(
+                "Import successful",
+                f"{file_name} have been successfully imported.",
+                parent,
+            )
 
     asyncio.get_event_loop().create_task(executor())
 
@@ -224,27 +273,31 @@ def check_type(old_reg: Register, new_value: list) -> bool:
     """
     Checks if all elements of new_value are the same type as old_reg value.
     """
-    _int_types = (ValueType.I64,
-                  ValueType.I32,
-                  ValueType.I16,
-                  ValueType.I8,
-                  ValueType.U64,
-                  ValueType.U32,
-                  ValueType.U16,
-                  ValueType.U8)
+    _int_types = (
+        ValueType.I64,
+        ValueType.I32,
+        ValueType.I16,
+        ValueType.I8,
+        ValueType.U64,
+        ValueType.U32,
+        ValueType.U16,
+        ValueType.U8,
+    )
 
-    _float_types = (ValueType.F32,
-                    ValueType.F64)
+    _float_types = (ValueType.F32, ValueType.F64)
 
     # >>> isinstance(True, int)
     # True
     if all(map(lambda _type: isinstance(_type, bool), new_value)):
         return old_reg.type_id == ValueType.BOOLEAN
     else:
-        _type_float = all(map(lambda _type: isinstance(_type, float), new_value)) and (old_reg.type_id in _float_types)
+        _type_float = all(map(lambda _type: isinstance(_type, float), new_value)) and (
+            old_reg.type_id in _float_types
+        )
         # allow the user to enter an int if expected value is float
-        _type_int = all(map(lambda _type: isinstance(_type, int), new_value)) and \
-            (old_reg.type_id in _float_types + _int_types)
+        _type_int = all(map(lambda _type: isinstance(_type, int), new_value)) and (
+            old_reg.type_id in _float_types + _int_types
+        )
         return _type_float or _type_int
 
 
@@ -256,7 +309,9 @@ def display_sucess_message(title: str, text: str, parent: WidgetBase):
     mbox.show()
 
 
-def display_warning_message(title: str, text: str, parent: WidgetBase, unwritten_registers: list):
+def display_warning_message(
+    title: str, text: str, parent: WidgetBase, unwritten_registers: list
+):
     _warning = QDialog(parent)
     _warning.setWindowTitle(title)
 
@@ -265,7 +320,9 @@ def display_warning_message(title: str, text: str, parent: WidgetBase, unwritten
     _tableWidget.setRowCount(len(unwritten_registers))
     _tableWidget.setColumnCount(3)
 
-    _tableWidget.setHorizontalHeaderLabels(['Full name', 'Current value', 'Requested value'])
+    _tableWidget.setHorizontalHeaderLabels(
+        ["Full name", "Current value", "Requested value"]
+    )
     _tableWidget.horizontalHeader().setStretchLastSection(True)
 
     _header = _tableWidget.horizontalHeader()
@@ -274,24 +331,32 @@ def display_warning_message(title: str, text: str, parent: WidgetBase, unwritten
     _header.setSectionResizeMode(2, QHeaderView.Stretch)
 
     _tableWidget.verticalHeader().hide()
-    _tableWidget.verticalHeader().setSectionResizeMode(_tableWidget.verticalHeader().ResizeToContents)
+    _tableWidget.verticalHeader().setSectionResizeMode(
+        _tableWidget.verticalHeader().ResizeToContents
+    )
 
     for i in range(len(unwritten_registers)):
         _name = unwritten_registers[i][0]
         _current_value = unwritten_registers[i][1]
         _requested_value = unwritten_registers[i][2]
-        _tableWidget.setItem(i, 0, QTableWidgetItem(_name + ' '))
-        _tableWidget.setItem(i, 1, QTableWidgetItem(', '.join(str(e) for e in _current_value)))
-        _tableWidget.setItem(i, 2, QTableWidgetItem(', '.join(str(e) for e in _requested_value)))
+        _tableWidget.setItem(i, 0, QTableWidgetItem(_name + " "))
+        _tableWidget.setItem(
+            i, 1, QTableWidgetItem(", ".join(str(e) for e in _current_value))
+        )
+        _tableWidget.setItem(
+            i, 2, QTableWidgetItem(", ".join(str(e) for e in _requested_value))
+        )
 
     _btn_ok = QPushButton(_warning)
-    _btn_ok.setText('Ok')
+    _btn_ok.setText("Ok")
     _btn_ok.clicked.connect(_warning.close)
 
     _warning.setLayout(
         lay_out_vertically(
             lay_out_horizontally(QLabel(text, _warning)),
-            lay_out_horizontally(QLabel('Some configuration parameters could not be written:', _warning)),
+            lay_out_horizontally(
+                QLabel("Some configuration parameters could not be written:", _warning)
+            ),
             lay_out_horizontally(_tableWidget),
             lay_out_horizontally(_btn_ok),
         )

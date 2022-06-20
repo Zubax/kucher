@@ -19,30 +19,40 @@ from kucher.utils import Event
 
 from ..utils import get_icon
 from ..device_model_representation import GeneralStatusView, BasicDeviceInfo, Commander
-from .device_management_widget import DeviceManagementWidget,\
-    ConnectionRequestCallback, DisconnectionRequestCallback
+from .device_management_widget import (
+    DeviceManagementWidget,
+    ConnectionRequestCallback,
+    DisconnectionRequestCallback,
+)
 from .telega_control_widget import TelegaControlWidget
 
 
 class MainWidget(QTabWidget):
-    def __init__(self,
-                 parent:                    QWidget,
-                 on_connection_request:     ConnectionRequestCallback,
-                 on_disconnection_request:  DisconnectionRequestCallback,
-                 commander:                 Commander):
+    def __init__(
+        self,
+        parent: QWidget,
+        on_connection_request: ConnectionRequestCallback,
+        on_disconnection_request: DisconnectionRequestCallback,
+        commander: Commander,
+    ):
         super(MainWidget, self).__init__(parent)
 
         self._resize_event = Event()
 
-        self._device_management_widget =\
-            DeviceManagementWidget(self,
-                                   on_connection_request=on_connection_request,
-                                   on_disconnection_request=on_disconnection_request)
+        self._device_management_widget = DeviceManagementWidget(
+            self,
+            on_connection_request=on_connection_request,
+            on_disconnection_request=on_disconnection_request,
+        )
 
         self._telega_control_widget = TelegaControlWidget(self, commander)
 
-        self.addTab(self._device_management_widget, get_icon('connector'), 'Device management')
-        self.addTab(self._telega_control_widget, get_icon('wagon'), 'Telega control panel')
+        self.addTab(
+            self._device_management_widget, get_icon("connector"), "Device management"
+        )
+        self.addTab(
+            self._telega_control_widget, get_icon("wagon"), "Telega control panel"
+        )
 
         self.setCurrentWidget(self._device_management_widget)
 
@@ -59,11 +69,13 @@ class MainWidget(QTabWidget):
         self._device_management_widget.on_connection_loss(reason)
         self._telega_control_widget.on_connection_loss()
 
-    def on_connection_initialization_progress_report(self,
-                                                     stage_description: str,
-                                                     progress: float):
+    def on_connection_initialization_progress_report(
+        self, stage_description: str, progress: float
+    ):
         self.setCurrentWidget(self._device_management_widget)
-        self._device_management_widget.on_connection_initialization_progress_report(stage_description, progress)
+        self._device_management_widget.on_connection_initialization_progress_report(
+            stage_description, progress
+        )
 
     def on_general_status_update(self, timestamp: float, status: GeneralStatusView):
         self._telega_control_widget.on_general_status_update(timestamp, status)

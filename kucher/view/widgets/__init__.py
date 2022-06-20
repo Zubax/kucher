@@ -28,14 +28,20 @@ class WidgetBase(QWidget):
     def __init__(self, parent: typing.Optional[QWidget]):
         super(WidgetBase, self).__init__(parent)
 
-    def flash(self, message: str, *format_args, duration: typing.Optional[float] = None):
+    def flash(
+        self, message: str, *format_args, duration: typing.Optional[float] = None
+    ):
         """
         Shows the specified message in the status bar of the parent window.
         """
         duration_milliseconds = int((duration or 0) * 1000)
         formatted_message = message % format_args
         self.window().statusBar().showMessage(formatted_message, duration_milliseconds)
-        _logger.info('Flashing status bar message from %r for %.1f seconds: %r',
-                     self,
-                     (duration_milliseconds * 1e-3) if duration_milliseconds > 0 else float('inf'),
-                     formatted_message)
+        _logger.info(
+            "Flashing status bar message from %r for %.1f seconds: %r",
+            self,
+            (duration_milliseconds * 1e-3)
+            if duration_milliseconds > 0
+            else float("inf"),
+            formatted_message,
+        )

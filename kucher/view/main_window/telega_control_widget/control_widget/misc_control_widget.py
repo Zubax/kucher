@@ -19,7 +19,12 @@ from logging import getLogger
 from PyQt5.QtWidgets import QWidget, QDoubleSpinBox, QLabel
 
 from kucher.view.device_model_representation import Commander, GeneralStatusView, TaskID
-from kucher.view.utils import make_button, lay_out_horizontally, lay_out_vertically, get_icon_path
+from kucher.view.utils import (
+    make_button,
+    lay_out_horizontally,
+    lay_out_vertically,
+    get_icon_path,
+)
 
 from .base import SpecializedControlWidgetBase
 
@@ -28,9 +33,7 @@ _logger = getLogger(__name__)
 
 
 class MiscControlWidget(SpecializedControlWidgetBase):
-    def __init__(self,
-                 parent:    QWidget,
-                 commander: Commander):
+    def __init__(self, parent: QWidget, commander: Commander):
         super(MiscControlWidget, self).__init__(parent)
 
         self._commander = commander
@@ -39,25 +42,33 @@ class MiscControlWidget(SpecializedControlWidgetBase):
         self._frequency_input = QDoubleSpinBox(self)
         self._frequency_input.setRange(100, 15000)
         self._frequency_input.setValue(3000)
-        self._frequency_input.setSuffix(' Hz')
-        self._frequency_input.setToolTip('Beep frequency, in hertz')
+        self._frequency_input.setSuffix(" Hz")
+        self._frequency_input.setToolTip("Beep frequency, in hertz")
         self._frequency_input.setStatusTip(self._frequency_input.toolTip())
 
         self._duration_input = QDoubleSpinBox(self)
         self._duration_input.setRange(0.01, 3)
         self._duration_input.setValue(0.5)
-        self._duration_input.setSuffix(' s')
-        self._duration_input.setToolTip('Beep duration, in seconds')
+        self._duration_input.setSuffix(" s")
+        self._duration_input.setToolTip("Beep duration, in seconds")
         self._duration_input.setStatusTip(self._duration_input.toolTip())
 
-        self._go_button = make_button(self,
-                                      text='Beep',
-                                      icon_name='speaker',
-                                      tool_tip='Sends a beep command to the device once',
-                                      on_clicked=self._beep_once)
+        self._go_button = make_button(
+            self,
+            text="Beep",
+            icon_name="speaker",
+            tool_tip="Sends a beep command to the device once",
+            on_clicked=self._beep_once,
+        )
 
-        def stealthy(icon_name: str, music_factory: typing.Callable[[], typing.Iterable['_Note']]) -> QWidget:
-            b = make_button(self, icon_name=icon_name, on_clicked=lambda: self._begin_performance(music_factory()))
+        def stealthy(
+            icon_name: str, music_factory: typing.Callable[[], typing.Iterable["_Note"]]
+        ) -> QWidget:
+            b = make_button(
+                self,
+                icon_name=icon_name,
+                on_clicked=lambda: self._begin_performance(music_factory()),
+            )
             b.setFlat(True)
             b.setFixedSize(4, 4)
             return b
@@ -65,9 +76,9 @@ class MiscControlWidget(SpecializedControlWidgetBase):
         self.setLayout(
             lay_out_vertically(
                 lay_out_horizontally(
-                    QLabel('Frequency', self),
+                    QLabel("Frequency", self),
                     self._frequency_input,
-                    QLabel('Duration', self),
+                    QLabel("Duration", self),
                     self._duration_input,
                     self._go_button,
                     (None, 1),
@@ -75,8 +86,8 @@ class MiscControlWidget(SpecializedControlWidgetBase):
                 (None, 1),
                 lay_out_horizontally(
                     (None, 1),
-                    stealthy('darth-vader', _get_imperial_march),
-                )
+                    stealthy("darth-vader", _get_imperial_march),
+                ),
             )
         )
 
@@ -84,9 +95,7 @@ class MiscControlWidget(SpecializedControlWidgetBase):
         self._performer_should_stop = True
 
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
-        if s.current_task_id in (TaskID.BEEP,
-                                 TaskID.IDLE,
-                                 TaskID.FAULT):
+        if s.current_task_id in (TaskID.BEEP, TaskID.IDLE, TaskID.FAULT):
             self.setEnabled(True)
         else:
             self._performer_should_stop = True
@@ -94,19 +103,23 @@ class MiscControlWidget(SpecializedControlWidgetBase):
 
     def _beep_once(self):
         self._performer_should_stop = True
-        self._launch_async(self._commander.beep(frequency=self._frequency_input.value(),
-                                                duration=self._duration_input.value()))
+        self._launch_async(
+            self._commander.beep(
+                frequency=self._frequency_input.value(),
+                duration=self._duration_input.value(),
+            )
+        )
 
-    def _begin_performance(self, composition: typing.Iterable['_Note']):
+    def _begin_performance(self, composition: typing.Iterable["_Note"]):
         self._performer_should_stop = False
         self._launch_async(self._perform(composition))
 
-    async def _perform(self, composition: typing.Iterable['_Note']):
+    async def _perform(self, composition: typing.Iterable["_Note"]):
         composition = list(composition)
-        _logger.info(f'Performer is starting with {len(composition)} notes')
+        _logger.info(f"Performer is starting with {len(composition)} notes")
         for note in composition:
             if self._performer_should_stop:
-                _logger.info('Performer stopping early because the owner said so')
+                _logger.info("Performer stopping early because the owner said so")
                 break
 
             if note.frequency > 0:
@@ -116,41 +129,43 @@ class MiscControlWidget(SpecializedControlWidgetBase):
                 # However, every time a command gets ignored, the device sends back a warning, that may be
                 # annoying for the user. So we don't repeat commands, and instead we inject a small additional
                 # delay after each note to avoid note loss to bad synchronization.
-                await self._commander.beep(frequency=note.frequency, duration=note.duration)
+                await self._commander.beep(
+                    frequency=note.frequency, duration=note.duration
+                )
 
             # The extra delay needed because we're running not on a real-time system
             await asyncio.sleep(note.duration + 0.07)
         else:
-            _logger.info('Performer has finished')
+            _logger.info("Performer has finished")
 
 
 @dataclass(frozen=True)
 class _Note:
-    duration:   float           # second; this field is required
-    frequency:  float = 0.0     # hertz; zero means pause
+    duration: float  # second; this field is required
+    frequency: float = 0.0  # hertz; zero means pause
 
 
 class _OneLineOctave:
-    C       = 261.6
-    Csharp  = 277.2
-    D       = 293.7
-    Dsharp  = 311.1
-    E       = 329.6
-    F       = 349.2
-    Fsharp  = 370.0
-    G       = 392.0
-    Gsharp  = 415.3
-    A       = 440.0
-    Asharp  = 466.2
-    B       = 493.9
-    C1      = 523.2
-    D1      = 555.4
-    E1      = 587.3
-    F1      = 622.2
-    G1      = 659.2
-    A1      = 698.4
-    B1      = 739.9
-    C2      = 784.0
+    C = 261.6
+    Csharp = 277.2
+    D = 293.7
+    Dsharp = 311.1
+    E = 329.6
+    F = 349.2
+    Fsharp = 370.0
+    G = 392.0
+    Gsharp = 415.3
+    A = 440.0
+    Asharp = 466.2
+    B = 493.9
+    C1 = 523.2
+    D1 = 555.4
+    E1 = 587.3
+    F1 = 622.2
+    G1 = 659.2
+    A1 = 698.4
+    B1 = 739.9
+    C2 = 784.0
 
 
 # noinspection PyArgumentList

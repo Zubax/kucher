@@ -29,6 +29,7 @@ def synchronized(method):
         https://github.com/GrahamDumpleton/wrapt/blob/develop/blog/07-the-missing-synchronized-decorator.md
         https://github.com/GrahamDumpleton/wrapt/blob/develop/blog/08-the-synchronized-decorator-as-context-manager.md
     """
+
     def decorator(self, *arg, **kws):
         with self._lock:
             return method(self, *arg, **kws)
@@ -39,15 +40,15 @@ def synchronized(method):
 class Event:
     def __init__(self):
         self._handlers: typing.Set[typing.Callable] = set()
-        self._logger = getLogger(__name__ + f'.Event[{self}]')
+        self._logger = getLogger(__name__ + f".Event[{self}]")
 
-    def connect(self, handler: typing.Callable) -> 'Event':
-        self._logger.debug('Adding new handler %r', handler)
+    def connect(self, handler: typing.Callable) -> "Event":
+        self._logger.debug("Adding new handler %r", handler)
         self._handlers.add(handler)
         return self
 
     # noinspection PyUnusedLocal
-    def connect_weak(self, instance, unbound_method: 'type(Event.connect)') -> 'Event':
+    def connect_weak(self, instance, unbound_method: "type(Event.connect)") -> "Event":
         """
         Adds a weak handler that points to a method. This callback will be automatically removed when
         the pointed-to object is garbage collected. Observe that we require a reference to an instance
@@ -58,15 +59,19 @@ class Event:
           https://stackoverflow.com/questions/5394772/why-are-my-weakrefs-dead-in-the-water-when-they-point-to-a-method
         """
         weak_instance = weakref.ref(instance)
-        instance_as_str = repr(instance)    # We're formatting it right now because we can't keep strong references
-        instance = None                     # Erase to prevent accidental re-use
+        instance_as_str = repr(
+            instance
+        )  # We're formatting it right now because we can't keep strong references
+        instance = None  # Erase to prevent accidental re-use
 
         if inspect.ismethod(unbound_method):
-            raise TypeError(f'Usage of bound methods, lambdas, and proxy functions as weak handlers is not '
-                            f'possible, because these are dedicated objects themselves and they will be '
-                            f'garbage collected immediately after the last strong reference is removed. '
-                            f'You should use unbound methods instead. '
-                            f'Here are the arguments that you tried to use: {instance}, {unbound_method}')
+            raise TypeError(
+                f"Usage of bound methods, lambdas, and proxy functions as weak handlers is not "
+                f"possible, because these are dedicated objects themselves and they will be "
+                f"garbage collected immediately after the last strong reference is removed. "
+                f"You should use unbound methods instead. "
+                f"Here are the arguments that you tried to use: {instance}, {unbound_method}"
+            )
 
         # noinspection PyShadowingNames
         @functools.wraps(unbound_method)
@@ -75,26 +80,30 @@ class Event:
             if instance is not None:
                 return unbound_method(instance, *args, **kwargs)
             else:
-                self._logger.info('Weak reference has died: %r', instance_as_str)
+                self._logger.info("Weak reference has died: %r", instance_as_str)
                 self.disconnect(proxy)
 
         return self.connect(proxy)
 
-    def disconnect(self, handler: typing.Callable) -> 'Event':
-        self._logger.debug('Removing handler %r', handler)
+    def disconnect(self, handler: typing.Callable) -> "Event":
+        self._logger.debug("Removing handler %r", handler)
         try:
             self._handlers.remove(handler)
         except LookupError:
-            raise ValueError(f'Handler {handler} is not registered') from None
+            raise ValueError(f"Handler {handler} is not registered") from None
 
         return self
 
     def emit(self, *args, **kwargs):
-        for handler in list(self._handlers):        # The invocation list can be modified from callbacks!
+        for handler in list(
+            self._handlers
+        ):  # The invocation list can be modified from callbacks!
             try:
                 handler(*args, **kwargs)
             except Exception as ex:
-                self._logger.exception('Unhandled exception %r in the handler %r', ex, handler)
+                self._logger.exception(
+                    "Unhandled exception %r in the handler %r", ex, handler
+                )
 
     @property
     def num_handlers(self):
@@ -114,27 +123,27 @@ def _unittest_event():
     e = Event()
     assert e.num_handlers == 0
     e()
-    e(123, '456')
+    e(123, "456")
 
-    acc = ''
+    acc = ""
 
     def acc_add(*s):
         nonlocal acc
-        acc += ''.join(s)
+        acc += "".join(s)
 
     e.connect(acc_add)
-    e('123', 'abc')
-    e('def')
+    e("123", "abc")
+    e("def")
     e()
     assert len(e) == 1
-    assert acc == '123abcdef'
+    assert acc == "123abcdef"
 
     with raises(ValueError):
         e.disconnect(lambda a: None)
 
     e.disconnect(acc_add)
     assert len(e) == 0
-    e(123, '456')
+    e(123, "456")
 
     # noinspection PyMethodMayBeStatic
     class Holder:
@@ -143,21 +152,21 @@ def _unittest_event():
 
         def receiver(self, *args):
             nonlocal acc
-            acc += ''.join(args)
+            acc += "".join(args)
 
     assert len(e) == 0
     holder = Holder(e)
     assert len(e) == 1
-    e(' Weak')
+    e(" Weak")
     assert len(e) == 1
     del holder
     gc.collect()
 
     assert len(e) == 1
-    e('Dead x_x')
+    e("Dead x_x")
     assert len(e) == 0
 
-    assert acc == '123abcdef Weak'
+    assert acc == "123abcdef Weak"
 
     holder = Holder(e)
     assert len(e) == 1
@@ -169,6 +178,6 @@ def _unittest_event():
     gc.collect()
 
     assert len(e) == 1
-    e('Dead x_x')
+    e("Dead x_x")
     assert len(e) == 0
-    assert acc == '123abcdef Weak'
+    assert acc == "123abcdef Weak"

@@ -46,8 +46,10 @@ def display_value(value, type_id: Register.ValueType) -> str:
 
 
 @functools.lru_cache(8192)
-def _display_value_impl(value: typing.Union[type(None), str, bytes, int, float, bool, tuple],
-                        type_id: Register.ValueType) -> str:
+def _display_value_impl(
+    value: typing.Union[type(None), str, bytes, int, float, bool, tuple],
+    type_id: Register.ValueType,
+) -> str:
     """
     The value must be of a hashable type. List is not hashable, so it has to be converted to tuple first.
     The size of the cache must be a power of two (refer to the documentation for lru_cache for more info).
@@ -56,7 +58,7 @@ def _display_value_impl(value: typing.Union[type(None), str, bytes, int, float, 
     The unit test provided in this file shows about twenty-fold improvement in conversion speed with cache.
     """
     if value is None:
-        return ''
+        return ""
     elif isinstance(value, (str, bytes)):
         return str(value)
     else:
@@ -68,18 +70,20 @@ def _display_value_impl(value: typing.Union[type(None), str, bytes, int, float, 
 
         dtype = Register.get_numpy_type(type_id)
         if dtype is None:
-            raise ValueError(f'Unknown type ID: {type_id!r}')
+            raise ValueError(f"Unknown type ID: {type_id!r}")
 
         return _display_array_of_scalars(value, dtype)
 
 
 def _display_array_of_scalars(value, dtype: numpy.dtype) -> str:
     # TODO: Format as rectangular arrays whenever possible
-    text = numpy.array2string(numpy.array(value, dtype=dtype),
-                              max_line_width=MAX_LINE_LENGTH,
-                              formatter=_get_numpy_formatter(dtype),
-                              separator=', ')
-    text = text.strip('[]').replace('\n ', '\n')
+    text = numpy.array2string(
+        numpy.array(value, dtype=dtype),
+        max_line_width=MAX_LINE_LENGTH,
+        formatter=_get_numpy_formatter(dtype),
+        separator=", ",
+    )
+    text = text.strip("[]").replace("\n ", "\n")
     return text
 
 
@@ -88,54 +92,55 @@ def _get_numpy_formatter(dtype: numpy.dtype) -> dict:
     """Formatter construction can be very slow, we optimize it by caching the results"""
     try:
         if dtype == numpy.bool_:
-            return {
-                'bool': '{:d}'.format       # Formatting as integer to conserve space
-            }
+            return {"bool": "{:d}".format}  # Formatting as integer to conserve space
         else:
             info = numpy.iinfo(dtype)
             item_length = max(len(str(info.max)), len(str(info.min)))
-            return {
-                'int_kind': ('{' + f':{item_length}' + '}').format
-            }
+            return {"int_kind": ("{" + f":{item_length}" + "}").format}
     except ValueError:
         decimals = int(abs(math.log10(numpy.finfo(dtype).resolution)) + 0.5)
-        return {
-            'float_kind': '{:#.@g}'.replace('@', str(decimals)).format
-        }
+        return {"float_kind": "{:#.@g}".replace("@", str(decimals)).format}
 
 
 def _unittest_display_value():
     import time
+
     tid = Register.ValueType
     begun = time.monotonic()
 
     # Running multiple tests in a row in order to evaluate the caching performance
     for _ in range(100):
-        assert display_value(True, tid.BOOLEAN) == 'True'
-        assert display_value(False, tid.BOOLEAN) == 'False'
-        assert display_value([True, False, True], tid.BOOLEAN) == '1, 0, 1'
+        assert display_value(True, tid.BOOLEAN) == "True"
+        assert display_value(False, tid.BOOLEAN) == "False"
+        assert display_value([True, False, True], tid.BOOLEAN) == "1, 0, 1"
 
-        assert display_value(123, tid.U8) == '123'
-        assert display_value([-1, +12, -123], tid.I8) == '  -1,   12, -123'
-        assert display_value(123.456789, tid.F32) == '123.457'
-        assert display_value([123.456789, -12e-34], tid.F32) == '123.457, -1.20000e-33'
+        assert display_value(123, tid.U8) == "123"
+        assert display_value([-1, +12, -123], tid.I8) == "  -1,   12, -123"
+        assert display_value(123.456789, tid.F32) == "123.457"
+        assert display_value([123.456789, -12e-34], tid.F32) == "123.457, -1.20000e-33"
 
-        assert display_value(list(range(9)), tid.F64) == '''
+        assert (
+            display_value(list(range(9)), tid.F64)
+            == """
 0.00000000000000, 1.00000000000000,
 2.00000000000000, 3.00000000000000,
 4.00000000000000, 5.00000000000000,
 6.00000000000000, 7.00000000000000,
 8.00000000000000
-'''.strip()
+""".strip()
+        )
 
-        assert display_value(list(range(9)), tid.F32) == '''
+        assert (
+            display_value(list(range(9)), tid.F32)
+            == """
 0.00000, 1.00000, 2.00000, 3.00000,
 4.00000, 5.00000, 6.00000, 7.00000,
 8.00000
-'''.strip()
+""".strip()
+        )
 
     elapsed = time.monotonic() - begun
-    print(f'Display value test completed in {elapsed * 1e3:.1f} milliseconds')
+    print(f"Display value test completed in {elapsed * 1e3:.1f} milliseconds")
 
 
 def parse_value(text: str, type_id: Register.ValueType):
@@ -143,7 +148,7 @@ def parse_value(text: str, type_id: Register.ValueType):
     Inverse to @ref display_value().
     """
     value = _parse_value_impl(text, type_id)
-    _logger.info('Value parser [with type %r]: %r --> %r', type_id, text, value)
+    _logger.info("Value parser [with type %r]: %r --> %r", type_id, text, value)
     return value
 
 
@@ -155,32 +160,45 @@ def _parse_value_impl(text: str, type_id: Register.ValueType):
         return text
 
     if type_id == Register.ValueType.UNSTRUCTURED:
-        return text.encode('latin1')
+        return text.encode("latin1")
 
     def parse_scalar(x: str) -> typing.Union[int, float]:
         try:
-            return int(x, 0)        # Supporting standard radix prefixes: 0x, 0b, 0o
+            return int(x, 0)  # Supporting standard radix prefixes: 0x, 0b, 0o
         except ValueError:
-            return float(x)         # Couldn't parse int, try float
+            return float(x)  # Couldn't parse int, try float
 
     # Normalize the case, resolve some special values, normalize separators
-    text = text.lower().replace('true', '1').replace('false', '0').replace(',', ' ').strip()
+    text = (
+        text.lower()
+        .replace("true", "1")
+        .replace("false", "0")
+        .replace(",", " ")
+        .strip()
+    )
 
     return [parse_scalar(x) for x in text.split()]
 
 
 def _unittest_parse_value():
     from pytest import approx
+
     tid = Register.ValueType
-    assert parse_value('', tid.EMPTY) is None
-    assert parse_value('Arbitrary', tid.EMPTY) is None
-    assert parse_value('Arbitrary', tid.STRING) == 'Arbitrary'
-    assert parse_value('\x01\x02\x88\xFF', tid.UNSTRUCTURED) == bytes([1, 2, 0x88, 0xFF])
-    assert parse_value('0', tid.BOOLEAN) == [False]
-    assert parse_value('True, false', tid.BOOLEAN) == [True, False]
-    assert parse_value('true, False', tid.I8) == [1, 0]
-    assert parse_value('0.123, 56.45', tid.F32) == [approx(0.123), approx(56.45)]
-    assert parse_value('0.123, 56.45, 123', tid.F64) == [approx(0.123), approx(56.45), 123]
+    assert parse_value("", tid.EMPTY) is None
+    assert parse_value("Arbitrary", tid.EMPTY) is None
+    assert parse_value("Arbitrary", tid.STRING) == "Arbitrary"
+    assert parse_value("\x01\x02\x88\xFF", tid.UNSTRUCTURED) == bytes(
+        [1, 2, 0x88, 0xFF]
+    )
+    assert parse_value("0", tid.BOOLEAN) == [False]
+    assert parse_value("True, false", tid.BOOLEAN) == [True, False]
+    assert parse_value("true, False", tid.I8) == [1, 0]
+    assert parse_value("0.123, 56.45", tid.F32) == [approx(0.123), approx(56.45)]
+    assert parse_value("0.123, 56.45, 123", tid.F64) == [
+        approx(0.123),
+        approx(56.45),
+        123,
+    ]
 
 
 @cached
@@ -191,11 +209,13 @@ def display_type(register: Register) -> str:
     TODO: dimensionality. Perhaps dimensionality should be considered in the register's __hash__() and __eq__()?
     TODO: Alternatively, just make the cache local rather than global.
     """
-    out = str(register.type_id).split('.')[-1].lower()
+    out = str(register.type_id).split(".")[-1].lower()
 
     def get_vector_dimension(value):
         if value and not isinstance(value, (str, bytes)):
-            if len(value) != 1:     # Length 1 is a scalar, dimensional annotation is redundant
+            if (
+                len(value) != 1
+            ):  # Length 1 is a scalar, dimensional annotation is redundant
                 return len(value)
 
     # Default value is preferred if available because it can't change dimensions at all, whereas the cached value
@@ -206,6 +226,6 @@ def display_type(register: Register) -> str:
         dimension = get_vector_dimension(register.cached_value)
 
     if dimension is not None:
-        out += f'[{dimension}]'
+        out += f"[{dimension}]"
 
     return out

@@ -30,7 +30,7 @@ _logger = getLogger(__name__)
 # The objective is to always pre-select the best guess, best choice port, so that the user could connect in
 # just one click. Vendor-product pairs located at the beginning of the list are preferred.
 _PREFERABLE_VENDOR_PRODUCT_PATTERNS: typing.List[typing.Tuple[str, str]] = [
-    ('*zubax*', '*telega*'),
+    ("*zubax*", "*telega*"),
 ]
 
 
@@ -38,6 +38,7 @@ class PortDiscoverer:
     """
     This is a bit low-effort, I mostly pulled this code from the UAVCAN GUI Tool.
     """
+
     def __init__(self):
         pass
 
@@ -55,16 +56,22 @@ class PortDiscoverer:
 
         # noinspection PyBroadException
         try:
-            ports = sorted(ports, key=lambda pi: pi.manufacturer() + pi.description() + pi.systemLocation())
+            ports = sorted(
+                ports,
+                key=lambda pi: pi.manufacturer()
+                + pi.description()
+                + pi.systemLocation(),
+            )
         except Exception:
-            _logger.exception('Pre-sorting failed')
+            _logger.exception("Pre-sorting failed")
 
         ports = sorted(ports, key=lambda pi: -get_score(pi))
         return list(ports)
 
     @staticmethod
-    def display_ports(ports: typing.List[QtSerialPort.QSerialPortInfo],
-                      combo: QComboBox) -> typing.Dict[str, str]:
+    def display_ports(
+        ports: typing.List[QtSerialPort.QSerialPortInfo], combo: QComboBox
+    ) -> typing.Dict[str, str]:
         known_keys = set()
         remove_indices = []
         was_empty = combo.count() == 0
@@ -72,7 +79,7 @@ class PortDiscoverer:
         def make_description(p: QtSerialPort.QSerialPortInfo) -> str:
             out = f'{p.portName()}: {p.manufacturer() or "Unknown vendor"} - {p.description() or "Unknown product"}'
             if p.serialNumber().strip():
-                out += ' #' + str(p.serialNumber())
+                out += " #" + str(p.serialNumber())
 
             return out
 
@@ -93,7 +100,7 @@ class PortDiscoverer:
 
             known_keys.add(tx)
             if tx not in description_location_mapping:
-                _logger.debug('Removing port %r', tx)
+                _logger.debug("Removing port %r", tx)
                 remove_indices.append(idx)
 
         # Removing - starting from the last item in order to retain indexes
@@ -103,7 +110,7 @@ class PortDiscoverer:
         # Adding new items - starting from the last item in order to retain the final order
         for key in list(description_location_mapping.keys())[::-1]:
             if key not in known_keys:
-                _logger.debug('Adding port %r', key)
+                _logger.debug("Adding port %r", key)
                 try:
                     combo.insertItem(0, description_icon_mapping[key], key)
                 except KeyError:
@@ -116,16 +123,24 @@ class PortDiscoverer:
         return description_location_mapping
 
 
-def _get_index_of_first_matching_preferable_pattern(pi: QtSerialPort.QSerialPortInfo) -> typing.Optional[int]:
-    for idx, (vendor_wildcard, product_wildcard) in enumerate(_PREFERABLE_VENDOR_PRODUCT_PATTERNS):
-        vendor_match = fnmatch.fnmatch(pi.manufacturer().lower(), vendor_wildcard.lower())
-        product_match = fnmatch.fnmatch(pi.description().lower(), product_wildcard.lower())
+def _get_index_of_first_matching_preferable_pattern(
+    pi: QtSerialPort.QSerialPortInfo,
+) -> typing.Optional[int]:
+    for idx, (vendor_wildcard, product_wildcard) in enumerate(
+        _PREFERABLE_VENDOR_PRODUCT_PATTERNS
+    ):
+        vendor_match = fnmatch.fnmatch(
+            pi.manufacturer().lower(), vendor_wildcard.lower()
+        )
+        product_match = fnmatch.fnmatch(
+            pi.description().lower(), product_wildcard.lower()
+        )
         if vendor_match and product_match:
             return idx
 
 
 def _get_port_icon(p: QtSerialPort.QSerialPortInfo) -> typing.Optional[QIcon]:
     if _get_index_of_first_matching_preferable_pattern(p) is not None:
-        return get_icon('zee')
+        return get_icon("zee")
     else:
-        return get_icon('question-mark')
+        return get_icon("question-mark")

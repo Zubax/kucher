@@ -21,7 +21,12 @@ from PyQt5.QtCore import Qt
 
 from kucher.view.device_model_representation import Commander, GeneralStatusView
 from kucher.view.widgets.group_box_widget import GroupBoxWidget
-from kucher.view.utils import make_button, lay_out_vertically, lay_out_horizontally, get_icon
+from kucher.view.utils import (
+    make_button,
+    lay_out_vertically,
+    lay_out_horizontally,
+    get_icon,
+)
 
 from .base import SpecializedControlWidgetBase
 from .run_control_widget import RunControlWidget
@@ -31,8 +36,8 @@ from .misc_control_widget import MiscControlWidget
 from .low_level_manipulation_control_widget import LowLevelManipulationControlWidget
 
 
-STOP_SHORTCUT = 'Esc'
-EMERGENCY_SHORTCUT = 'Ctrl+Space'
+STOP_SHORTCUT = "Esc"
+EMERGENCY_SHORTCUT = "Ctrl+Space"
 
 
 _logger = getLogger(__name__)
@@ -40,28 +45,42 @@ _logger = getLogger(__name__)
 
 class ControlWidget(GroupBoxWidget):
     # noinspection PyArgumentList,PyUnresolvedReferences
-    def __init__(self,
-                 parent:    QWidget,
-                 commander: Commander):
-        super(ControlWidget, self).__init__(parent, 'Controls', 'adjust')
+    def __init__(self, parent: QWidget, commander: Commander):
+        super(ControlWidget, self).__init__(parent, "Controls", "adjust")
 
         self._commander: Commander = commander
 
-        self._last_seen_timestamped_general_status: typing.Optional[typing.Tuple[float, GeneralStatusView]] = None
+        self._last_seen_timestamped_general_status: typing.Optional[
+            typing.Tuple[float, GeneralStatusView]
+        ] = None
 
         self._run_widget = RunControlWidget(self, commander)
-        self._motor_identification_widget = MotorIdentificationControlWidget(self, commander)
+        self._motor_identification_widget = MotorIdentificationControlWidget(
+            self, commander
+        )
         self._hardware_test_widget = HardwareTestControlWidget(self, commander)
         self._misc_widget = MiscControlWidget(self, commander)
-        self._low_level_manipulation_widget = LowLevelManipulationControlWidget(self, commander)
+        self._low_level_manipulation_widget = LowLevelManipulationControlWidget(
+            self, commander
+        )
 
         self._panel = QTabWidget(self)
 
-        self._panel.addTab(self._run_widget, get_icon('running'), 'Run')
-        self._panel.addTab(self._motor_identification_widget, get_icon('caliper'), 'Motor identification')
-        self._panel.addTab(self._hardware_test_widget, get_icon('pass-fail'), 'Self-test')
-        self._panel.addTab(self._misc_widget, get_icon('ellipsis'), 'Miscellaneous')
-        self._panel.addTab(self._low_level_manipulation_widget, get_icon('hand-button'), 'Low-level manipulation')
+        self._panel.addTab(self._run_widget, get_icon("running"), "Run")
+        self._panel.addTab(
+            self._motor_identification_widget,
+            get_icon("caliper"),
+            "Motor identification",
+        )
+        self._panel.addTab(
+            self._hardware_test_widget, get_icon("pass-fail"), "Self-test"
+        )
+        self._panel.addTab(self._misc_widget, get_icon("ellipsis"), "Miscellaneous")
+        self._panel.addTab(
+            self._low_level_manipulation_widget,
+            get_icon("hand-button"),
+            "Low-level manipulation",
+        )
 
         self._current_widget: SpecializedControlWidgetBase = self._hardware_test_widget
 
@@ -69,24 +88,28 @@ class ControlWidget(GroupBoxWidget):
         self._panel.setCurrentWidget(self._run_widget)
 
         # Shared buttons
-        self._stop_button =\
-            make_button(self,
-                        text='Stop',
-                        icon_name='stop',
-                        tool_tip=f'Sends a regular stop command which instructs the controller to abandon the current'
-                                 f'task and activate the Idle task [{STOP_SHORTCUT}]',
-                        on_clicked=self._do_regular_stop)
-        self._stop_button.setSizePolicy(QSizePolicy().MinimumExpanding,
-                                        QSizePolicy().MinimumExpanding)
+        self._stop_button = make_button(
+            self,
+            text="Stop",
+            icon_name="stop",
+            tool_tip=f"Sends a regular stop command which instructs the controller to abandon the current"
+            f"task and activate the Idle task [{STOP_SHORTCUT}]",
+            on_clicked=self._do_regular_stop,
+        )
+        self._stop_button.setSizePolicy(
+            QSizePolicy().MinimumExpanding, QSizePolicy().MinimumExpanding
+        )
 
-        self._emergency_button =\
-            make_button(self,
-                        text='EMERGENCY\nSHUTDOWN',
-                        tool_tip=f'Unconditionally  disables and locks down the VSI until restarted '
-                                 f'[{EMERGENCY_SHORTCUT}]',
-                        on_clicked=self._do_emergency_stop)
-        self._emergency_button.setSizePolicy(QSizePolicy().MinimumExpanding,
-                                             QSizePolicy().MinimumExpanding)
+        self._emergency_button = make_button(
+            self,
+            text="EMERGENCY\nSHUTDOWN",
+            tool_tip=f"Unconditionally  disables and locks down the VSI until restarted "
+            f"[{EMERGENCY_SHORTCUT}]",
+            on_clicked=self._do_emergency_stop,
+        )
+        self._emergency_button.setSizePolicy(
+            QSizePolicy().MinimumExpanding, QSizePolicy().MinimumExpanding
+        )
         small_font = QFont()
         small_font.setPointSize(round(small_font.pointSize() * 0.8))
         self._emergency_button.setFont(small_font)
@@ -95,7 +118,9 @@ class ControlWidget(GroupBoxWidget):
         self._stop_shortcut = QShortcut(QKeySequence(STOP_SHORTCUT), self.window())
         self._stop_shortcut.setAutoRepeat(False)
 
-        self._emergency_shortcut = QShortcut(QKeySequence(EMERGENCY_SHORTCUT), self.window())
+        self._emergency_shortcut = QShortcut(
+            QKeySequence(EMERGENCY_SHORTCUT), self.window()
+        )
         self._emergency_shortcut.setAutoRepeat(False)
 
         self.setEnabled(False)
@@ -114,10 +139,12 @@ class ControlWidget(GroupBoxWidget):
                 (self._panel, 1),
                 lay_out_vertically(
                     (self._stop_button, 1),
-                    make_tiny_label(f'\u2191 {STOP_SHORTCUT} \u2191', Qt.AlignTop),
-                    make_tiny_label(f'\u2193 {EMERGENCY_SHORTCUT} \u2193', Qt.AlignBottom),
+                    make_tiny_label(f"\u2191 {STOP_SHORTCUT} \u2191", Qt.AlignTop),
+                    make_tiny_label(
+                        f"\u2193 {EMERGENCY_SHORTCUT} \u2193", Qt.AlignBottom
+                    ),
                     (self._emergency_button, 1),
-                )
+                ),
             )
         )
 
@@ -141,52 +168,64 @@ class ControlWidget(GroupBoxWidget):
         self._current_widget.on_general_status_update(timestamp, s)
 
     def _on_current_widget_changed(self, new_widget_index: int):
-        _logger.debug(f'The user has changed the active widget. '
-                      f'Stopping the previous widget, which was {self._current_widget!r}')
+        _logger.debug(
+            f"The user has changed the active widget. "
+            f"Stopping the previous widget, which was {self._current_widget!r}"
+        )
         self._current_widget.stop()
 
         self._current_widget = self._panel.currentWidget()
         assert isinstance(self._current_widget, SpecializedControlWidgetBase)
 
-        _logger.debug(f'Starting the new widget (at index {new_widget_index}), which is {self._current_widget!r}')
+        _logger.debug(
+            f"Starting the new widget (at index {new_widget_index}), which is {self._current_widget!r}"
+        )
         self._current_widget.start()
 
         # We also make sure to always provide the newly activated widget with the latest known general status,
         # in order to let it actualize its state faster.
         if self._last_seen_timestamped_general_status is not None:
-            self._current_widget.on_general_status_update(*self._last_seen_timestamped_general_status)
+            self._current_widget.on_general_status_update(
+                *self._last_seen_timestamped_general_status
+            )
 
     # noinspection PyUnresolvedReferences
     def _enable(self):
         self._stop_shortcut.activated.connect(self._do_regular_stop)
         self._emergency_shortcut.activated.connect(self._do_emergency_stop)
         self.setEnabled(True)
-        self._emergency_button.setStyleSheet('''QPushButton {
+        self._emergency_button.setStyleSheet(
+            """QPushButton {
              background-color: #f00;
              font-weight: 600;
              color: #300;
-        }''')
+        }"""
+        )
 
     # noinspection PyUnresolvedReferences
     def _disable(self):
         self._stop_shortcut.activated.disconnect(self._do_regular_stop)
         self._emergency_shortcut.activated.disconnect(self._do_emergency_stop)
         self.setEnabled(False)
-        self._emergency_button.setStyleSheet('')
+        self._emergency_button.setStyleSheet("")
 
     def _do_regular_stop(self):
         self._launch(self._commander.stop())
-        _logger.info('Stop button clicked (or shortcut activated)')
-        self.window().statusBar().showMessage('Stop command has been sent. '
-                                              'The device may choose to disregard it, depending on the current task.')
+        _logger.info("Stop button clicked (or shortcut activated)")
+        self.window().statusBar().showMessage(
+            "Stop command has been sent. "
+            "The device may choose to disregard it, depending on the current task."
+        )
         self._current_widget.stop()
 
     def _do_emergency_stop(self):
         for _ in range(3):
             self._launch(self._commander.emergency())
 
-        _logger.warning('Emergency button clicked (or shortcut activated)')
-        self.window().statusBar().showMessage("DON'T PANIC. The hardware will remain unusable until restarted.")
+        _logger.warning("Emergency button clicked (or shortcut activated)")
+        self.window().statusBar().showMessage(
+            "DON'T PANIC. The hardware will remain unusable until restarted."
+        )
 
         self._current_widget.stop()
 

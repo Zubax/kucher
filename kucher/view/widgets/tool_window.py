@@ -26,12 +26,16 @@ _logger = getLogger(__name__)
 
 class ToolWindow(QDockWidget):
     # noinspection PyArgumentList
-    def __init__(self,
-                 parent:            QWidget,
-                 title:             typing.Optional[str] = None,
-                 icon_name:         typing.Optional[str] = None):
+    def __init__(
+        self,
+        parent: QWidget,
+        title: typing.Optional[str] = None,
+        icon_name: typing.Optional[str] = None,
+    ):
         super(QDockWidget, self).__init__(parent)
-        self.setAttribute(Qt.WA_DeleteOnClose)                  # This is required to stop background timers!
+        self.setAttribute(
+            Qt.WA_DeleteOnClose
+        )  # This is required to stop background timers!
 
         if title:
             self.setWindowTitle(title)
@@ -43,10 +47,10 @@ class ToolWindow(QDockWidget):
         self._resize_event = Event()
 
     def __del__(self):
-        _logger.debug('Deleting %r', self)
+        _logger.debug("Deleting %r", self)
 
     def __str__(self):
-        return f'ToolWindow({self.widget!r})'
+        return f"ToolWindow({self.widget!r})"
 
     __repr__ = __str__
 
@@ -61,7 +65,7 @@ class ToolWindow(QDockWidget):
         return self._resize_event
 
     def set_icon(self, icon_name: str):
-        pass        # TODO: Icons?
+        pass  # TODO: Icons?
 
     @property
     def widget(self) -> QWidget:
@@ -71,14 +75,14 @@ class ToolWindow(QDockWidget):
     @widget.setter
     def widget(self, widget: QWidget):
         if not isinstance(widget, QWidget):
-            raise TypeError(f'Expected QWidget, got {type(widget)}')
+            raise TypeError(f"Expected QWidget, got {type(widget)}")
 
         self.setWidget(widget)
 
     # noinspection PyCallingNonCallable,PyArgumentList
     def closeEvent(self, *args):
         super(ToolWindow, self).closeEvent(*args)
-        _logger.debug('Close event at %r', self)
+        _logger.debug("Close event at %r", self)
         self._close_event()
 
     # noinspection PyCallingNonCallable,PyArgumentList

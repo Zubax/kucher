@@ -1,4 +1,3 @@
 #!/bin/bash
 pytest
-
-pycodestyle
+black kucher/fuhrer kucher/model kucher/view kucher/*.py --check

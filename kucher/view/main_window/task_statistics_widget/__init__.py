@@ -16,15 +16,28 @@ import typing
 import asyncio
 import datetime
 from logging import getLogger
-from PyQt5.QtWidgets import QWidget, QTableView, QHeaderView, QSpinBox, QCheckBox, QLabel, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import (
+    QWidget,
+    QTableView,
+    QHeaderView,
+    QSpinBox,
+    QCheckBox,
+    QLabel,
+    QVBoxLayout,
+    QHBoxLayout,
+)
 from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtCore import QTimer, Qt, QAbstractTableModel, QModelIndex, QVariant
 from PyQt5.QtGui import QFontMetrics, QFont
 
 from kucher.view.widgets import WidgetBase
 from kucher.view.utils import gui_test, get_icon_pixmap
-from kucher.view.device_model_representation import TaskStatisticsView, TaskID, get_icon_name_for_task_id, \
-    get_human_friendly_task_name
+from kucher.view.device_model_representation import (
+    TaskStatisticsView,
+    TaskID,
+    get_icon_name_for_task_id,
+    get_human_friendly_task_name,
+)
 
 
 _DEFAULT_UPDATE_PERIOD = 2
@@ -35,15 +48,21 @@ _logger = getLogger(__name__)
 
 class TaskStatisticsWidget(WidgetBase):
     # noinspection PyUnresolvedReferences,PyArgumentList
-    def __init__(self,
-                 parent: QWidget,
-                 async_update_delegate: typing.Callable[[], typing.Awaitable[typing.Optional[TaskStatisticsView]]]):
+    def __init__(
+        self,
+        parent: QWidget,
+        async_update_delegate: typing.Callable[
+            [], typing.Awaitable[typing.Optional[TaskStatisticsView]]
+        ],
+    ):
         """
         :param parent:
         :param async_update_delegate: Returns TaskStatisticsView if connected, None otherwise
         """
         super(TaskStatisticsWidget, self).__init__(parent)
-        self.setAttribute(Qt.WA_DeleteOnClose)                  # This is required to stop background timers!
+        self.setAttribute(
+            Qt.WA_DeleteOnClose
+        )  # This is required to stop background timers!
 
         self._model = _TableModel(self)
 
@@ -56,8 +75,10 @@ class TaskStatisticsWidget(WidgetBase):
             if task is None or task.done():
                 task = asyncio.get_event_loop().create_task(self._do_update())
             else:
-                self._display_status('Still updating...')
-                _logger.warning('Update task not launched because the previous one has not completed yet')
+                self._display_status("Still updating...")
+                _logger.warning(
+                    "Update task not launched because the previous one has not completed yet"
+                )
 
         self._update_timer = QTimer(self)
         self._update_timer.timeout.connect(launch_update_task)
@@ -67,22 +88,25 @@ class TaskStatisticsWidget(WidgetBase):
         self._update_interval_selector.setMaximum(10)
         self._update_interval_selector.setValue(_DEFAULT_UPDATE_PERIOD)
         self._update_interval_selector.valueChanged.connect(
-            lambda: self._update_timer.setInterval(self._update_interval_selector.value() * 1000))
+            lambda: self._update_timer.setInterval(
+                self._update_interval_selector.value() * 1000
+            )
+        )
 
         def on_update_enabler_toggled():
             if self._update_enabler.isChecked():
-                self._display_status()      # Clear status
-                self._model.clear()         # Remove obsolete data from the model (this will trigger view update later)
-                launch_update_task()        # Request update ASAP
+                self._display_status()  # Clear status
+                self._model.clear()  # Remove obsolete data from the model (this will trigger view update later)
+                launch_update_task()  # Request update ASAP
                 self._update_interval_selector.setEnabled(True)
                 self._update_timer.start(self._update_interval_selector.value() * 1000)
             else:
-                self._display_status('Disabled')
+                self._display_status("Disabled")
                 self._table_view.setEnabled(False)
                 self._update_interval_selector.setEnabled(False)
                 self._update_timer.stop()
 
-        self._update_enabler = QCheckBox('Update every', self)
+        self._update_enabler = QCheckBox("Update every", self)
         self._update_enabler.setChecked(False)
         self._update_enabler.stateChanged.connect(on_update_enabler_toggled)
 
@@ -98,7 +122,7 @@ class TaskStatisticsWidget(WidgetBase):
         controls_layout = QHBoxLayout()
         controls_layout.addWidget(self._update_enabler)
         controls_layout.addWidget(self._update_interval_selector)
-        controls_layout.addWidget(QLabel('seconds', self))
+        controls_layout.addWidget(QLabel("seconds", self))
         controls_layout.addStretch(1)
         controls_layout.addWidget(self._status_display)
 
@@ -110,7 +134,7 @@ class TaskStatisticsWidget(WidgetBase):
         self.setMinimumSize(400, 100)
 
     def __del__(self):
-        _logger.debug('Widget deleted')
+        _logger.debug("Widget deleted")
 
     def _display_status(self, text=None):
         self._status_display.setText(text)
@@ -118,18 +142,18 @@ class TaskStatisticsWidget(WidgetBase):
     async def _do_update(self):
         # noinspection PyBroadException
         try:
-            self._display_status('Updating...')
+            self._display_status("Updating...")
             data = await self._async_update_delegate()
             if data is not None:
                 self._table_view.setEnabled(True)
                 self._model.set_data(data)
-                self._display_status('OK')
+                self._display_status("OK")
             else:
                 self._table_view.setEnabled(False)
-                self._display_status('Data not available')
+                self._display_status("Data not available")
         except Exception as ex:
-            _logger.exception('Update failed')
-            self._display_status(f'Error: {ex}')
+            _logger.exception("Update failed")
+            self._display_status(f"Error: {ex}")
 
 
 # noinspection PyArgumentList
@@ -142,7 +166,7 @@ def _unittest_task_statistics_widget():
     win.resize(800, 600)
 
     async def update_delegate() -> TaskStatisticsView:
-        print('UPDATE')
+        print("UPDATE")
         return _make_test_data()
 
     widget = TaskStatisticsWidget(win, update_delegate)
@@ -165,7 +189,9 @@ class _TableView(QTableView):
         super(_TableView, self).__init__(parent)
         self.setModel(model)
 
-        self.horizontalHeader().setSectionResizeMode(self.horizontalHeader().ResizeToContents)
+        self.horizontalHeader().setSectionResizeMode(
+            self.horizontalHeader().ResizeToContents
+        )
         self.horizontalHeader().setStretchLastSection(True)
 
         self.verticalHeader().setSectionResizeMode(self.verticalHeader().Stretch)
@@ -181,13 +207,13 @@ class _TableView(QTableView):
 # noinspection PyMethodOverriding
 class _TableModel(QAbstractTableModel):
     COLUMNS = [
-        ('Started',     'When the task was last started'),
-        ('Stopped',     'When the task was last stopped'),
-        ('Last RT',     'Last run time'),
-        ('Total RT',    'Total run time'),
-        ('Invocations', 'How many times times the task was started'),
-        ('Failures',    'How many times the task has failed'),
-        ('Exit code',   'Last exit code'),
+        ("Started", "When the task was last started"),
+        ("Stopped", "When the task was last stopped"),
+        ("Last RT", "Last run time"),
+        ("Total RT", "Total run time"),
+        ("Invocations", "How many times times the task was started"),
+        ("Failures", "How many times the task has failed"),
+        ("Exit code", "Last exit code"),
     ]
 
     def __init__(self, parent: QWidget):
@@ -233,7 +259,10 @@ class _TableModel(QAbstractTableModel):
 
         if role == Qt.FontRole:
             if orientation == Qt.Vertical:
-                if list(self._data.entries.keys())[section] == self._get_running_task_id():
+                if (
+                    list(self._data.entries.keys())[section]
+                    == self._get_running_task_id()
+                ):
                     font = QFont()
                     font.setBold(True)
                     return font
@@ -250,7 +279,7 @@ class _TableModel(QAbstractTableModel):
             if secs > 0:
                 return datetime.timedelta(seconds=float(secs))
             else:
-                return ''
+                return ""
 
         if role == Qt.DisplayRole:
             if column == 0:
@@ -277,13 +306,13 @@ class _TableModel(QAbstractTableModel):
             if column == 6:
                 return str(entry.last_exit_code)
 
-            raise ValueError(f'Invalid column index: {column}')
+            raise ValueError(f"Invalid column index: {column}")
 
         if role == Qt.TextAlignmentRole:
             return Qt.AlignCenter
 
         if role == Qt.DecorationRole:
-            pass        # Return icons if necessary
+            pass  # Return icons if necessary
 
         return QVariant()
 
@@ -308,12 +337,14 @@ class _TableModel(QAbstractTableModel):
         if number_of_columns_changed:
             self.headerDataChanged.emit(Qt.Horizontal, 0, self.columnCount())
 
-        if number_of_rows_changed or (previous_running_task_id != self._get_running_task_id()):
+        if number_of_rows_changed or (
+            previous_running_task_id != self._get_running_task_id()
+        ):
             self.headerDataChanged.emit(Qt.Vertical, 0, self.rowCount())
 
-        self.dataChanged.emit(self.index(0, 0),
-                              self.index(self.rowCount() - 1,
-                                         self.columnCount() - 1))
+        self.dataChanged.emit(
+            self.index(0, 0), self.index(self.rowCount() - 1, self.columnCount() - 1)
+        )
 
     def clear(self):
         self.set_data(TaskStatisticsView())
@@ -368,57 +399,72 @@ def _make_test_data():
     from decimal import Decimal
 
     sample = {
-        'entries':   [
-            {'last_exit_code':          194,
-             'last_started_at':         Decimal('3.017389'),
-             'last_stopped_at':         Decimal('3.017432'),
-             'number_of_times_failed':  2,
-             'number_of_times_started': 2,
-             'task_id':                 'idle',
-             'total_run_time':          Decimal('0.000062')},
-            {'last_exit_code':          0,
-             'last_started_at':         Decimal('3.017432'),
-             'last_stopped_at':         Decimal('3.017389'),
-             'number_of_times_failed':  0,
-             'number_of_times_started': 3,
-             'task_id':                 'fault',
-             'total_run_time':          Decimal('27.093250')},
-            {'last_exit_code':          0,
-             'last_started_at':         Decimal('0.000000'),
-             'last_stopped_at':         Decimal('0.000000'),
-             'number_of_times_failed':  0,
-             'number_of_times_started': 0,
-             'task_id':                 'beep',
-             'total_run_time':          Decimal('0.000000')},
-            {'last_exit_code':          0,
-             'last_started_at':         Decimal('0.000000'),
-             'last_stopped_at':         Decimal('0.000000'),
-             'number_of_times_failed':  0,
-             'number_of_times_started': 0,
-             'task_id':                 'run',
-             'total_run_time':          Decimal('0.000000')},
-            {'last_exit_code':          2,
-             'last_started_at':         Decimal('0.016381'),
-             'last_stopped_at':         Decimal('2.025321'),
-             'number_of_times_failed':  1,
-             'number_of_times_started': 1,
-             'task_id':                 'hardware_test',
-             'total_run_time':          Decimal('2.008939')},
-            {'last_exit_code':          0,
-             'last_started_at':         Decimal('0.000000'),
-             'last_stopped_at':         Decimal('0.000000'),
-             'number_of_times_failed':  0,
-             'number_of_times_started': 0,
-             'task_id':                 'motor_identification',
-             'total_run_time':          Decimal('0.000000')},
-            {'last_exit_code':          0,
-             'last_started_at':         Decimal('0.000000'),
-             'last_stopped_at':         Decimal('0.000000'),
-             'number_of_times_failed':  0,
-             'number_of_times_started': 0,
-             'task_id':                 'low_level_manipulation',
-             'total_run_time':          Decimal('0.000000')}],
-        'timestamp': Decimal('29.114152')
+        "entries": [
+            {
+                "last_exit_code": 194,
+                "last_started_at": Decimal("3.017389"),
+                "last_stopped_at": Decimal("3.017432"),
+                "number_of_times_failed": 2,
+                "number_of_times_started": 2,
+                "task_id": "idle",
+                "total_run_time": Decimal("0.000062"),
+            },
+            {
+                "last_exit_code": 0,
+                "last_started_at": Decimal("3.017432"),
+                "last_stopped_at": Decimal("3.017389"),
+                "number_of_times_failed": 0,
+                "number_of_times_started": 3,
+                "task_id": "fault",
+                "total_run_time": Decimal("27.093250"),
+            },
+            {
+                "last_exit_code": 0,
+                "last_started_at": Decimal("0.000000"),
+                "last_stopped_at": Decimal("0.000000"),
+                "number_of_times_failed": 0,
+                "number_of_times_started": 0,
+                "task_id": "beep",
+                "total_run_time": Decimal("0.000000"),
+            },
+            {
+                "last_exit_code": 0,
+                "last_started_at": Decimal("0.000000"),
+                "last_stopped_at": Decimal("0.000000"),
+                "number_of_times_failed": 0,
+                "number_of_times_started": 0,
+                "task_id": "run",
+                "total_run_time": Decimal("0.000000"),
+            },
+            {
+                "last_exit_code": 2,
+                "last_started_at": Decimal("0.016381"),
+                "last_stopped_at": Decimal("2.025321"),
+                "number_of_times_failed": 1,
+                "number_of_times_started": 1,
+                "task_id": "hardware_test",
+                "total_run_time": Decimal("2.008939"),
+            },
+            {
+                "last_exit_code": 0,
+                "last_started_at": Decimal("0.000000"),
+                "last_stopped_at": Decimal("0.000000"),
+                "number_of_times_failed": 0,
+                "number_of_times_started": 0,
+                "task_id": "motor_identification",
+                "total_run_time": Decimal("0.000000"),
+            },
+            {
+                "last_exit_code": 0,
+                "last_started_at": Decimal("0.000000"),
+                "last_stopped_at": Decimal("0.000000"),
+                "number_of_times_failed": 0,
+                "number_of_times_started": 0,
+                "task_id": "low_level_manipulation",
+                "total_run_time": Decimal("0.000000"),
+            },
+        ],
+        "timestamp": Decimal("29.114152"),
     }
 
     return TaskStatisticsView.populate(sample)

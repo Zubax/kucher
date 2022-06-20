@@ -17,8 +17,16 @@ import time
 import typing
 import functools
 from logging import getLogger
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QMessageBox, QLayout, QHBoxLayout, QVBoxLayout, \
-    QBoxLayout
+from PyQt5.QtWidgets import (
+    QApplication,
+    QWidget,
+    QPushButton,
+    QMessageBox,
+    QLayout,
+    QHBoxLayout,
+    QVBoxLayout,
+    QBoxLayout,
+)
 from PyQt5.QtGui import QFont, QFontInfo, QIcon, QPixmap
 from PyQt5.QtCore import Qt
 
@@ -34,20 +42,20 @@ _logger = getLogger(__name__)
 
 
 def get_application_icon() -> QIcon:
-    return get_icon('zee')
+    return get_icon("zee")
 
 
 @cached
 def get_icon_path(name: str) -> str:
     def attempt(ext: str) -> str:
-        return get_absolute_path('view', 'icons', f'{name}.{ext}', check_existence=True)
+        return get_absolute_path("view", "icons", f"{name}.{ext}", check_existence=True)
 
     try:
-        out = attempt('png')
+        out = attempt("png")
     except ValueError:
-        out = attempt('svg')
+        out = attempt("svg")
 
-    _logger.info(f'Icon {name!r} found at {out!r}')
+    _logger.info(f"Icon {name!r} found at {out!r}")
     return out
 
 
@@ -66,7 +74,13 @@ def get_icon_pixmap(icon_name: str, width: int, height: int = None) -> QPixmap:
     height = height or width
     output = get_icon(icon_name).pixmap(width, height)
     elapsed = time.monotonic() - begun
-    _logger.info('Pixmap %r has been rendered with size %rx%r in %.6f seconds', icon_name, width, height, elapsed)
+    _logger.info(
+        "Pixmap %r has been rendered with size %rx%r in %.6f seconds",
+        icon_name,
+        width,
+        height,
+        elapsed,
+    )
     return output
 
 
@@ -80,18 +94,34 @@ def _get_monospace_font_impl(small=False) -> QFont:
     begun = time.monotonic()
     multiplier = 0.8 if small else 1.0
     min_font_size = min(7, QFont().pointSize())
-    preferred = ['Consolas', 'DejaVu Sans Mono', 'Monospace', 'Lucida Console', 'Monaco']
+    preferred = [
+        "Consolas",
+        "DejaVu Sans Mono",
+        "Monospace",
+        "Lucida Console",
+        "Monaco",
+    ]
     for name in preferred:
         font = QFont(name)
         if QFontInfo(font).fixedPitch():
-            font.setPointSize(round(max(min_font_size, QFont().pointSize() * multiplier)))
-            _logger.info('Selected monospace font (%.6f seconds): %r', time.monotonic() - begun, font.toString())
+            font.setPointSize(
+                round(max(min_font_size, QFont().pointSize() * multiplier))
+            )
+            _logger.info(
+                "Selected monospace font (%.6f seconds): %r",
+                time.monotonic() - begun,
+                font.toString(),
+            )
             return font
 
     font = QFont()
     font.setStyleHint(QFont().Monospace)
-    font.setFamily('monospace')
-    _logger.info('Using fallback monospace font (%.6f seconds): %r', time.monotonic() - begun, font.toString())
+    font.setFamily("monospace")
+    _logger.info(
+        "Using fallback monospace font (%.6f seconds): %r",
+        time.monotonic() - begun,
+        font.toString(),
+    )
     return font
 
 
@@ -102,17 +132,19 @@ def is_small_screen() -> bool:
     rect = QApplication.desktop().screenGeometry()
     w, h = rect.width(), rect.height()
     is_small = (w < 1000) or (h < 800)
-    _logger.info(f'Screen width and height: {w, h}, is small: {is_small}')
+    _logger.info(f"Screen width and height: {w, h}, is small: {is_small}")
     return is_small
 
 
-def make_button(parent: QWidget,
-                text: str = '',
-                icon_name: typing.Optional[str] = None,
-                tool_tip: typing.Optional[str] = None,
-                checkable: bool = False,
-                checked: bool = False,
-                on_clicked: typing.Callable[[], None] = None) -> QPushButton:
+def make_button(
+    parent: QWidget,
+    text: str = "",
+    icon_name: typing.Optional[str] = None,
+    tool_tip: typing.Optional[str] = None,
+    checkable: bool = False,
+    checked: bool = False,
+    on_clicked: typing.Callable[[], None] = None,
+) -> QPushButton:
     b = QPushButton(text, parent)
     b.setFocusPolicy(Qt.NoFocus)
     if icon_name:
@@ -123,7 +155,9 @@ def make_button(parent: QWidget,
 
     if checked and not checkable:
         checkable = True
-        _logger.error(f'A checked button must be checkable! text={text} icon_name={icon_name}')
+        _logger.error(
+            f"A checked button must be checkable! text={text} icon_name={icon_name}"
+        )
 
     if checkable:
         b.setCheckable(True)
@@ -135,12 +169,16 @@ def make_button(parent: QWidget,
     return b
 
 
-def show_error(title: str,
-               text: str,
-               informative_text: str,
-               parent: typing.Optional[QWidget]) -> QMessageBox:
-    _logger.exception('Error window: title=%r, text=%r, informative_text=%r, parent=%r',
-                      title, text, informative_text, parent)
+def show_error(
+    title: str, text: str, informative_text: str, parent: typing.Optional[QWidget]
+) -> QMessageBox:
+    _logger.exception(
+        "Error window: title=%r, text=%r, informative_text=%r, parent=%r",
+        title,
+        text,
+        informative_text,
+        parent,
+    )
 
     mbox = QMessageBox(parent)
 
@@ -152,7 +190,7 @@ def show_error(title: str,
     mbox.setIcon(QMessageBox.Critical)
     mbox.setStandardButtons(QMessageBox.Ok)
 
-    mbox.show()     # Not exec() because we don't want it to block!
+    mbox.show()  # Not exec() because we don't want it to block!
 
     return mbox
 
@@ -163,7 +201,7 @@ def time_tracked(target: typing.Callable):
     Note that if the wrapped function throws, the statistics is not updated and not logged.
     """
     worst = 0.0
-    best = float('+inf')
+    best = float("+inf")
     total = 0.0
     call_cnt = 0
 
@@ -180,8 +218,14 @@ def time_tracked(target: typing.Callable):
         total += execution_time
         call_cnt += 1
 
-        getLogger(str(target.__module__)).debug('%r completed in %.3f s (worst %.3f, best %.3f, avg %.3f)',
-                                                target, execution_time, worst, best, total / call_cnt)
+        getLogger(str(target.__module__)).debug(
+            "%r completed in %.3f s (worst %.3f, best %.3f, avg %.3f)",
+            target,
+            execution_time,
+            worst,
+            best,
+            total / call_cnt,
+        )
 
         return output
 
@@ -189,12 +233,16 @@ def time_tracked(target: typing.Callable):
 
 
 # noinspection PyArgumentList
-def lay_out(layout_object: QBoxLayout,
-            *items_or_items_with_stretch_factors: typing.Union[QWidget,
-                                                               QLayout,
-                                                               typing.Tuple[QWidget, int],
-                                                               typing.Tuple[QLayout, int],
-                                                               typing.Tuple[None, int]]):
+def lay_out(
+    layout_object: QBoxLayout,
+    *items_or_items_with_stretch_factors: typing.Union[
+        QWidget,
+        QLayout,
+        typing.Tuple[QWidget, int],
+        typing.Tuple[QLayout, int],
+        typing.Tuple[None, int],
+    ],
+):
     for item in items_or_items_with_stretch_factors:
         if isinstance(item, tuple):
             item, stretch = item
@@ -208,15 +256,19 @@ def lay_out(layout_object: QBoxLayout,
         elif item is None:
             layout_object.addStretch(stretch)
         else:
-            raise TypeError(f'Unexpected type: {type(item)!r}')
+            raise TypeError(f"Unexpected type: {type(item)!r}")
 
 
 # noinspection PyArgumentList
-def lay_out_horizontally(*items_or_items_with_stretch_factors: typing.Union[QWidget,
-                                                                            QLayout,
-                                                                            typing.Tuple[QWidget, int],
-                                                                            typing.Tuple[QLayout, int],
-                                                                            typing.Tuple[None, int]]) -> QLayout:
+def lay_out_horizontally(
+    *items_or_items_with_stretch_factors: typing.Union[
+        QWidget,
+        QLayout,
+        typing.Tuple[QWidget, int],
+        typing.Tuple[QLayout, int],
+        typing.Tuple[None, int],
+    ]
+) -> QLayout:
     """A simple convenience function that creates a horizontal layout in a Pythonic way"""
     inner = QHBoxLayout()
     lay_out(inner, *items_or_items_with_stretch_factors)
@@ -224,11 +276,15 @@ def lay_out_horizontally(*items_or_items_with_stretch_factors: typing.Union[QWid
 
 
 # noinspection PyArgumentList
-def lay_out_vertically(*items_or_items_with_stretch_factors: typing.Union[QWidget,
-                                                                          QLayout,
-                                                                          typing.Tuple[QWidget, int],
-                                                                          typing.Tuple[QLayout, int],
-                                                                          typing.Tuple[None, int]]) -> QLayout:
+def lay_out_vertically(
+    *items_or_items_with_stretch_factors: typing.Union[
+        QWidget,
+        QLayout,
+        typing.Tuple[QWidget, int],
+        typing.Tuple[QLayout, int],
+        typing.Tuple[None, int],
+    ]
+) -> QLayout:
     """Like lay_out_horizontally(), but for vertical layouts."""
     inner = QVBoxLayout()
     lay_out(inner, *items_or_items_with_stretch_factors)
@@ -241,17 +297,20 @@ def gui_test(test_case_function: typing.Callable):
     It attempts to detect if there is a desktop environment available where the GUI could be rendered, and if not,
     it skips the decorated test.
     """
+
     @functools.wraps(test_case_function)
     def decorator(*args, **kwargs):
         # Observe that PyTest is NOT a runtime dependency; therefore, it must not be imported unless a test
         # function is invoked!
         import pytest
 
-        if not bool(os.getenv('DISPLAY', False)):
-            pytest.skip("GUI test skipped because this environment doesn't seem to be GUI-capable")
+        if not bool(os.getenv("DISPLAY", False)):
+            pytest.skip(
+                "GUI test skipped because this environment doesn't seem to be GUI-capable"
+            )
 
-        if bool(os.environ.get('SKIP_SLOW_TESTS', False)):
-            pytest.skip('GUI test skipped because $SKIP_SLOW_TESTS is set')
+        if bool(os.environ.get("SKIP_SLOW_TESTS", False)):
+            pytest.skip("GUI test skipped because $SKIP_SLOW_TESTS is set")
 
         test_case_function(*args, **kwargs)
 
@@ -261,9 +320,10 @@ def gui_test(test_case_function: typing.Callable):
 @gui_test
 def _unittest_show_error():
     from PyQt5.QtWidgets import QApplication
+
     app = QApplication([])
     # We don't have to act upon the returned object; we just need to keep a reference to keep it alive
-    mb = show_error('Error title', 'Error text', 'Informative text', None)
+    mb = show_error("Error title", "Error text", "Informative text", None)
     for _ in range(1000):
         time.sleep(0.002)
         app.processEvents()
@@ -275,14 +335,25 @@ def _unittest_show_error():
 def _unittest_icons():
     import math
     import glob
-    from PyQt5.QtWidgets import QApplication, QMainWindow, QGroupBox, QGridLayout, QLabel, QSizePolicy
+    from PyQt5.QtWidgets import (
+        QApplication,
+        QMainWindow,
+        QGroupBox,
+        QGridLayout,
+        QLabel,
+        QSizePolicy,
+    )
     from PyQt5.QtGui import QFont, QFontMetrics
 
     app = QApplication([])
 
-    all_icons = list(map(lambda x: os.path.splitext(os.path.basename(x))[0],
-                         glob.glob(os.path.join(get_absolute_path('view', 'icons'), '*'))))
-    print('All icons:', len(all_icons), all_icons)
+    all_icons = list(
+        map(
+            lambda x: os.path.splitext(os.path.basename(x))[0],
+            glob.glob(os.path.join(get_absolute_path("view", "icons"), "*")),
+        )
+    )
+    print("All icons:", len(all_icons), all_icons)
 
     grid_size = int(math.ceil(math.sqrt(len(all_icons))))
 

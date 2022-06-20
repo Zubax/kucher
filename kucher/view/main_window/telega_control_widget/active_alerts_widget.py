@@ -20,14 +20,14 @@ from kucher.view.widgets.group_box_widget import GroupBoxWidget
 from kucher.view.utils import gui_test
 
 
-_ICON_OK = 'ok-strong'
-_ICON_ALERT = 'error'
+_ICON_OK = "ok-strong"
+_ICON_ALERT = "error"
 
 
 class ActiveAlertsWidget(GroupBoxWidget):
     # noinspection PyArgumentList,PyCallingNonCallable
     def __init__(self, parent: QWidget):
-        super(ActiveAlertsWidget, self).__init__(parent, 'Active alerts', _ICON_OK)
+        super(ActiveAlertsWidget, self).__init__(parent, "Active alerts", _ICON_OK)
 
         self._content = QLabel()
         self._content.setWordWrap(True)
@@ -54,15 +54,15 @@ class ActiveAlertsWidget(GroupBoxWidget):
         attrs = []
 
         for at in dir(flags):
-            if at.startswith('_'):
+            if at.startswith("_"):
                 continue
             val = getattr(flags, at)
             if not isinstance(val, bool):
                 continue
             if val:
-                attrs.append(at.replace('_', ' '))
+                attrs.append(at.replace("_", " "))
 
-        text = ', '.join(attrs).upper()
+        text = ", ".join(attrs).upper()
 
         # Changing icons is very expensive
         if text != str(self._content.text()):
@@ -70,7 +70,7 @@ class ActiveAlertsWidget(GroupBoxWidget):
                 self._content.setText(text)
                 self.set_icon(_ICON_ALERT)
             else:
-                self._content.setText('')
+                self._content.setText("")
                 self.set_icon(_ICON_OK)
 
 
@@ -80,6 +80,7 @@ def _unittest_active_alerts_widget():
     from dataclasses import dataclass
     import time
     from PyQt5.QtWidgets import QApplication, QMainWindow
+
     app = QApplication([])
 
     win = QMainWindow()
@@ -94,8 +95,8 @@ def _unittest_active_alerts_widget():
 
     @dataclass
     class Instance:
-        flag_a:         bool = False
-        flag_b_too:     bool = False
+        flag_a: bool = False
+        flag_b_too: bool = False
         flag_c_as_well: bool = False
 
     run_a_bit()

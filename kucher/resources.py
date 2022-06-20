@@ -15,7 +15,7 @@
 import os
 import sys
 
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     # https://pythonhosted.org/PyInstaller/runtime-information.html
     # noinspection PyUnresolvedReferences, PyProtectedMember
     PACKAGE_ROOT = sys._MEIPASS
@@ -24,9 +24,11 @@ else:
 
 
 def get_absolute_path(*relative_path_items: str, check_existence=False) -> str:
-    out = os.path.abspath(os.path.join(PACKAGE_ROOT, *relative_path_items)).replace('\\', '/')
+    out = os.path.abspath(os.path.join(PACKAGE_ROOT, *relative_path_items)).replace(
+        "\\", "/"
+    )
     if check_existence:
         if not os.path.exists(out):
-            raise ValueError(f'The specified path does not exist: {out}')
+            raise ValueError(f"The specified path does not exist: {out}")
 
     return out

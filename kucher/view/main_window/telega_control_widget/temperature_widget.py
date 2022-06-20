@@ -16,53 +16,55 @@ from PyQt5.QtWidgets import QWidget
 
 from kucher.view.utils import gui_test
 from kucher.view.monitored_quantity import MonitoredQuantity, MonitoredQuantityPresenter
-from kucher.view.widgets.value_display_group_widget import ValueDisplayGroupWidget, ValueDisplayWidget
+from kucher.view.widgets.value_display_group_widget import (
+    ValueDisplayGroupWidget,
+    ValueDisplayWidget,
+)
 
 
 class TemperatureWidget(ValueDisplayGroupWidget):
     # noinspection PyArgumentList,PyCallingNonCallable
     def __init__(self, parent: QWidget):
-        super(TemperatureWidget, self).__init__(parent,
-                                                'Temperature',
-                                                'thermometer',
-                                                with_comments=True)
+        super(TemperatureWidget, self).__init__(
+            parent, "Temperature", "thermometer", with_comments=True
+        )
         dp = MonitoredQuantityPresenter.DisplayParameters
         style = ValueDisplayWidget.Style
-        placeholder = 'N/A'
+        placeholder = "N/A"
 
-        default = dp(comment='OK',
-                     icon_name='ok')
+        default = dp(comment="OK", icon_name="ok")
 
-        when_low = dp(comment='Cold',
-                      icon_name='cold',
-                      style=style.ALERT_LOW)
+        when_low = dp(comment="Cold", icon_name="cold", style=style.ALERT_LOW)
 
-        when_high = dp(comment='Overheat',
-                       icon_name='fire',
-                       style=style.ALERT_HIGH)
+        when_high = dp(comment="Overheat", icon_name="fire", style=style.ALERT_HIGH)
 
-        self._cpu = MonitoredQuantityPresenter(self.create_value_display('CPU', placeholder),
-                                               '%.0f \u00B0C',
-                                               params_default=default,
-                                               params_when_low=when_low,
-                                               params_when_high=when_high)
+        self._cpu = MonitoredQuantityPresenter(
+            self.create_value_display("CPU", placeholder),
+            "%.0f \u00B0C",
+            params_default=default,
+            params_when_low=when_low,
+            params_when_high=when_high,
+        )
 
-        self._vsi = MonitoredQuantityPresenter(self.create_value_display('VSI', placeholder),
-                                               '%.0f \u00B0C',
-                                               params_default=default,
-                                               params_when_low=when_low,
-                                               params_when_high=when_high)
+        self._vsi = MonitoredQuantityPresenter(
+            self.create_value_display("VSI", placeholder),
+            "%.0f \u00B0C",
+            params_default=default,
+            params_when_low=when_low,
+            params_when_high=when_high,
+        )
 
-        self._motor = MonitoredQuantityPresenter(self.create_value_display('Motor', placeholder),
-                                                 '%.0f \u00B0C',
-                                                 params_default=default,
-                                                 params_when_low=when_low,
-                                                 params_when_high=when_high)
+        self._motor = MonitoredQuantityPresenter(
+            self.create_value_display("Motor", placeholder),
+            "%.0f \u00B0C",
+            params_default=default,
+            params_when_low=when_low,
+            params_when_high=when_high,
+        )
 
-    def set(self,
-            cpu:    MonitoredQuantity,
-            vsi:    MonitoredQuantity,
-            motor:  MonitoredQuantity):
+    def set(
+        self, cpu: MonitoredQuantity, vsi: MonitoredQuantity, motor: MonitoredQuantity
+    ):
         self._cpu.display(cpu)
         self._vsi.display(vsi)
         self._motor.display(motor)
@@ -73,6 +75,7 @@ class TemperatureWidget(ValueDisplayGroupWidget):
 def _unittest_temperature_widget():
     import time
     from PyQt5.QtWidgets import QApplication, QMainWindow
+
     app = QApplication([])
 
     win = QMainWindow()

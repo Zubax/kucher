@@ -30,9 +30,7 @@ from .control_widget import ControlWidget
 
 
 class TelegaControlWidget(WidgetBase):
-    def __init__(self,
-                 parent:    QWidget,
-                 commander: Commander):
+    def __init__(self, parent: QWidget, commander: Commander):
         super(TelegaControlWidget, self).__init__(parent)
 
         self._dc_quantities_widget = DCQuantitiesWidget(self)
@@ -80,44 +78,66 @@ class TelegaControlWidget(WidgetBase):
     def on_general_status_update(self, timestamp: float, s: GeneralStatusView):
         # DC quantities
         power = s.dc.voltage * s.dc.current
-        self._dc_quantities_widget.set(_make_monitored_quantity(s.dc.voltage,
-                                                                s.alert_flags.dc_undervoltage,
-                                                                s.alert_flags.dc_overvoltage),
-                                       _make_monitored_quantity(s.dc.current,
-                                                                s.alert_flags.dc_undercurrent,
-                                                                s.alert_flags.dc_overcurrent),
-                                       power)
+        self._dc_quantities_widget.set(
+            _make_monitored_quantity(
+                s.dc.voltage,
+                s.alert_flags.dc_undervoltage,
+                s.alert_flags.dc_overvoltage,
+            ),
+            _make_monitored_quantity(
+                s.dc.current,
+                s.alert_flags.dc_undercurrent,
+                s.alert_flags.dc_overcurrent,
+            ),
+            power,
+        )
         # Temperature
         k2c = s.temperature.convert_kelvin_to_celsius
-        self._temperature_widget.set(_make_monitored_quantity(k2c(s.temperature.cpu),
-                                                              s.alert_flags.cpu_cold,
-                                                              s.alert_flags.cpu_overheating),
-                                     _make_monitored_quantity(k2c(s.temperature.vsi),
-                                                              s.alert_flags.vsi_cold,
-                                                              s.alert_flags.vsi_overheating),
-                                     _make_monitored_quantity(k2c(s.temperature.motor) if s.temperature.motor else None,
-                                                              s.alert_flags.motor_cold,
-                                                              s.alert_flags.motor_overheating))
+        self._temperature_widget.set(
+            _make_monitored_quantity(
+                k2c(s.temperature.cpu),
+                s.alert_flags.cpu_cold,
+                s.alert_flags.cpu_overheating,
+            ),
+            _make_monitored_quantity(
+                k2c(s.temperature.vsi),
+                s.alert_flags.vsi_cold,
+                s.alert_flags.vsi_overheating,
+            ),
+            _make_monitored_quantity(
+                k2c(s.temperature.motor) if s.temperature.motor else None,
+                s.alert_flags.motor_cold,
+                s.alert_flags.motor_overheating,
+            ),
+        )
         # Hardware flags
         hfc_fs = HardwareFlagCountersWidget.FlagState
         # noinspection PyArgumentList
         self._hardware_flag_counters_widget.set(
-            lvps_malfunction=hfc_fs(event_count=s.hardware_flag_edge_counters.lvps_malfunction,
-                                    active=s.alert_flags.hardware_lvps_malfunction),
-            overload=hfc_fs(event_count=s.hardware_flag_edge_counters.overload,
-                            active=s.alert_flags.hardware_overload),
-            fault=hfc_fs(event_count=s.hardware_flag_edge_counters.fault,
-                         active=s.alert_flags.hardware_fault))
+            lvps_malfunction=hfc_fs(
+                event_count=s.hardware_flag_edge_counters.lvps_malfunction,
+                active=s.alert_flags.hardware_lvps_malfunction,
+            ),
+            overload=hfc_fs(
+                event_count=s.hardware_flag_edge_counters.overload,
+                active=s.alert_flags.hardware_overload,
+            ),
+            fault=hfc_fs(
+                event_count=s.hardware_flag_edge_counters.fault,
+                active=s.alert_flags.hardware_fault,
+            ),
+        )
 
         # Device status
-        self._device_status_widget.set(s.current_task_id,
-                                       s.timestamp)
+        self._device_status_widget.set(s.current_task_id, s.timestamp)
 
         # VSI status
-        self._vsi_status_widget.set(1 / s.pwm.period,
-                                    s.status_flags.vsi_enabled,
-                                    s.status_flags.vsi_modulating,
-                                    s.status_flags.phase_current_agc_high_gain_selected)
+        self._vsi_status_widget.set(
+            1 / s.pwm.period,
+            s.status_flags.vsi_enabled,
+            s.status_flags.vsi_modulating,
+            s.status_flags.phase_current_agc_high_gain_selected,
+        )
 
         # Active alerts
         self._active_alerts_widget.set(s.alert_flags)
@@ -129,9 +149,9 @@ class TelegaControlWidget(WidgetBase):
         self._control_widget.on_general_status_update(timestamp, s)
 
 
-def _make_monitored_quantity(value: float,
-                             too_low: bool = False,
-                             too_high: bool = False) -> MonitoredQuantity:
+def _make_monitored_quantity(
+    value: float, too_low: bool = False, too_high: bool = False
+) -> MonitoredQuantity:
     mq = MonitoredQuantity(value)
 
     if too_low:

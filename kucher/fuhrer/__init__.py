@@ -17,7 +17,11 @@ import asyncio
 import functools
 from logging import getLogger
 from kucher.model import device_model
-from kucher.model.device_model import DeviceModel, DeviceInfoView, ConnectionNotEstablishedException
+from kucher.model.device_model import (
+    DeviceModel,
+    DeviceInfoView,
+    ConnectionNotEstablishedException,
+)
 from kucher.view.main_window import MainWindow
 from kucher.view import device_model_representation
 
@@ -29,46 +33,67 @@ class Fuhrer:
     def __init__(self):
         self._device_model: DeviceModel = DeviceModel(asyncio.get_event_loop())
 
-        self._main_window = MainWindow(on_close=self._on_main_window_close,
-                                       on_connection_request=self._on_connection_request,
-                                       on_disconnection_request=self._on_disconnection_request,
-                                       on_task_statistics_request=_return_none_if_not_connected(
-                                           self._device_model.get_task_statistics),
-                                       commander=self._device_model.commander)
+        self._main_window = MainWindow(
+            on_close=self._on_main_window_close,
+            on_connection_request=self._on_connection_request,
+            on_disconnection_request=self._on_disconnection_request,
+            on_task_statistics_request=_return_none_if_not_connected(
+                self._device_model.get_task_statistics
+            ),
+            commander=self._device_model.commander,
+        )
         self._main_window.show()
 
-        self._device_model.device_status_update_event.connect(self._main_window.on_general_status_update)
-        self._device_model.connection_status_change_event.connect(self._on_connection_status_change)
-        self._device_model.log_line_reception_event.connect(self._main_window.on_log_line_reception)
+        self._device_model.device_status_update_event.connect(
+            self._main_window.on_general_status_update
+        )
+        self._device_model.connection_status_change_event.connect(
+            self._on_connection_status_change
+        )
+        self._device_model.log_line_reception_event.connect(
+            self._main_window.on_log_line_reception
+        )
 
         self._should_stop = False
 
     def _on_main_window_close(self):
-        _logger.info('The main window is closing, asking the controller task to stop')
+        _logger.info("The main window is closing, asking the controller task to stop")
         self._should_stop = True
 
-    def _on_connection_status_change(self, device_info_or_error: typing.Union[DeviceInfoView, str, Exception]):
+    def _on_connection_status_change(
+        self, device_info_or_error: typing.Union[DeviceInfoView, str, Exception]
+    ):
         if isinstance(device_info_or_error, DeviceInfoView):
-            self._main_window.on_connection_established(_make_view_basic_device_info(device_info_or_error),
-                                                        list(self._device_model.registers.values()))
+            self._main_window.on_connection_established(
+                _make_view_basic_device_info(device_info_or_error),
+                list(self._device_model.registers.values()),
+            )
         elif isinstance(device_info_or_error, (str, Exception)):
-            reason = str(device_info_or_error) or repr(device_info_or_error)    # Some exceptions may not contain text
+            reason = str(device_info_or_error) or repr(
+                device_info_or_error
+            )  # Some exceptions may not contain text
             self._main_window.on_connection_loss(reason)
         else:
-            raise TypeError(f'Invalid argument: {type(device_info_or_error)}')
+            raise TypeError(f"Invalid argument: {type(device_info_or_error)}")
 
-    async def _on_connection_request(self, port: str) -> device_model_representation.BasicDeviceInfo:
+    async def _on_connection_request(
+        self, port: str
+    ) -> device_model_representation.BasicDeviceInfo:
         assert not self._device_model.is_connected
 
         def on_progress_report(stage_description: str, progress: float):
-            self._main_window.on_connection_initialization_progress_report(stage_description, progress)
+            self._main_window.on_connection_initialization_progress_report(
+                stage_description, progress
+            )
 
-        device_info = await self._device_model.connect(port_name=port, on_progress_report=on_progress_report)
+        device_info = await self._device_model.connect(
+            port_name=port, on_progress_report=on_progress_report
+        )
 
         return _make_view_basic_device_info(device_info)
 
     async def _on_disconnection_request(self) -> None:
-        await self._device_model.disconnect('User request')
+        await self._device_model.disconnect("User request")
 
     async def run(self):
         # noinspection PyBroadException
@@ -76,9 +101,9 @@ class Fuhrer:
             while not self._should_stop:
                 await asyncio.sleep(1)
         except Exception:
-            _logger.exception('Unhandled exception in controller task')
+            _logger.exception("Unhandled exception in controller task")
         else:
-            _logger.info('Controller task is stopping normally')
+            _logger.info("Controller task is stopping normally")
 
 
 def _return_none_if_not_connected(target: typing.Callable):
@@ -92,7 +117,9 @@ def _return_none_if_not_connected(target: typing.Callable):
     return decorator
 
 
-def _make_view_basic_device_info(di: device_model.DeviceInfoView) -> device_model_representation.BasicDeviceInfo:
+def _make_view_basic_device_info(
+    di: device_model.DeviceInfoView,
+) -> device_model_representation.BasicDeviceInfo:
     """
     Decouples the model-specific device info representation from the view-specific device info representation.
     """

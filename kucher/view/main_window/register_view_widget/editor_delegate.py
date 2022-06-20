@@ -16,8 +16,15 @@ import math
 import numpy
 import typing
 from logging import getLogger
-from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QSpinBox, QDoubleSpinBox, \
-    QPlainTextEdit, QComboBox
+from PyQt5.QtWidgets import (
+    QStyledItemDelegate,
+    QWidget,
+    QStyleOptionViewItem,
+    QSpinBox,
+    QDoubleSpinBox,
+    QPlainTextEdit,
+    QComboBox,
+)
 from PyQt5.QtCore import Qt, QModelIndex, QObject, QAbstractItemModel, QRect, QSize
 from PyQt5.QtGui import QFontMetrics, QPainter
 
@@ -39,13 +46,15 @@ class EditorDelegate(QStyledItemDelegate):
     Factory and manager of editing widgets for use with the Register view table.
     """
 
-    def __init__(self,
-                 parent: QObject,
-                 message_display_callback: typing.Callable[[str], None]):
+    def __init__(
+        self, parent: QObject, message_display_callback: typing.Callable[[str], None]
+    ):
         super(EditorDelegate, self).__init__(parent)
         self._message_display_callback = message_display_callback
 
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QWidget:
+    def createEditor(
+        self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex
+    ) -> QWidget:
         """
         The set of editors that we have defined here are only good for small-dimensioned registers with a few values.
         They are not good for unstructured data and large arrays. For that, shall the need arise, we'll need to define
@@ -54,31 +63,37 @@ class EditorDelegate(QStyledItemDelegate):
         appears on top of the view.
         """
         register = self._get_register_from_index(index)
-        _logger.info('Constructing editor for %r', register)
+        _logger.info("Constructing editor for %r", register)
 
         if self._can_use_bool_switch(register):
             editor = QComboBox(parent)
             editor.setEditable(False)
-            editor.addItem(get_icon('cancel'), 'False (0)')
-            editor.addItem(get_icon('ok'), 'True (1)')
+            editor.addItem(get_icon("cancel"), "False (0)")
+            editor.addItem(get_icon("ok"), "True (1)")
         elif self._can_use_spinbox(register):
             minimum, maximum = register.min_value[0], register.max_value[0]
 
             try:
                 dtype = Register.get_numpy_type(register.type_id)
-                float_decimals = int(abs(math.log10(numpy.finfo(dtype).resolution)) + 0.5) + 1
+                float_decimals = (
+                    int(abs(math.log10(numpy.finfo(dtype).resolution)) + 0.5) + 1
+                )
             except ValueError:
                 float_decimals = None
 
             if float_decimals is not None:
-                step = (maximum - minimum) / _MIN_PREFERRED_NUMBER_OF_STEPS_IN_FULL_RANGE
+                step = (
+                    maximum - minimum
+                ) / _MIN_PREFERRED_NUMBER_OF_STEPS_IN_FULL_RANGE
                 try:
                     step = 10 ** round(math.log10(step))
                 except ValueError:
-                    step = 1        # Math domain error corner case
+                    step = 1  # Math domain error corner case
 
-                step = min(1.0, step)                       # Step can't be greater than one for UX reasons
-                _logger.info('Constructing QDoubleSpinBox with single step set to %r', step)
+                step = min(1.0, step)  # Step can't be greater than one for UX reasons
+                _logger.info(
+                    "Constructing QDoubleSpinBox with single step set to %r", step
+                )
                 editor = QDoubleSpinBox(parent)
                 editor.setSingleStep(step)
                 editor.setDecimals(float_decimals)
@@ -90,11 +105,13 @@ class EditorDelegate(QStyledItemDelegate):
         else:
             editor = QPlainTextEdit(parent)
             editor.setFont(get_monospace_font())
-            editor.setMinimumWidth(QFontMetrics(editor.font()).width('9' * (MAX_LINE_LENGTH + 5)))
+            editor.setMinimumWidth(
+                QFontMetrics(editor.font()).width("9" * (MAX_LINE_LENGTH + 5))
+            )
 
         editor.setFont(Model.get_font())
 
-        self._message_display_callback('Press Esc to cancel editing')
+        self._message_display_callback("Press Esc to cancel editing")
 
         return editor
 
@@ -105,7 +122,11 @@ class EditorDelegate(QStyledItemDelegate):
         if isinstance(editor, QComboBox):
             assert self._can_use_bool_switch(register)
             editor.setCurrentIndex(int(bool(register.cached_value[0])))
-            _logger.info('Value %r has been represented as %r', register.cached_value, editor.currentText())
+            _logger.info(
+                "Value %r has been represented as %r",
+                register.cached_value,
+                editor.currentText(),
+            )
         elif isinstance(editor, (QDoubleSpinBox, QSpinBox)):
             assert self._can_use_spinbox(register)
             editor.setValue(register.cached_value[0])
@@ -113,9 +134,11 @@ class EditorDelegate(QStyledItemDelegate):
             assert not self._can_use_spinbox(register)
             editor.setPlainText(display_value(register.cached_value, register.type_id))
         else:
-            raise TypeError(f'Unexpected editor: {editor}')
+            raise TypeError(f"Unexpected editor: {editor}")
 
-    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex):
+    def setModelData(
+        self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex
+    ):
         """Invoked ad the end of the editing session; data transferred from the editor to the model"""
         register = self._get_register_from_index(index)
 
@@ -129,10 +152,12 @@ class EditorDelegate(QStyledItemDelegate):
             # True
             # Wait what?!
             value = bool(editor.currentIndex())
-            _logger.info('Value %r has been interpreted as %r', editor.currentText(), value)
+            _logger.info(
+                "Value %r has been interpreted as %r", editor.currentText(), value
+            )
         elif isinstance(editor, (QDoubleSpinBox, QSpinBox)):
             assert self._can_use_spinbox(register)
-            editor.interpretText()                          # Beware!!1
+            editor.interpretText()  # Beware!!1
             value = editor.value()
         elif isinstance(editor, QPlainTextEdit):
             assert not self._can_use_spinbox(register)
@@ -140,17 +165,26 @@ class EditorDelegate(QStyledItemDelegate):
             try:
                 value = parse_value(text, register.type_id)
             except Exception as ex:
-                _logger.warning('The following value could not be parsed: %r', text, exc_info=True)
-                show_error('Invalid value', 'Could not parse the entered value', repr(ex), editor.window())
+                _logger.warning(
+                    "The following value could not be parsed: %r", text, exc_info=True
+                )
+                show_error(
+                    "Invalid value",
+                    "Could not parse the entered value",
+                    repr(ex),
+                    editor.window(),
+                )
                 value = None
         else:
-            raise TypeError(f'Unexpected editor: {editor}')
+            raise TypeError(f"Unexpected editor: {editor}")
 
         # We're not going to touch the device here; instead, we're going to delegate that back to the Model instance.
         if value is not None:
             model.setData(index, value, Qt.EditRole)
 
-    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
+    def updateEditorGeometry(
+        self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex
+    ):
         """
         http://doc.qt.io/qt-5/model-view-programming.html#delegate-classes
         """
@@ -192,10 +226,11 @@ class EditorDelegate(QStyledItemDelegate):
         y_offset = max(0, editor_size.height() - rect.height()) // 2
         # We also have to make sure that we don't accidentally move it into negative coordinates!
         # That would hide part of the widget, unacceptable
-        editor.move(max(0, rect.x() - x_offset),
-                    max(0, rect.y() - y_offset))
+        editor.move(max(0, rect.x() - x_offset), max(0, rect.y() - y_offset))
 
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
+    def paint(
+        self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
+    ):
         """
         Reposition the icon to the right side.
         """
@@ -207,10 +242,14 @@ class EditorDelegate(QStyledItemDelegate):
     def _get_register_from_index(index: QModelIndex) -> Register:
         register = Model.get_register_from_index(index)
         if register is None:
-            raise ValueError(f'Logic error - the index {index} MUST contain a valid register reference')
+            raise ValueError(
+                f"Logic error - the index {index} MUST contain a valid register reference"
+            )
 
         if register.type_id == Register.ValueType.EMPTY:
-            raise ValueError("Did not expect an empty register here (who needs them anyway? doesn't make sense)")
+            raise ValueError(
+                "Did not expect an empty register here (who needs them anyway? doesn't make sense)"
+            )
 
         return register
 
@@ -220,12 +259,13 @@ class EditorDelegate(QStyledItemDelegate):
         # If the register is variable size, the user may set it to a single scalar using the vector editor,
         # and the next time it tries to edit it we still have to show the vector editor rather than scalar.
         # Hence we check the sizes of the min and max to prevent the user from being stuck with the scalar editor.
-        return \
-            register.kind == Register.ValueKind.ARRAY_OF_SCALARS and \
-            register.has_min_and_max_values and \
-            len(register.cached_value) == 1 and \
-            len(register.min_value) == 1 and \
-            len(register.max_value) == 1
+        return (
+            register.kind == Register.ValueKind.ARRAY_OF_SCALARS
+            and register.has_min_and_max_values
+            and len(register.cached_value) == 1
+            and len(register.min_value) == 1
+            and len(register.max_value) == 1
+        )
 
     @staticmethod
     def _can_use_bool_switch(register: Register) -> bool:
@@ -240,7 +280,9 @@ class EditorDelegate(QStyledItemDelegate):
         if register.has_default_value and len(register.default_value) != 1:
             return False
 
-        if register.has_min_and_max_values and (len(register.min_value) != 1 or len(register.max_value) != 1):
+        if register.has_min_and_max_values and (
+            len(register.min_value) != 1 or len(register.max_value) != 1
+        ):
             return False
 
         return True
