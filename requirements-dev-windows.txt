@@ -12,4 +12,4 @@ pycodestyle
 black == 22.*
 
 # Packaging tools
-PyInstaller ~= 3.3
+PyInstaller == 5.*
