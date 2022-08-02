@@ -39,11 +39,10 @@ from .device_management_widget import (
 from .main_widget import MainWidget
 from .task_statistics_widget import TaskStatisticsWidget
 from .log_widget import LogWidget
+from .about_widget import AboutWidget
 from .register_view_widget import RegisterViewWidget
 
-
 _WINDOW_TITLE_PREFIX = "Zubax Kucher"
-
 
 TaskStatisticsRequestCallback = typing.Callable[
     [], typing.Awaitable[typing.Optional[TaskStatisticsView]]
@@ -61,6 +60,7 @@ class MainWindow(QMainWindow):
         commander: Commander,
     ):
         super(MainWindow, self).__init__()
+        self.about_window: Optional[AboutWidget] = None
         self.setWindowTitle(_WINDOW_TITLE_PREFIX)
         self.setWindowIcon(get_application_icon())
 
@@ -201,15 +201,25 @@ class MainWindow(QMainWindow):
         show_log_directory_action = QAction(
             get_icon("log"), "Open &log directory", self
         )
+        open_about_action = QAction(get_icon("log"), "About", self)
         show_log_directory_action.triggered.connect(
             lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(LOG_DIR))
         )
+
+        def open_about_window():
+            if not self.about_window:
+                self.about_window = AboutWidget()
+            else:
+                self.about_window.show()
+                self.about_window.raise_()
+
+        open_about_action.triggered.connect(open_about_window)
 
         help_menu = self.menuBar().addMenu("&Help")
         help_menu.addAction(website_action)
         help_menu.addAction(knowledge_base_action)
         help_menu.addAction(show_log_directory_action)
-        # help_menu.addAction(about_action)                 # TODO: Implement this
+        help_menu.addAction(open_about_action)
 
     def _readjust_size_policies(self):
         size_hint: QSize = self.centralWidget().sizeHint()
