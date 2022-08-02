@@ -42,9 +42,7 @@ from .log_widget import LogWidget
 from .about_widget import AboutWidget
 from .register_view_widget import RegisterViewWidget
 
-
 _WINDOW_TITLE_PREFIX = "Zubax Kucher"
-
 
 TaskStatisticsRequestCallback = typing.Callable[
     [], typing.Awaitable[typing.Optional[TaskStatisticsView]]
@@ -203,9 +201,7 @@ class MainWindow(QMainWindow):
         show_log_directory_action = QAction(
             get_icon("log"), "Open &log directory", self
         )
-        open_about_action = QAction(
-            get_icon("log"), "About", self
-        )
+        open_about_action = QAction(get_icon("log"), "About", self)
         show_log_directory_action.triggered.connect(
             lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(LOG_DIR))
         )

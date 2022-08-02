@@ -6,7 +6,7 @@ class AboutWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.setGeometry(300, 300, 350, 50)
-        self.setWindowTitle('About')
+        self.setWindowTitle("About")
         layout = QVBoxLayout()
         version_string = "Version " + ".".join(map(str, __version__))
         self.label = QLabel(version_string)
