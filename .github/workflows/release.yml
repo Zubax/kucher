@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     name: Deploy website
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - name: Retrieve repository
         uses: actions/checkout@v1
