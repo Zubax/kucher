@@ -1,51 +1,46 @@
-invalid on purpose
 name: deployment
 
 on:
   push:
     branches:
       - master
-      - uat
 
 jobs:
   deploy:
     name: Deploy website
     runs-on: ubuntu-latest
-    if:
-      contains(github.event.head_commit.message, '#release')
     steps:
-    - name: Retrieve repository
-      uses: actions/checkout@v1
-    - name: Configure SSH
-      run: |
-        mkdir -p ~/.ssh/
-        echo "$SSH_KEY" > ~/.ssh/private.key
-        chmod 600 ~/.ssh/private.key
-        cat >>~/.ssh/config <<END
-        Host target
-          HostName $SSH_HOST
-          User $SSH_USER
-          IdentityFile ~/.ssh/private.key
-          StrictHostKeyChecking no
-        END
-      env:
-        SSH_HOST: files.zubax.com
-        SSH_USER: github
-        SSH_KEY: ${{ secrets.FILES_RELEASE_SSH_PRIVATE_KEY }}
-    - name: Extract the version number from version.py
+      - name: Retrieve repository
+        uses: actions/checkout@v1
+      - uses: actions/setup-python@v1
+      - name: Configure SSH
         run: |
-          -  python -c "from kucher.version import __version__; print('.'.join(map(str, __version__)))"
-    - name: Build the release using pyinstaller like in the build_linux.sh script
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/private.key
+          chmod 600 ~/.ssh/private.key
+          cat >>~/.ssh/config <<END
+          Host target
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/private.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_HOST: files.zubax.com
+          SSH_USER: ubuntu
+          SSH_KEY: ${{ secrets.FILES_RELEASE_SSH_PRIVATE_KEY }}
+      - name: Extract the version number from version.py
         run: |
-          - pip install -r requirements.txt
-          - pip install -r requirements-dev-linux.txt
-          - pyinstaller --clean --noconfirm pyinstaller.spec || exit 2
-    - name: Deploy the release
+            -  echo "KUCHER_VERSION=$(python -c "from kucher.version import __version__; print('.'.join(map(str, __version__)))")" >> $GITHUB_ENV
+      - name: Assemble the target directory path
         run: |
-          ssh target "if [ -d $TARGET_DIR ]; then sudo rm -rf $TARGET_DIR; fi"
-          rsync -avztlp -e ssh --delete --exclude='.git' --exclude='.github' --exclude='.gitignore' ./ target:$TARGET_DIR
-          ssh target "chgrp -R www-data $TARGET_DIR"
-          ssh target "find $TARGET_DIR -type f -exec chmod 644 {} \;"
-          ssh target "find $TARGET_DIR -type d -exec chmod 775 {} \;"
-          ssh target "find $TARGET_DIR -type d -exec chmod g+s {} \;"
-          ssh target "chmod 775 $TARGET_DIR/website.wsgi"
+            - echo "KUCHER_TARGET_DIR=/var/www/files/products/com.zubax.kucher/$(KUCHER_VERSION)" >> $GITHUB_ENV
+      - name: Build the release using pyinstaller like in the build_linux.sh script
+        run: |
+            pip install -r requirements.txt
+            pip install -r requirements-dev-linux.txt
+            pyinstaller --clean --noconfirm pyinstaller.spec || exit 2
+      - name: Deploy the release
+        run: |
+#            ssh target "if [ -d $ ]; then sudo rm -rf $TARGET_DIR; fi"
+            scp dist/Kucher target:$KUCHER_TARGET_DIR
