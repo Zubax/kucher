@@ -41,6 +41,7 @@ jobs:
             pip install -r requirements-dev-linux.txt
             pyinstaller --clean --noconfirm pyinstaller.spec || exit 2
       - name: Deploy the release
+        if: ${{ success() }}
         run: |
             KUCHER_VERSION=$(python3 -c "from kucher.version import __version__; print('.'.join(map(str, __version__)))")
             KUCHER_TARGET_DIR=/var/www/files/products/com.zubax.kucher/$KUCHER_VERSION/linux-x86_64
