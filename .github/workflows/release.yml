@@ -39,6 +39,7 @@ jobs:
         run: |
             pip install -r requirements.txt
             pip install -r requirements-dev-linux.txt
+            git submodule update --init --recursive
             pyinstaller --clean --noconfirm pyinstaller.spec || exit 2
       - name: Deploy the release
         if: ${{ success() }}
