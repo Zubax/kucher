@@ -7,12 +7,17 @@ on:
 
 jobs:
   deploy:
-    name: Deploy website
-    runs-on: ubuntu-18.04
+    name: Build and deploy Kucher
+    runs-on: ubuntu-latest
+
     steps:
       - name: Retrieve repository
         uses: actions/checkout@v1
-      - uses: actions/setup-python@v1
+      - name: Setup Python3
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh/
@@ -26,21 +31,20 @@ jobs:
             StrictHostKeyChecking no
           END
         env:
-          SSH_HOST: files.zubax.com
-          SSH_USER: ubuntu
-          SSH_KEY: ${{ secrets.FILES_RELEASE_SSH_PRIVATE_KEY }}
-      - name: Extract the version number from version.py
-        run: |
-            -  echo "KUCHER_VERSION=$(python -c "from kucher.version import __version__; print('.'.join(map(str, __version__)))")" >> $GITHUB_ENV
-      - name: Assemble the target directory path
-        run: |
-            - echo "KUCHER_TARGET_DIR=/var/www/files/products/com.zubax.kucher/$(KUCHER_VERSION)" >> $GITHUB_ENV
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
       - name: Build the release using pyinstaller like in the build_linux.sh script
+        continue-on-error: false
         run: |
             pip install -r requirements.txt
             pip install -r requirements-dev-linux.txt
             pyinstaller --clean --noconfirm pyinstaller.spec || exit 2
       - name: Deploy the release
         run: |
-#            ssh target "if [ -d $ ]; then sudo rm -rf $TARGET_DIR; fi"
-            scp dist/Kucher target:$KUCHER_TARGET_DIR
+            KUCHER_VERSION=$(python3 -c "from kucher.version import __version__; print('.'.join(map(str, __version__)))")
+            KUCHER_TARGET_DIR=/var/www/files/products/com.zubax.kucher/$KUCHER_VERSION/linux-x86_64
+            ssh target "mkdir -p $KUCHER_TARGET_DIR; echo $KUCHER_TARGET_DIR"
+            scp $KUCHER_ARTIFACT target:$KUCHER_TARGET_DIR
+        env:
+          KUCHER_ARTIFACT: dist/Kucher
