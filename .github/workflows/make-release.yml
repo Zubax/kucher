@@ -5,8 +5,7 @@ name: 'Kucher application builder'
 on:
   push:
     branches:
-      - main
-      - issue-54
+      - master
 
 # Ensures that only one workflow is running at a time
 concurrency:
@@ -21,6 +20,7 @@ jobs:
     name: Test Kucher
     if: startsWith(github.ref, 'refs/heads/')
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-2019]
         python: ['3.10']
@@ -46,74 +46,101 @@ jobs:
           pip --version
         shell: bash
 
+      # Set architecture specific variables
+      - name: Set architecture variables
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            echo "kucher_test_script=pytest; black kucher/fuhrer kucher/model kucher/view kucher/*.py --check" >> $GITHUB_ENV
+            echo "kucher_requirements=requirements-dev-linux.txt" >> $GITHUB_ENV
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+            echo "kucher_test_script=.\test_windows.bat" >> $GITHUB_ENV
+            echo "kucher_requirements=requirements-dev-windows.txt" >> $GITHUB_ENV
+          else
+            echo "${{ runner.os }} not supported"
+            exit 1
+          fi
+        shell: bash
+
       # Install test dependencies
       - name: Install dependencies
         run: |
           git submodule update --init --recursive
           python -m pip install --upgrade pip
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            python -m pip install -r requirements.txt -r requirements-dev-linux.txt
-          elif [ "$RUNNER_OS" == "Windows" ]; then
-            python -m pip install -r requirements.txt -r requirements-dev-windows.txt
-          else
-            echo "${{ runner.os }} not supported"
-            exit 1
-          fi
-        shell: bash
+          python -m pip install -r requirements.txt -r ${{ env.kucher_requirements }}
 
       # Run Linux test
       - name: Test Kucher
+        run: ${{ env.kucher_test_script }}
+
+      # Archive source files
+      - name: Archive source files
+        run: 7z a zubax-kucher.7z *
+
+      # Upload source file artifacts
+      - name: Store test result artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: zubax-kucher-${{ matrix.os }}-python-${{ matrix.python }}-source
+          path: zubax-kucher.7z
+          retention-days: 7
+
+  #
+  # Kucher build
+  #
+  kucher-build:
+    name: Build Kucher
+    if: startsWith(github.ref, 'refs/heads/')
+    needs: kucher-test
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-2019]
+        python: ['3.10']
+    runs-on: ${{ matrix.os }}
+    steps:
+      # Checkout code from GitHub
+      - name: Check out
+        uses: actions/checkout@v3
+
+      # Install Python version needed for test
+      - name: Install Python3
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      # Set architecture specific variables
+      - name: Set architecture variables
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
-            pytest
-            black kucher/fuhrer kucher/model kucher/view kucher/*.py --check
+            echo "kucher_build_script=./build_linux.sh" >> $GITHUB_ENV
+            echo "kucher_requirements=requirements-dev-linux.txt" >> $GITHUB_ENV
+            echo "kucher_artifact=dist/Kucher" >> $GITHUB_ENV
           elif [ "$RUNNER_OS" == "Windows" ]; then
-            ./test_windows.bat
+            echo "kucher_build_script=./build_windows.bat" >> $GITHUB_ENV
+            echo "kucher_requirements=requirements-dev-windows.txt" >> $GITHUB_ENV
+            echo "kucher_artifact=dist/Kucher.exe" >> $GITHUB_ENV
           else
             echo "${{ runner.os }} not supported"
             exit 1
           fi
         shell: bash
 
-      # Collect test results
-      - name: Collect test results
-        run: 7z a zubax-kucher.7z *
+      # Install test dependencies
+      - name: Install dependencies
+        run: |
+          git submodule update --init --recursive
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r ${{ env.kucher_requirements }}
 
-      # Upload test result artifacts
-      - name: Store test result artifacts
+      # Run build script
+      - name: Build Kucher
+        run: ${{ env.kucher_build_script }}
+
+      # Upload Kucher artifact
+      - name: Upload Kucher artifact
         uses: actions/upload-artifact@v3
         with:
-          name: zubax-kucher-${{ matrix.os }}-python-${{ matrix.python }}-test-results
-          path: zubax-kucher.7z
+          name: zubax-kucher-${{ matrix.os }}-python-${{ matrix.python }}
+          path: ${{ env.kucher_artifact }}
+          if-no-files-found: error
           retention-days: 7
-
-      # Run Linux build
-      - name: Build Kucher on Linux
-        if: ${{ runner.os == 'Linux' }}
-        run: ./build_linux.sh
-
-      # Upload artifacts for Linux
-      - name: Store Linux artifacts
-        if: ${{ runner.os == 'Linux' }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: zubax-kucher-${{ matrix.os }}-python-${{ matrix.python }}
-          path: dist/Kucher
-          if-no-files-found: error
-          retention-days: 1
-
-      # Run Windows build
-      - name: Build Kucher on Windows
-        if: ${{ runner.os == 'Windows' }}
-        run: .\build_windows.bat
-
-      # Upload artifacts for Windows
-      - name: Store Windows artifacts
-        if: ${{ runner.os == 'Windows' }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: zubax-kucher-${{ matrix.os }}-python-${{ matrix.python }}
-          path: dist\Kucher.exe
-          if-no-files-found: error
-          retention-days: 1
 
