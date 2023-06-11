@@ -1,9 +1,11 @@
 name: 'Kucher application builder'
 
 # Builds Kucher release
-
 on:
   push:
+    branches:
+      - master
+  pull_request:
     branches:
       - master
 
@@ -18,7 +20,6 @@ jobs:
   #
   kucher-test:
     name: Test Kucher
-    if: startsWith(github.ref, 'refs/heads/')
     strategy:
       fail-fast: false
       matrix:
@@ -26,7 +27,7 @@ jobs:
         python: ['3.10']
     runs-on: ${{ matrix.os }}
     steps:
-      # Checkout code from GitHub
+      # Checkout kucher repository
       - name: Check out
         uses: actions/checkout@v3
 
@@ -89,7 +90,7 @@ jobs:
   #
   kucher-build:
     name: Build Kucher
-    if: startsWith(github.ref, 'refs/heads/')
+    if: (github.event_name == 'push') && (github.ref == 'refs/heads/master')
     needs: kucher-test
     strategy:
       matrix:
