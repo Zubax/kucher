@@ -1,23 +1,12 @@
-name: 'Kucher application builder'
+name: 'Test and Release Kucher'
+on: [ push, pull_request ]
 
-# Builds Kucher release
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
-
-# Ensures that only one workflow is running at a time
+# Ensures that only one workflow is running at a time - required for duplicate pushes and repushing a PR
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
-  #
-  # Kucher test
-  #
   kucher-test:
     name: Test Kucher
     strategy:
@@ -27,17 +16,14 @@ jobs:
         python: ['3.10']
     runs-on: ${{ matrix.os }}
     steps:
-      # Checkout kucher repository
       - name: Check out
         uses: actions/checkout@v3
 
-      # Install Python version needed for test
       - name: Install Python3
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
 
-      # Log versions
       - name: Log versions
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
@@ -47,7 +33,6 @@ jobs:
           pip --version
         shell: bash
 
-      # Set architecture specific variables
       - name: Set architecture variables
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
@@ -62,22 +47,18 @@ jobs:
           fi
         shell: bash
 
-      # Install test dependencies
       - name: Install dependencies
         run: |
           git submodule update --init --recursive
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt -r ${{ env.kucher_requirements }}
 
-      # Run Linux test
       - name: Test Kucher
         run: ${{ env.kucher_test_script }}
 
-      # Archive source files
       - name: Archive source files
         run: 7z a zubax-kucher.7z *
 
-      # Upload source file artifacts
       - name: Store test result artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -85,12 +66,9 @@ jobs:
           path: zubax-kucher.7z
           retention-days: 7
 
-  #
-  # Kucher build
-  #
-  kucher-build:
-    name: Build Kucher
-    if: (github.event_name == 'push') && (github.ref == 'refs/heads/master')
+  kucher-release:
+    name: Release Kucher
+    if: contains(github.event.head_commit.message, '#release') || contains(github.ref, '/master')
     needs: kucher-test
     strategy:
       matrix:
@@ -98,17 +76,14 @@ jobs:
         python: ['3.10']
     runs-on: ${{ matrix.os }}
     steps:
-      # Checkout code from GitHub
       - name: Check out
         uses: actions/checkout@v3
 
-      # Install Python version needed for test
       - name: Install Python3
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
 
-      # Set architecture specific variables
       - name: Set architecture variables
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
@@ -125,18 +100,15 @@ jobs:
           fi
         shell: bash
 
-      # Install test dependencies
       - name: Install dependencies
         run: |
           git submodule update --init --recursive
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt -r ${{ env.kucher_requirements }}
 
-      # Run build script
       - name: Build Kucher
         run: ${{ env.kucher_build_script }}
 
-      # Upload Kucher artifact
       - name: Upload Kucher artifact
         uses: actions/upload-artifact@v3
         with:
