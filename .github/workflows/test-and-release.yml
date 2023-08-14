@@ -1,9 +1,9 @@
 name: 'Test and Release Kucher'
-on: [ push, pull_request ]
+on: push
 
-# Ensures that only one workflow is running at a time - required for duplicate pushes and repushing a PR
+# Ensures that only one workflow is running at a time
 concurrency:
-  group: ${{ github.workflow }}
+  group: ${{ github.workflow_sha }}
   cancel-in-progress: true
 
 jobs:
