@@ -1,0 +1,119 @@
+name: 'Test and Release Kucher'
+on: push
+
+# Ensures that only one workflow is running at a time
+concurrency:
+  group: ${{ github.workflow_sha }}
+  cancel-in-progress: true
+
+jobs:
+  kucher-test:
+    name: Test Kucher
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2019]
+        python: ['3.10']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+
+      - name: Install Python3
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Log versions
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            lsb_release -a
+          fi
+          python --version
+          pip --version
+        shell: bash
+
+      - name: Set architecture variables
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            echo "kucher_test_script=pytest; black kucher/fuhrer kucher/model kucher/view kucher/*.py --check" >> $GITHUB_ENV
+            echo "kucher_requirements=requirements-dev-linux.txt" >> $GITHUB_ENV
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+            echo "kucher_test_script=.\test_windows.bat" >> $GITHUB_ENV
+            echo "kucher_requirements=requirements-dev-windows.txt" >> $GITHUB_ENV
+          else
+            echo "${{ runner.os }} not supported"
+            exit 1
+          fi
+        shell: bash
+
+      - name: Install dependencies
+        run: |
+          git submodule update --init --recursive
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r ${{ env.kucher_requirements }}
+
+      - name: Test Kucher
+        run: ${{ env.kucher_test_script }}
+
+      - name: Archive source files
+        run: 7z a zubax-kucher.7z *
+
+      - name: Store test result artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: zubax-kucher-${{ matrix.os }}-python-${{ matrix.python }}-source
+          path: zubax-kucher.7z
+          retention-days: 7
+
+  kucher-release:
+    name: Release Kucher
+    if: contains(github.event.head_commit.message, '#release') || contains(github.ref, '/master')
+    needs: kucher-test
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-2019]
+        python: ['3.10']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+
+      - name: Install Python3
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Set architecture variables
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            echo "kucher_build_script=./build_linux.sh" >> $GITHUB_ENV
+            echo "kucher_requirements=requirements-dev-linux.txt" >> $GITHUB_ENV
+            echo "kucher_artifact=dist/Kucher" >> $GITHUB_ENV
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+            echo "kucher_build_script=./build_windows.bat" >> $GITHUB_ENV
+            echo "kucher_requirements=requirements-dev-windows.txt" >> $GITHUB_ENV
+            echo "kucher_artifact=dist/Kucher.exe" >> $GITHUB_ENV
+          else
+            echo "${{ runner.os }} not supported"
+            exit 1
+          fi
+        shell: bash
+
+      - name: Install dependencies
+        run: |
+          git submodule update --init --recursive
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r ${{ env.kucher_requirements }}
+
+      - name: Build Kucher
+        run: ${{ env.kucher_build_script }}
+
+      - name: Upload Kucher artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: zubax-kucher-${{ matrix.os }}-python-${{ matrix.python }}
+          path: ${{ env.kucher_artifact }}
+          if-no-files-found: error
+          retention-days: 7
+
